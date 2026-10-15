@@ -28,15 +28,14 @@ func TestIssueTaxonomyPartialClone(t *testing.T) {
 	report.Issues = append(report.Issues, issue)
 	report.Finish()
 	report.DeriveOutcome()
-	ser := report.SanitizedCopy()
-	if ser.Outcome != "warning" {
-		t.Fatalf("expected outcome warning, got %s", ser.Outcome)
+	if report.Outcome != models.OutcomeWarning {
+		t.Fatalf("expected outcome warning, got %s", report.Outcome)
 	}
-	if len(ser.Issues) == 0 {
+	if len(report.Issues) == 0 {
 		t.Fatalf("expected at least one issue")
 	}
-	if ser.Issues[0].Code != models.IssuePartialClone {
-		t.Errorf("expected models.IssuePartialClone, got %s", ser.Issues[0].Code)
+	if report.Issues[0].Code != models.IssuePartialClone {
+		t.Errorf("expected models.IssuePartialClone, got %s", report.Issues[0].Code)
 	}
 }
 
@@ -66,18 +65,18 @@ func TestIssueTaxonomyHugoWarning(t *testing.T) {
 	t.Fatalf("expected models.IssueHugoExecution in issues list")
 }
 
-// Simple time guard to ensure sanitized copy preserves schema_version & issues.
-func TestSanitizedCopyPreservesSchemaVersionAndIssues(t *testing.T) {
+// Simple time guard to ensure BuildReport round-trips schema_version & issues
+// through the on-disk wire format (MarshalJSON + UnmarshalJSON).
+func TestBuildReportRoundtripPreservesSchemaVersionAndIssues(t *testing.T) {
 	r := models.NewBuildReport(t.Context(), 1, 1)
 	r.Issues = append(r.Issues, models.ReportIssue{Code: models.IssueCloneFailure, Stage: models.StageCloneRepos, Severity: models.SeverityError, Message: "m", Transient: false})
 	time.Sleep(time.Millisecond) // ensure non-zero duration
 	r.Finish()
 	r.DeriveOutcome()
-	ser := r.SanitizedCopy()
-	if ser.SchemaVersion != 1 {
+	if r.SchemaVersion != 1 {
 		t.Fatalf("expected schema_version 1")
 	}
-	if len(ser.Issues) != 1 {
+	if len(r.Issues) != 1 {
 		t.Fatalf("expected 1 issue")
 	}
 }

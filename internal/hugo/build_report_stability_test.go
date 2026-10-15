@@ -27,26 +27,25 @@ func TestBuildReportStability(t *testing.T) {
 	r.ConfigHash = "deadbeef" // deterministic stub
 	r.PipelineVersion = 1
 	r.EffectiveRenderMode = buildReportRenderMode
-	ser := r.SanitizedCopy()
-	// Populate optional fields to match golden defaults
-	if ser.DocFilesHash == "" {
-		ser.DocFilesHash = ""
+	// Populate optional fields to match golden defaults (no-op for non-nil; preserves prior intent)
+	if r.DocFilesHash == "" {
+		r.DocFilesHash = ""
 	}
-	if ser.DeltaDecision == "" {
-		ser.DeltaDecision = ""
+	if r.DeltaDecision == "" {
+		r.DeltaDecision = ""
 	}
-	if ser.DeltaChangedRepos == nil {
-		ser.DeltaChangedRepos = nil
+	if r.DeltaChangedRepos == nil {
+		r.DeltaChangedRepos = nil
 	}
-	if ser.DeltaRepoReasons == nil {
-		ser.DeltaRepoReasons = nil
+	if r.DeltaRepoReasons == nil {
+		r.DeltaRepoReasons = nil
 	}
 
 	// Normalize dynamic fields
-	ser.Start = time.Unix(0, 0).UTC()
-	ser.End = time.Unix(0, 0).UTC()
+	r.Start = time.Unix(0, 0).UTC()
+	r.End = time.Unix(0, 0).UTC()
 	// Marshal
-	gotJSON, err := json.MarshalIndent(ser, "", "  ")
+	gotJSON, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}

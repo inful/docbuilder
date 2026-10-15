@@ -131,7 +131,7 @@ func (g *Generator) existingSiteValidForSkip() bool {
 	return g.outputHasNonRootMarkdownContent()
 }
 
-func (g *Generator) readPreviousBuildReport() (*models.BuildReportSerializable, bool) {
+func (g *Generator) readPreviousBuildReport() (*models.BuildReport, bool) {
 	reportPath := filepath.Join(g.outputDir, "build-report.json")
 	if fi, err := os.Stat(reportPath); err != nil || fi.IsDir() {
 		return nil, false
@@ -139,7 +139,7 @@ func (g *Generator) readPreviousBuildReport() (*models.BuildReportSerializable, 
 	// Parse the previous build report to validate it's compatible with the current
 	// binary/config. If we cannot parse the report, treat the output as unsafe to
 	// skip (we'd rather rebuild than serve an empty/partial site).
-	var prev models.BuildReportSerializable
+	var prev models.BuildReport
 	// #nosec G304 -- reportPath is derived from the configured output directory.
 	b, err := os.ReadFile(reportPath)
 	if err != nil {
@@ -151,9 +151,9 @@ func (g *Generator) readPreviousBuildReport() (*models.BuildReportSerializable, 
 	return &prev, true
 }
 
-func (g *Generator) previousReportAllowsSkip(prev *models.BuildReportSerializable) bool {
+func (g *Generator) previousReportAllowsSkip(prev *models.BuildReport) bool {
 	// Only consider skipping if the previous build wasn't a failure.
-	if prev.Outcome != string(models.OutcomeSuccess) && prev.Outcome != string(models.OutcomeWarning) {
+	if prev.Outcome != models.OutcomeSuccess && prev.Outcome != models.OutcomeWarning {
 		return false
 	}
 	// Do not early-skip when the previous build discovered zero documentation files.

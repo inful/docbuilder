@@ -259,7 +259,7 @@ func (r *BuildReport) Persist(root string) error {
 		return fmt.Errorf("ensure root for report: %w", err)
 	}
 	// JSON
-	jb, err := json.MarshalIndent(r.SanitizedCopy(), "", "  ")
+	jb, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal report json: %w", err)
 	}
@@ -283,100 +283,202 @@ func (r *BuildReport) Persist(root string) error {
 	return nil
 }
 
-// SanitizedCopy returns a shallow copy with error fields converted to strings for JSON friendliness.
-func (r *BuildReport) SanitizedCopy() *BuildReportSerializable {
-	stageCounts := make(map[string]StageCount, len(r.StageCounts))
-	for k, v := range r.StageCounts {
-		stageCounts[string(k)] = v
+// MarshalJSON serializes the report to the on-disk wire format. It is the
+// single source of truth for the build-report.json schema: error and warning
+// slices are stringified, typed map keys (StageName) are coerced to plain
+// strings, and the Outcome enum is rendered as its underlying string. Nil
+// maps/slices are normalized to empty so the JSON output is stable regardless
+// of which fields a caller populated.
+//
+// This method replaces the legacy SanitizedCopy / BuildReportSerializable
+// pair. It preserves the exact field ordering of the previous wire format so
+// on-disk reports written by older binaries remain readable.
+func (r BuildReport) MarshalJSON() ([]byte, error) {
+	// Defensive nil-to-empty coercion (matches the previous SanitizedCopy
+	// behavior). Done on a local copy to avoid mutating the receiver.
+	r2 := r
+	if r2.StageDurations == nil {
+		r2.StageDurations = map[string]time.Duration{}
 	}
-	sek := make(map[string]string, len(r.StageErrorKinds))
-	for k, v := range r.StageErrorKinds {
-		sek[string(k)] = string(v)
+	if r2.IndexTemplates == nil {
+		r2.IndexTemplates = map[string]IndexTemplateInfo{}
+	}
+	if r2.Issues == nil {
+		r2.Issues = []ReportIssue{}
 	}
 
-	if r.StageDurations == nil {
-		r.StageDurations = map[string]time.Duration{}
+	// wire mirrors the previous BuildReportSerializable shape exactly.
+	// Field order is significant: it determines JSON output order and is
+	// covered by the stability test golden file.
+	wire := struct {
+		SchemaVersion       int                          `json:"schema_version"`
+		Repositories        int                          `json:"repositories"`
+		Files               int                          `json:"files"`
+		Start               time.Time                    `json:"start"`
+		End                 time.Time                    `json:"end"`
+		Errors              []string                     `json:"errors"`
+		Warnings            []string                     `json:"warnings"`
+		StageDurations      map[string]time.Duration     `json:"stage_durations"`
+		StageErrorKinds     map[string]string            `json:"stage_error_kinds"`
+		ClonedRepositories  int                          `json:"cloned_repositories"`
+		FailedRepositories  int                          `json:"failed_repositories"`
+		SkippedRepositories int                          `json:"skipped_repositories"`
+		RenderedPages       int                          `json:"rendered_pages"`
+		StageCounts         map[string]StageCount        `json:"stage_counts"`
+		Outcome             string                       `json:"outcome"`
+		StaticRendered      bool                         `json:"static_rendered"`
+		Retries             int                          `json:"retries"`
+		RetriesExhausted    bool                         `json:"retries_exhausted"`
+		Issues              []ReportIssue                `json:"issues"`
+		SkipReason          string                       `json:"skip_reason,omitempty"`
+		IndexTemplates      map[string]IndexTemplateInfo `json:"index_templates,omitempty"`
+		CloneStageSkipped   bool                         `json:"clone_stage_skipped,omitempty"`
+		DocFilesHash        string                       `json:"doc_files_hash,omitempty"`
+		DeltaDecision       string                       `json:"delta_decision,omitempty"`
+		DeltaChangedRepos   []string                     `json:"delta_changed_repos,omitempty"`
+		DeltaRepoReasons    map[string]string            `json:"delta_repo_reasons,omitempty"`
+		ConfigHash          string                       `json:"config_hash,omitempty"`
+		PipelineVersion     int                          `json:"pipeline_version,omitempty"`
+		EffectiveRenderMode string                       `json:"effective_render_mode,omitempty"`
+		DocBuilderVersion   string                       `json:"docbuilder_version,omitempty"`
+		HugoVersion         string                       `json:"hugo_version,omitempty"`
+	}{
+		SchemaVersion:       r2.SchemaVersion,
+		Repositories:        r2.Repositories,
+		Files:               r2.Files,
+		Start:               r2.Start,
+		End:                 r2.End,
+		StageDurations:      r2.StageDurations,
+		ClonedRepositories:  r2.ClonedRepositories,
+		FailedRepositories:  r2.FailedRepositories,
+		SkippedRepositories: r2.SkippedRepositories,
+		RenderedPages:       r2.RenderedPages,
+		StaticRendered:      r2.StaticRendered,
+		Retries:             r2.Retries,
+		RetriesExhausted:    r2.RetriesExhausted,
+		Issues:              r2.Issues,
+		SkipReason:          r2.SkipReason,
+		IndexTemplates:      r2.IndexTemplates,
+		CloneStageSkipped:   r2.CloneStageSkipped,
+		DocFilesHash:        r2.DocFilesHash,
+		DeltaDecision:       r2.DeltaDecision,
+		DeltaChangedRepos:   r2.DeltaChangedRepos,
+		DeltaRepoReasons:    r2.DeltaRepoReasons,
+		ConfigHash:          r2.ConfigHash,
+		PipelineVersion:     r2.PipelineVersion,
+		EffectiveRenderMode: r2.EffectiveRenderMode,
+		DocBuilderVersion:   r2.DocBuilderVersion,
+		HugoVersion:         r2.HugoVersion,
+		Outcome:             string(r2.Outcome),
 	}
-	if r.IndexTemplates == nil {
-		r.IndexTemplates = map[string]IndexTemplateInfo{}
+	wire.Errors = make([]string, len(r2.Errors))
+	for i, e := range r2.Errors {
+		wire.Errors[i] = e.Error()
 	}
-	if r.Issues == nil {
-		r.Issues = []ReportIssue{}
+	wire.Warnings = make([]string, len(r2.Warnings))
+	for i, w := range r2.Warnings {
+		wire.Warnings[i] = w.Error()
 	}
-
-	s := &BuildReportSerializable{
-		SchemaVersion:       r.SchemaVersion,
-		Repositories:        r.Repositories,
-		Files:               r.Files,
-		Start:               r.Start,
-		End:                 r.End,
-		Errors:              make([]string, len(r.Errors)),
-		Warnings:            make([]string, len(r.Warnings)),
-		StageDurations:      r.StageDurations,
-		StageErrorKinds:     sek,
-		ClonedRepositories:  r.ClonedRepositories,
-		FailedRepositories:  r.FailedRepositories,
-		SkippedRepositories: r.SkippedRepositories,
-		RenderedPages:       r.RenderedPages,
-		StageCounts:         stageCounts,
-		Outcome:             string(r.Outcome),
-		StaticRendered:      r.StaticRendered,
-		Retries:             r.Retries,
-		RetriesExhausted:    r.RetriesExhausted,
-		Issues:              r.Issues,
-		SkipReason:          r.SkipReason,
-		IndexTemplates:      r.IndexTemplates,
-		CloneStageSkipped:   r.CloneStageSkipped,
-		DocFilesHash:        r.DocFilesHash,
-		DeltaDecision:       r.DeltaDecision,
-		DeltaChangedRepos:   r.DeltaChangedRepos,
-		DeltaRepoReasons:    r.DeltaRepoReasons,
-		ConfigHash:          r.ConfigHash,
-		PipelineVersion:     r.PipelineVersion,
-		EffectiveRenderMode: r.EffectiveRenderMode,
-		DocBuilderVersion:   r.DocBuilderVersion,
-		HugoVersion:         r.HugoVersion,
+	wire.StageCounts = make(map[string]StageCount, len(r2.StageCounts))
+	for k, v := range r2.StageCounts {
+		wire.StageCounts[string(k)] = v
 	}
-	for i, e := range r.Errors {
-		s.Errors[i] = e.Error()
+	wire.StageErrorKinds = make(map[string]string, len(r2.StageErrorKinds))
+	for k, v := range r2.StageErrorKinds {
+		wire.StageErrorKinds[string(k)] = string(v)
 	}
-	for i, w := range r.Warnings {
-		s.Warnings[i] = w.Error()
-	}
-	return s
+	return json.Marshal(wire)
 }
 
-// BuildReportSerializable mirrors BuildReport but with string errors for JSON output.
-type BuildReportSerializable struct {
-	SchemaVersion       int                          `json:"schema_version"`
-	Repositories        int                          `json:"repositories"`
-	Files               int                          `json:"files"`
-	Start               time.Time                    `json:"start"`
-	End                 time.Time                    `json:"end"`
-	Errors              []string                     `json:"errors"`
-	Warnings            []string                     `json:"warnings"`
-	StageDurations      map[string]time.Duration     `json:"stage_durations"`
-	StageErrorKinds     map[string]string            `json:"stage_error_kinds"`
-	ClonedRepositories  int                          `json:"cloned_repositories"`
-	FailedRepositories  int                          `json:"failed_repositories"`
-	SkippedRepositories int                          `json:"skipped_repositories"`
-	RenderedPages       int                          `json:"rendered_pages"`
-	StageCounts         map[string]StageCount        `json:"stage_counts"`
-	Outcome             string                       `json:"outcome"`
-	StaticRendered      bool                         `json:"static_rendered"`
-	Retries             int                          `json:"retries"`
-	RetriesExhausted    bool                         `json:"retries_exhausted"`
-	Issues              []ReportIssue                `json:"issues"`
-	SkipReason          string                       `json:"skip_reason,omitempty"`
-	IndexTemplates      map[string]IndexTemplateInfo `json:"index_templates,omitempty"`
-	CloneStageSkipped   bool                         `json:"clone_stage_skipped,omitempty"`
-	DocFilesHash        string                       `json:"doc_files_hash,omitempty"`
-	DeltaDecision       string                       `json:"delta_decision,omitempty"`
-	DeltaChangedRepos   []string                     `json:"delta_changed_repos,omitempty"`
-	DeltaRepoReasons    map[string]string            `json:"delta_repo_reasons,omitempty"`
-	ConfigHash          string                       `json:"config_hash,omitempty"`
-	PipelineVersion     int                          `json:"pipeline_version,omitempty"`
-	EffectiveRenderMode string                       `json:"effective_render_mode,omitempty"`
-	DocBuilderVersion   string                       `json:"docbuilder_version,omitempty"`
-	HugoVersion         string                       `json:"hugo_version,omitempty"`
+// UnmarshalJSON parses the on-disk wire format produced by MarshalJSON. It is
+// the inverse of MarshalJSON: error/warning strings are wrapped as plain
+// errors, typed map keys (StageName) are reconstructed, and the Outcome enum
+// is restored from its underlying string. The reconstructed errors are
+// intentionally plain (errors.New) because callers that read the report back
+// (e.g. the early-skip evaluator) only inspect scalar fields and never the
+// error chain.
+func (r *BuildReport) UnmarshalJSON(data []byte) error {
+	wire := struct {
+		SchemaVersion       int                          `json:"schema_version"`
+		Repositories        int                          `json:"repositories"`
+		Files               int                          `json:"files"`
+		Start               time.Time                    `json:"start"`
+		End                 time.Time                    `json:"end"`
+		Errors              []string                     `json:"errors"`
+		Warnings            []string                     `json:"warnings"`
+		StageDurations      map[string]time.Duration     `json:"stage_durations"`
+		StageErrorKinds     map[string]string            `json:"stage_error_kinds"`
+		ClonedRepositories  int                          `json:"cloned_repositories"`
+		FailedRepositories  int                          `json:"failed_repositories"`
+		SkippedRepositories int                          `json:"skipped_repositories"`
+		RenderedPages       int                          `json:"rendered_pages"`
+		StageCounts         map[string]StageCount        `json:"stage_counts"`
+		Outcome             string                       `json:"outcome"`
+		StaticRendered      bool                         `json:"static_rendered"`
+		Retries             int                          `json:"retries"`
+		RetriesExhausted    bool                         `json:"retries_exhausted"`
+		Issues              []ReportIssue                `json:"issues"`
+		SkipReason          string                       `json:"skip_reason,omitempty"`
+		IndexTemplates      map[string]IndexTemplateInfo `json:"index_templates,omitempty"`
+		CloneStageSkipped   bool                         `json:"clone_stage_skipped,omitempty"`
+		DocFilesHash        string                       `json:"doc_files_hash,omitempty"`
+		DeltaDecision       string                       `json:"delta_decision,omitempty"`
+		DeltaChangedRepos   []string                     `json:"delta_changed_repos,omitempty"`
+		DeltaRepoReasons    map[string]string            `json:"delta_repo_reasons,omitempty"`
+		ConfigHash          string                       `json:"config_hash,omitempty"`
+		PipelineVersion     int                          `json:"pipeline_version,omitempty"`
+		EffectiveRenderMode string                       `json:"effective_render_mode,omitempty"`
+		DocBuilderVersion   string                       `json:"docbuilder_version,omitempty"`
+		HugoVersion         string                       `json:"hugo_version,omitempty"`
+	}{}
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return err
+	}
+
+	*r = BuildReport{
+		SchemaVersion:       wire.SchemaVersion,
+		Repositories:        wire.Repositories,
+		Files:               wire.Files,
+		Start:               wire.Start,
+		End:                 wire.End,
+		StageDurations:      wire.StageDurations,
+		ClonedRepositories:  wire.ClonedRepositories,
+		FailedRepositories:  wire.FailedRepositories,
+		SkippedRepositories: wire.SkippedRepositories,
+		RenderedPages:       wire.RenderedPages,
+		StaticRendered:      wire.StaticRendered,
+		Retries:             wire.Retries,
+		RetriesExhausted:    wire.RetriesExhausted,
+		Issues:              wire.Issues,
+		SkipReason:          wire.SkipReason,
+		IndexTemplates:      wire.IndexTemplates,
+		CloneStageSkipped:   wire.CloneStageSkipped,
+		DocFilesHash:        wire.DocFilesHash,
+		DeltaDecision:       wire.DeltaDecision,
+		DeltaChangedRepos:   wire.DeltaChangedRepos,
+		DeltaRepoReasons:    wire.DeltaRepoReasons,
+		ConfigHash:          wire.ConfigHash,
+		PipelineVersion:     wire.PipelineVersion,
+		EffectiveRenderMode: wire.EffectiveRenderMode,
+		DocBuilderVersion:   wire.DocBuilderVersion,
+		HugoVersion:         wire.HugoVersion,
+		Outcome:             BuildOutcome(wire.Outcome),
+	}
+	r.Errors = make([]error, len(wire.Errors))
+	for i, s := range wire.Errors {
+		r.Errors[i] = errors.New(s)
+	}
+	r.Warnings = make([]error, len(wire.Warnings))
+	for i, s := range wire.Warnings {
+		r.Warnings[i] = errors.New(s)
+	}
+	r.StageCounts = make(map[StageName]StageCount, len(wire.StageCounts))
+	for k, v := range wire.StageCounts {
+		r.StageCounts[StageName(k)] = v
+	}
+	r.StageErrorKinds = make(map[StageName]StageErrorKind, len(wire.StageErrorKinds))
+	for k, v := range wire.StageErrorKinds {
+		r.StageErrorKinds[StageName(k)] = StageErrorKind(v)
+	}
+	return nil
 }
