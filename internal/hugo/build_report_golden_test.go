@@ -21,8 +21,7 @@ func TestBuildReportGolden(t *testing.T) {
 	r.Finish()
 	r.DeriveOutcome()
 
-	ser := r.SanitizedCopy()
-	jb, err := json.MarshalIndent(ser, "", "  ")
+	jb, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
