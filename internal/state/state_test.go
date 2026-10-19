@@ -3,6 +3,7 @@ package state
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -493,12 +494,10 @@ func TestLoadLegacyStateFileWithoutFormatVersion(t *testing.T) {
 	}
 }
 
-// TestLoadUnknownStateFileFormatVersionAutoUpgrades locks in that a state
-// file with an explicit but unknown format_version (e.g. from a future binary
-// or a hand-edited file) is loaded by silently upgrading to the current
-// version. This is the documented trade-off: forward-incompatibility is
-// downgraded instead of erroring, so a v1 binary can read v2 files.
-func TestLoadUnknownStateFileFormatVersionAutoUpgrades(t *testing.T) {
+// TestLoadUnsupportedStateFileFormatVersionStillFails locks in that the
+// auto-upgrade only applies to the missing-field case, not to a file that
+// explicitly carries a forward-incompatible format_version.
+func TestLoadUnsupportedStateFileFormatVersionStillFails(t *testing.T) {
 	tmpDir := t.TempDir()
 	statePath := filepath.Join(tmpDir, "daemon-state.json")
 
@@ -518,11 +517,10 @@ func TestLoadUnknownStateFileFormatVersionAutoUpgrades(t *testing.T) {
 	}
 
 	result := NewJSONStore(tmpDir)
-	if result.IsErr() {
-		t.Fatalf("expected unknown format_version to be auto-upgraded, got error: %v", result.UnwrapErr())
+	if !result.IsErr() {
+		t.Fatalf("expected unsupported format_version to fail, but load succeeded")
 	}
-	store := result.Unwrap()
-	if store.daemonInfo.Version != "2.0.0" {
-		t.Errorf("expected upgraded store to retain version 2.0.0, got %q", store.daemonInfo.Version)
+	if errMsg := result.UnwrapErr().Error(); !strings.Contains(errMsg, "unsupported state snapshot format_version") {
+		t.Errorf("expected 'unsupported state snapshot format_version' error, got: %v", errMsg)
 	}
 }

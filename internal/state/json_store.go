@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
@@ -247,20 +246,15 @@ func decodeStateSnapshot(data []byte) (stateSnapshot, error) {
 	if err := json.Unmarshal(data, &snapshot); err != nil {
 		return stateSnapshot{}, err
 	}
-	// Auto-upgrade legacy state files written before format_version was added,
-	// and any state file whose format_version is not the current one (with a
-	// warning). Trade-off: a future v2 binary writing a file that a v1 binary
-	// reads will be silently downgraded to v1 instead of erroring.
+	// Auto-upgrade legacy state files written before format_version was added.
 	// The next saveToDiskUnsafe call will persist the upgraded field, so this
-	// is a one-time migration on first load.
+	// is a one-time migration on first load. Files with an explicit
+	// format_version that doesn't match the current one still fail below.
 	if snapshot.FormatVersion == "" {
 		snapshot.FormatVersion = stateSnapshotFormatVersion
 	}
 	if snapshot.FormatVersion != stateSnapshotFormatVersion {
-		slog.Warn("state snapshot format_version is not the current version; auto-upgrading on load",
-			"file_version", snapshot.FormatVersion,
-			"expected_version", stateSnapshotFormatVersion)
-		snapshot.FormatVersion = stateSnapshotFormatVersion
+		return stateSnapshot{}, fmt.Errorf("unsupported state snapshot format_version %q (expected %s)", snapshot.FormatVersion, stateSnapshotFormatVersion)
 	}
 	return snapshot, nil
 }
