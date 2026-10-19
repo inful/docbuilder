@@ -3,7 +3,6 @@ package state
 import (
 	"context"
 	"encoding/json"
-	stderr "errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -247,8 +246,12 @@ func decodeStateSnapshot(data []byte) (stateSnapshot, error) {
 	if err := json.Unmarshal(data, &snapshot); err != nil {
 		return stateSnapshot{}, err
 	}
+	// Auto-upgrade legacy state files written before format_version was added.
+	// The next saveToDiskUnsafe call will persist the upgraded field, so this
+	// is a one-time migration on first load. Files with an explicit
+	// format_version that doesn't match the current one still fail below.
 	if snapshot.FormatVersion == "" {
-		return stateSnapshot{}, stderr.New("state snapshot missing format_version (legacy files are no longer supported)")
+		snapshot.FormatVersion = stateSnapshotFormatVersion
 	}
 	if snapshot.FormatVersion != stateSnapshotFormatVersion {
 		return stateSnapshot{}, fmt.Errorf("unsupported state snapshot format_version %q (expected %s)", snapshot.FormatVersion, stateSnapshotFormatVersion)

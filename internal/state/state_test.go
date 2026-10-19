@@ -3,6 +3,7 @@ package state
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -445,3 +446,81 @@ func TestStateService(t *testing.T) {
 }
 
 // Adapter tests removed after deprecation cleanup - use StateService directly instead
+
+// TestLoadLegacyStateFileWithoutFormatVersion is a regression test: a state
+// file written before format_version was added (e.g. by an older binary) must
+// load successfully, with the missing field auto-upgraded to the current
+// version. The upgrade is persisted on the next save, so this is a one-time
+// migration on first load.
+func TestLoadLegacyStateFileWithoutFormatVersion(t *testing.T) {
+	tmpDir := t.TempDir()
+	statePath := filepath.Join(tmpDir, "daemon-state.json")
+
+	// Hand-craft a legacy state file: identical to current shape but with
+	// no format_version field. Mirrors the production incident captured
+	// in internal/daemon/daemon-data/daemon-state.json.
+	legacy := []byte(`{
+  "version": "2.0.0",
+  "start_time": "2025-09-26T14:12:01.930254653+02:00",
+  "last_update": "2025-09-26T14:12:11.798120815+02:00",
+  "status": "starting",
+  "repositories": {},
+  "builds": {},
+  "schedules": {},
+  "statistics": {
+    "total_builds": 0,
+    "successful_builds": 0,
+    "failed_builds": 0,
+    "total_discoveries": 0,
+    "documents_found": 0,
+    "average_build_time_seconds": 0,
+    "last_stat_reset": "2025-09-26T14:10:59.124518924+02:00",
+    "uptime_seconds": 9.867866747,
+    "last_updated": "2025-09-26T14:12:11.798120815+02:00"
+  }
+}`)
+	if err := os.WriteFile(statePath, legacy, 0o600); err != nil {
+		t.Fatalf("write legacy state file: %v", err)
+	}
+
+	// Loading the legacy file must succeed (auto-upgrade path).
+	result := NewJSONStore(tmpDir)
+	if result.IsErr() {
+		t.Fatalf("expected legacy state file to load, got error: %v", result.UnwrapErr())
+	}
+	store := result.Unwrap()
+	if store.daemonInfo.Version != "2.0.0" {
+		t.Errorf("expected upgraded store to retain version 2.0.0, got %q", store.daemonInfo.Version)
+	}
+}
+
+// TestLoadUnsupportedStateFileFormatVersionStillFails locks in that the
+// auto-upgrade only applies to the missing-field case, not to a file that
+// explicitly carries a forward-incompatible format_version.
+func TestLoadUnsupportedStateFileFormatVersionStillFails(t *testing.T) {
+	tmpDir := t.TempDir()
+	statePath := filepath.Join(tmpDir, "daemon-state.json")
+
+	future := []byte(`{
+  "format_version": "999",
+  "version": "2.0.0",
+  "start_time": "2025-09-26T14:12:01.930254653+02:00",
+  "last_update": "2025-09-26T14:12:11.798120815+02:00",
+  "status": "starting",
+  "repositories": {},
+  "builds": {},
+  "schedules": {},
+  "statistics": {}
+}`)
+	if err := os.WriteFile(statePath, future, 0o600); err != nil {
+		t.Fatalf("write future state file: %v", err)
+	}
+
+	result := NewJSONStore(tmpDir)
+	if !result.IsErr() {
+		t.Fatalf("expected unsupported format_version to fail, but load succeeded")
+	}
+	if errMsg := result.UnwrapErr().Error(); !strings.Contains(errMsg, "unsupported state snapshot format_version") {
+		t.Errorf("expected 'unsupported state snapshot format_version' error, got: %v", errMsg)
+	}
+}
