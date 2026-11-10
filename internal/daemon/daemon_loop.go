@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"sort"
+	"strings"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -35,8 +37,81 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 			workCtx, cancel := d.stopAwareContext(ctx)
 			d.goWorker("initial_discovery", func() {
 				defer cancel()
-				d.discover.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
+				runDiscoveryWithRetry(workCtx, d.initialDiscoveryAttempt, discoveryRetryBackoff)
 			})
+		}
+	}
+}
+
+// discoveryRetryBackoff is the delay ladder used when the initial discovery
+// fails. The daemon retries until discovery succeeds instead of waiting for
+// the next cron tick (default: every 4 hours), so a transient forge outage
+// does not leave the daemon without a build.
+var discoveryRetryBackoff = []time.Duration{
+	30 * time.Second,
+	time.Minute,
+	2 * time.Minute,
+	5 * time.Minute,
+}
+
+// initialDiscoveryAttempt runs one discovery pass and reports whether it
+// succeeded.
+//
+// A forge-level failure (unreachable forge, bad credentials) is reported
+// inside the discovery result (result.Errors) rather than as an error
+// return, so the cached result is inspected here. Without that check an
+// unreachable forge looks like a successful discovery that found zero
+// repositories: no build is triggered and the daemon sits idle until the
+// next cron tick.
+func (d *Daemon) initialDiscoveryAttempt(ctx context.Context) error {
+	if err := d.discover.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning }); err != nil {
+		return err
+	}
+	if d.discover.discoveryCache == nil {
+		return nil
+	}
+	result, cacheErr := d.discover.discoveryCache.Get()
+	if cacheErr != nil {
+		return cacheErr
+	}
+	if result == nil || len(result.Errors) == 0 {
+		return nil
+	}
+
+	forges := make([]string, 0, len(result.Errors))
+	for name := range result.Errors {
+		forges = append(forges, name)
+	}
+	sort.Strings(forges)
+	return fmt.Errorf("discovery failed for %d forge(s): %s", len(forges), strings.Join(forges, ", "))
+}
+
+// runDiscoveryWithRetry runs attempt until it succeeds, retrying after each
+// failure with the given backoff ladder (the last entry repeats). It returns
+// when the attempt succeeds or ctx is canceled.
+func runDiscoveryWithRetry(ctx context.Context, attempt func(context.Context) error, backoff []time.Duration) {
+	if len(backoff) == 0 {
+		backoff = discoveryRetryBackoff
+	}
+	for i := 0; ; i++ {
+		err := attempt(ctx)
+		if err == nil {
+			return
+		}
+
+		delay := backoff[len(backoff)-1]
+		if i < len(backoff) {
+			delay = backoff[i]
+		}
+		slog.Warn("Discovery failed; retrying",
+			logfields.Error(err),
+			slog.Duration("retry_in", delay),
+			slog.Int("attempt", i+1))
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(delay):
 		}
 	}
 }

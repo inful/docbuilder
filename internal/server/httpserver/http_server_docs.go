@@ -154,6 +154,7 @@ func (s *Server) startDocsServerWithListener(_ context.Context, ln net.Listener)
 	mux.HandleFunc("/healthz", s.monitoringHandlers.HandleHealthCheck) // Kubernetes-style alias
 	mux.HandleFunc("/ready", s.handleReadiness)
 	mux.HandleFunc("/readyz", s.handleReadiness) // Kubernetes-style alias
+	mux.HandleFunc("/site-ready", s.handleSiteReadiness)
 
 	// VS Code edit link handler for local preview mode
 	mux.HandleFunc("/_edit/", s.handleVSCodeEdit)

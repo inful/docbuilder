@@ -82,6 +82,25 @@ commits; pin to a SHA for reproducibility per the README.
   to match.
 
 ### Fixed
+- **Daemon readiness no longer depends on a rendered site**: `GET /ready`
+  (and `/readyz`) now report whether the daemon is running and able to
+  serve. They previously returned 503 until `<output>/public` existed,
+  which meant a daemon whose first build had not finished (or could not
+  finish — an unreachable forge, a failing clone) never became ready. As
+  a Kubernetes startup probe that is a restart loop: the container is
+  killed, the build restarts, it fails again, forever. The render-state
+  check is still available under the new `GET /site-ready` path for
+  deployments that want to hold traffic until the site is built.
+- **A failed initial discovery is retried instead of waiting for the
+  next cron tick**: with a `forges:` configuration the first build only
+  happens after a successful discovery, and a failed discovery left the
+  daemon without a build until the next sync tick (default: every 4
+  hours). The daemon now retries the initial discovery with a backoff
+  ladder (30s, 1m, 2m, then every 5m) until it succeeds. Forge-level
+  failures count as failures here: they are reported inside the
+  discovery result (`result.Errors`) rather than as an error return, so
+  an unreachable forge previously looked like a successful discovery
+  that found zero repositories.
 - **Daemon state load no longer bricks startup**: an unreadable
   `daemon-state.json` (corrupt JSON, or a `format_version` this build
   does not understand) previously aborted daemon startup with
