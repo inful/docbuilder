@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 52b33dc2d28c84b890c503c90a6e3f573018824d05b91e300eb9ed4e6d81c21f
+fingerprint: 623cccb7035cdb7bc05b8a741dcf7aa0af7ba76c637b93120ab99719720227bb
 lastmod: "2026-11-10"
 tags:
   - configuration
@@ -457,6 +457,16 @@ The categories sidebar wiring solves this by emitting one Relearn sidebar block 
 
 **Default behavior:** `hugo.sidebar.mode` defaults to `auto`. The categories sidebar is emitted whenever the build produces any documents, with a synthetic `_uncategorized` bucket for any doc that has no `categories:` front matter. To revert to the legacy Relearn single-page sidebar, set `hugo.sidebar.mode: default` explicitly.
 
+**Shared sidebar (`mode: shared`):** the navigation is rendered **once**, into its own output format published as `/sidebar.html`, and injected into each page by a small script; the script also marks the current entry in the browser, so the result is the same sidebar the server-side render produces. Because the navigation is no longer duplicated into every page, neither the render time nor the published site grows with the square of the page count any more. Measured on a 1517-page site: render step **3m42s → 4.0s**, published site **868 MB → 31 MB**, with the navigation fragment (560 KB) served once and cached by the browser.
+
+The trade-off is that the navigation is rendered client-side: without JavaScript the pages show no sidebar. Use it for large sites; the default (`auto`) keeps the server-rendered sidebar.
+
+```yaml
+hugo:
+  sidebar:
+    mode: shared
+```
+
 **Example rendered sidebar:**
 
 ```
@@ -486,7 +496,7 @@ hugo:
 
 | Field | Description |
 |-------|-------------|
-| `mode` | `"auto"` (the default, including unset) emits the categories sidebar. `"categories"` is an explicit alias. `"default"` opts out and emits Relearn's legacy single-page menu. |
+| `mode` | `"auto"` (the default, including unset) emits the categories sidebar. `"categories"` is an explicit alias. `"default"` opts out and emits Relearn's legacy single-page menu. `"shared"` emits the categories sidebar but delivers it as a shared fragment (see below). |
 | `keep_default_menu` | When `true` (the default), the main page menu is appended after the category menus so users can navigate by category or by repository. Set to `false` to show only the category menus. |
 | `project_segment` | The unit used to group documents inside a category. Today only `"repo"` is supported; reserved for future segmentations (e.g., forge, group). |
 | `group_by` | Optional map keyed by the **canonical lowercase category name** that opts a category into a sub-grouping under its wrapper. Each value is the ordered list of axis names that form the level-by-level grouping path (the first axis is level 1, the second is level 2, and so on — there is no fixed depth cap). An axis is either a front-matter field name or — by the self-describing rule — a sibling category name: any axis value that is also a key in the same `group_by` map is treated as a sibling category reference, resolved from the doc's `categories:` list. Categories not present in the map use the default Repository-based grouping. At every level, a missing or empty axis value falls back to the doc's source Repository so the path is always fully populated. |
