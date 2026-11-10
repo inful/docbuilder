@@ -9,6 +9,8 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-11-10
+
 ### Fixed
 - **The shared sidebar is no longer re-downloaded on every navigation**: the
   navigation fragment is the same on every page of a build, so the browser
