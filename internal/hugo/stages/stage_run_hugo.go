@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 
@@ -37,16 +38,19 @@ func StageRunHugo(ctx context.Context, bs *models.BuildState) error {
 	slog.Info("Executing Hugo renderer",
 		slog.String("root", root),
 		slog.String("renderer_type", fmt.Sprintf("%T", renderer)))
+	start := time.Now()
 	if err := renderer.Execute(ctx, root); err != nil {
 		slog.Error("Renderer execution failed",
 			slog.String("error", err.Error()),
-			slog.String("root", root))
+			slog.String("root", root),
+			slog.Duration("duration", time.Since(start)))
 		// Return error regardless of mode - let caller decide how to handle
 		return models.NewFatalStageError(models.StageRunHugo, fmt.Errorf("%w: %w", herrors.ErrHugoExecutionFailed, err))
 	}
 	bs.Report.StaticRendered = true
 	slog.Info("Hugo renderer completed successfully",
 		slog.String("root", root),
-		slog.Bool("static_rendered", true))
+		slog.Bool("static_rendered", true),
+		slog.Duration("duration", time.Since(start)))
 	return nil
 }

@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 52b33dc2d28c84b890c503c90a6e3f573018824d05b91e300eb9ed4e6d81c21f
+fingerprint: b4fd8d65fad4c8ccb64399c73b083426fd443c0046be865c382f5fa526d4d6a3
 lastmod: "2026-11-10"
 tags:
   - configuration
@@ -490,6 +490,8 @@ hugo:
 | `keep_default_menu` | When `true` (the default), the main page menu is appended after the category menus so users can navigate by category or by repository. Set to `false` to show only the category menus. |
 | `project_segment` | The unit used to group documents inside a category. Today only `"repo"` is supported; reserved for future segmentations (e.g., forge, group). |
 | `group_by` | Optional map keyed by the **canonical lowercase category name** that opts a category into a sub-grouping under its wrapper. Each value is the ordered list of axis names that form the level-by-level grouping path (the first axis is level 1, the second is level 2, and so on — there is no fixed depth cap). An axis is either a front-matter field name or — by the self-describing rule — a sibling category name: any axis value that is also a key in the same `group_by` map is treated as a sibling category reference, resolved from the doc's `categories:` list. Categories not present in the map use the default Repository-based grouping. At every level, a missing or empty axis value falls back to the doc's source Repository so the path is always fully populated. |
+
+**Build cost:** Relearn renders the navigation tree into *every* page, so render time and output size both grow with the square of the page count. Measured on a 1517-page site: the Hugo render step takes ~3m15s using ~2.7 CPU cores, and the site comes out at ~870 MB because every page carries a ~570 KB sidebar. The categories sidebar adds a second pass over the same documents, so `keep_default_menu: false` removes one of the two. Below a few hundred pages this is invisible; past a thousand, size the container for it — the render is CPU-bound, and a 1-core limit stretches the same work to roughly nine minutes.
 
 **Repository labels:** By default, the project entry in the sidebar uses the repository's `name`. To override the displayed label, set `display_name` on the repository:
 

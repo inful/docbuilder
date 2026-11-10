@@ -9,7 +9,17 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Changed
+- **Kubernetes example resources**: the example deployment limits the
+  container to 1 CPU. The Hugo render is CPU-bound and parallel (~2.7 cores
+  for ~1500 pages), so that quota stretched a 3-minute render to ~9 minutes.
+  The example now requests 500m and allows 4000m CPU / 2Gi memory.
+
 ### Fixed
+- **Hugo log lines are no longer reported as warnings**: Hugo writes its
+  progress output — including the per-step build timings — to stderr, and
+  every one of those lines was logged at `WARN`. Each line is now logged at
+  the level Hugo reported it at.
 - **Docker image tags**: the release workflow publishes the version
   **without** a `v` prefix (`0.20.0`, `0.20`, `0`) plus `latest`, but the
   documentation showed `v1.2.3` / `v1.2` / `v1` — tags that were never
