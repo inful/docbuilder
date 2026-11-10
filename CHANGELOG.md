@@ -27,6 +27,18 @@ commits; pin to a SHA for reproducibility per the README.
   The example now requests 500m and allows 4000m CPU / 2Gi memory.
 
 ### Fixed
+- **Embedded assets are now content-addressed**: the shared navigation
+  script and the view-transitions stylesheet were published under stable
+  URLs, but the docs server serves `.js` and `.css` with a one-year
+  `immutable` cache header - safe only for content-hashed URLs. A browser
+  that had cached them kept the old file after a DocBuilder upgrade. Both
+  are now published through Hugo's resource pipeline, so their URLs carry a
+  content hash.
+- **Shared sidebar was not scrollable**: the theme binds to the sidebar's
+  contents on `DOMContentLoaded`, which happens before the shared fragment
+  arrives, so its menu scrollbar was never mounted and the navigation could
+  not be scrolled. The shared navigation script now re-runs the theme's
+  sidebar initialisation after injecting the fragment.
 - **Hugo log lines are no longer reported as warnings**: Hugo writes its
   progress output — including the per-step build timings — to stderr, and
   every one of those lines was logged at `WARN`. Each line is now logged at

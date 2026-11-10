@@ -33,10 +33,20 @@ const SharedNavOutputFormat = "sidebar"
 // sharedNavPlaceholder replaces the theme's sidebar partial. The page ships
 // an empty sidebar plus the script that fills it in; the navigation itself
 // lives in the shared fragment.
+//
+// The script is published through Hugo's resource pipeline so its URL is
+// content-addressed. The docs server serves .js with a one-year immutable
+// cache header, which is only safe for content-hashed URLs - a stable URL
+// would keep serving a stale script after DocBuilder is upgraded.
+//
+// The script tag sits next to the sidebar, not inside it: the fragment
+// replaces the sidebar's contents, which would take the tag with it.
 const sharedNavPlaceholder = `<aside id="R-sidebar" class="default-animation">
   <div id="R-sidebar-menu" data-nav-src="{{ with site.Home.OutputFormats.Get "sidebar" }}{{ .RelPermalink }}{{ end }}"></div>
-  <script src="{{ "js/nav-shared.js" | relURL }}" defer></script>
 </aside>
+{{- with resources.Get "js/nav-shared.js" }}
+<script src="{{ (. | fingerprint "sha256").RelPermalink }}" defer></script>
+{{- end }}
 `
 
 // sharedNavFragmentLayout renders the shared fragment: the navigation and
@@ -56,7 +66,9 @@ func SharedNavFiles() map[string]string {
 		filepath.Join("layouts", "partials", "menu.html"):         sharedNavPlaceholder,
 		filepath.Join("layouts", "partials", "nav-full.html"):     string(relearnNavTemplate),
 		filepath.Join("layouts", "_default", "home.sidebar.html"): sharedNavFragmentLayout,
-		filepath.Join("static", "js", "nav-shared.js"):            string(navSharedScript),
+		// The script lives in assets/ so the placeholder can publish it
+		// through Hugo's resource pipeline with a content-addressed URL.
+		filepath.Join("assets", "js", "nav-shared.js"): string(navSharedScript),
 	}
 }
 

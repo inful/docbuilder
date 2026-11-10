@@ -54,7 +54,7 @@ func TestGenerateCustomHeaderAssets_Enabled(t *testing.T) {
 			assert.Contains(t, content, "<style>", "default custom CSS should be inlined as <style>")
 			assert.Contains(t, content, "view-transitions.css", "view-transitions <link> should be present when transitions enabled")
 			assert.Contains(t, content, "docbuilder:template", "header should contain template metadata")
-		case "static/view-transitions.css":
+		case "assets/css/view-transitions.css":
 			cssFound = true
 			assert.Contains(t, string(a.Content), "@view-transition", "CSS should contain View Transitions directive")
 		}
@@ -168,7 +168,7 @@ func TestGenerateStaticAssets_WithTransitions(t *testing.T) {
 	var htmlFound, cssFound bool
 	for _, asset := range assets {
 		switch asset.Path {
-		case "static/view-transitions.css":
+		case "assets/css/view-transitions.css":
 			cssFound = true
 			assert.NotEmpty(t, asset.Content)
 		case "layouts/partials/custom-header.html":
