@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 623cccb7035cdb7bc05b8a741dcf7aa0af7ba76c637b93120ab99719720227bb
+fingerprint: 57f4d74d5f50d54d830f9f817bf5a56c32cdf819813293d05d7e48fc7cb8aaf5
 lastmod: "2026-11-10"
 tags:
   - configuration
@@ -457,7 +457,7 @@ The categories sidebar wiring solves this by emitting one Relearn sidebar block 
 
 **Default behavior:** `hugo.sidebar.mode` defaults to `auto`. The categories sidebar is emitted whenever the build produces any documents, with a synthetic `_uncategorized` bucket for any doc that has no `categories:` front matter. To revert to the legacy Relearn single-page sidebar, set `hugo.sidebar.mode: default` explicitly.
 
-**Shared sidebar (`mode: shared`):** the navigation is rendered **once**, into its own output format published as `/sidebar.html`, and injected into each page by a small script; the script also marks the current entry in the browser, so the result is the same sidebar the server-side render produces. Because the navigation is no longer duplicated into every page, neither the render time nor the published site grows with the square of the page count any more. Measured on a 1517-page site: render step **3m42s → 4.0s**, published site **868 MB → 31 MB**, with the navigation fragment (560 KB) served once and cached by the browser.
+**Shared sidebar (`mode: shared`):** the navigation is rendered **once**, into its own output format published as `/sidebar.html`, and injected into each page by a small script; the script also marks the current entry in the browser, so the result is the same sidebar the server-side render produces. That removes the per-page duplication behind the build cost described below: on a 1517-page site the render step drops from **3m42s to 4.0s** and the published site from **868 MB to 31 MB**, with the navigation fragment (560 KB) served once and cached by the browser.
 
 The trade-off is that the navigation is rendered client-side: without JavaScript the pages show no sidebar. Use it for large sites; the default (`auto`) keeps the server-rendered sidebar.
 
@@ -500,6 +500,8 @@ hugo:
 | `keep_default_menu` | When `true` (the default), the main page menu is appended after the category menus so users can navigate by category or by repository. Set to `false` to show only the category menus. |
 | `project_segment` | The unit used to group documents inside a category. Today only `"repo"` is supported; reserved for future segmentations (e.g., forge, group). |
 | `group_by` | Optional map keyed by the **canonical lowercase category name** that opts a category into a sub-grouping under its wrapper. Each value is the ordered list of axis names that form the level-by-level grouping path (the first axis is level 1, the second is level 2, and so on — there is no fixed depth cap). An axis is either a front-matter field name or — by the self-describing rule — a sibling category name: any axis value that is also a key in the same `group_by` map is treated as a sibling category reference, resolved from the doc's `categories:` list. Categories not present in the map use the default Repository-based grouping. At every level, a missing or empty axis value falls back to the doc's source Repository so the path is always fully populated. |
+
+**Build cost:** Relearn renders the navigation tree into *every* page, so render time and output size both grow with the square of the page count. Measured on a 1517-page site: the Hugo render step takes ~3m15s using ~2.7 CPU cores, and the site comes out at ~870 MB because every page carries a ~570 KB sidebar. The categories sidebar adds a second pass over the same documents, so `keep_default_menu: false` removes one of the two. Below a few hundred pages this is invisible; past a thousand, size the container for it — the render is CPU-bound, and a 1-core limit stretches the same work to roughly nine minutes.
 
 **Repository labels:** By default, the project entry in the sidebar uses the repository's `name`. To override the displayed label, set `display_name` on the repository:
 

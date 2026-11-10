@@ -132,12 +132,17 @@ spec:
         - name: output
           mountPath: /data
         resources:
+          # The Hugo render is CPU-bound and parallel: rendering ~1500 pages
+          # uses ~2.7 cores. A 1-core quota stretches a 3-minute render to
+          # ~9 minutes, so give the container room to use the cores it asks
+          # for. Memory follows the same reasoning: the whole site tree is
+          # rendered into every page, which is what grows the heap.
           requests:
-            cpu: 100m
-            memory: 256Mi
+            cpu: 500m
+            memory: 512Mi
           limits:
-            cpu: 1000m
-            memory: 1Gi
+            cpu: 4000m
+            memory: 2Gi
         # Startup probe: the daemon is up. Do not use /ready here — tying
         # startup to a successful build makes Kubernetes restart the
         # container in a loop whenever a build fails.
