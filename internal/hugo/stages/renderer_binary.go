@@ -88,6 +88,25 @@ func ensurePATHContainsDir(env []string, dir string) []string {
 	return setEnvValue(env, "PATH", dir+string(os.PathListSeparator)+pathValue)
 }
 
+// hugoLogLevel maps a Hugo log line to the level DocBuilder logs it at.
+//
+// Hugo writes its progress output to stderr, so a build's INFO lines (the
+// per-step timings included) arrive on the same stream as its warnings.
+// Reporting all of them as warnings buries the real ones and makes a
+// successful build look like a stream of failures.
+func hugoLogLevel(line string) slog.Level {
+	switch {
+	case strings.HasPrefix(line, "ERROR"), strings.HasPrefix(line, "Error"):
+		return slog.LevelError
+	case strings.HasPrefix(line, "WARN"):
+		return slog.LevelWarn
+	case strings.HasPrefix(line, "DEBUG"), strings.HasPrefix(line, "TRACE"):
+		return slog.LevelDebug
+	default:
+		return slog.LevelInfo
+	}
+}
+
 func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	if _, err := exec.LookPath("hugo"); err != nil {
 		return fmt.Errorf("%w: %w", herrors.ErrHugoBinaryNotFound, err)
@@ -152,7 +171,7 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 		// Log each line separately to avoid escaped newlines
 		for line := range strings.SplitSeq(strings.TrimSpace(errStr), "\n") {
 			if line != "" {
-				slog.Warn("hugo stderr", "line", line)
+				slog.Log(ctx, hugoLogLevel(line), "hugo stderr", "line", line)
 			}
 		}
 	}

@@ -9,7 +9,28 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Added
+- **Shared sidebar mode** (`hugo.sidebar.mode: shared`): the navigation is
+  rendered once into a `/sidebar.html` fragment and injected into each page
+  by a small script, instead of being embedded in every page. Relearn renders
+  the whole navigation tree into every page, so both the render time and the
+  published site grow with the square of the page count. Measured on a
+  1517-page site: render step **3m42s → 4.0s**, published site
+  **868 MB → 31 MB**. The navigation content is unchanged and the current
+  entry is marked in the browser. The trade-off: without JavaScript the pages
+  show no sidebar. The default mode is unchanged.
+
+### Changed
+- **Kubernetes example resources**: the example deployment limits the
+  container to 1 CPU. The Hugo render is CPU-bound and parallel (~2.7 cores
+  for ~1500 pages), so that quota stretched a 3-minute render to ~9 minutes.
+  The example now requests 500m and allows 4000m CPU / 2Gi memory.
+
 ### Fixed
+- **Hugo log lines are no longer reported as warnings**: Hugo writes its
+  progress output — including the per-step build timings — to stderr, and
+  every one of those lines was logged at `WARN`. Each line is now logged at
+  the level Hugo reported it at.
 - **Docker image tags**: the release workflow publishes the version
   **without** a `v` prefix (`0.20.0`, `0.20`, `0`) plus `latest`, but the
   documentation showed `v1.2.3` / `v1.2` / `v1` — tags that were never
