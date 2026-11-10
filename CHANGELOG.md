@@ -55,6 +55,13 @@ commits; pin to a SHA for reproducibility per the README.
   `KeepStaging`, to carry the options those shims used to inject.
 
 ### Added
+- **Placeholder page while the first site is still building**: while no
+  rendered site exists, the docs server now serves the "Documentation is
+  being prepared" page for every documentation URL instead of only for
+  `/`. Previously every other URL fell through to the file server and
+  404'd against the Hugo scaffold. The page shows the daemon status and
+  the build queue depth, so it reads as "working on it" rather than a
+  dead end. Asset-looking paths still 404 instead of returning HTML.
 - **BuildService.RunDirect**: a new entry point on `BuildService`
   for callers that have already-discovered doc files (preview
   mode, `docbuilder build -d`, any future embedder). It skips the

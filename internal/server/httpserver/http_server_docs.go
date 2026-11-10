@@ -88,14 +88,18 @@ func (s *Server) handleStatusPage(w http.ResponseWriter, r *http.Request, root s
 		}
 	}
 
-	// Show pending page for root path only
-	if r.URL.Path == "/" || r.URL.Path == "" {
-		s.renderBuildPendingPage(w)
+	// No rendered site exists yet (first build still running, or the
+	// previous one was lost). Serve the pending page for every
+	// documentation URL, not just the root: falling through to the file
+	// server would serve the Hugo scaffold, which 404s for every real
+	// documentation path. Asset-looking paths keep the file server so
+	// they 404 instead of returning an HTML page.
+	if filepath.Ext(r.URL.Path) != "" {
+		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
 		return
 	}
 
-	// For non-root paths, fall through to file server (will likely 404)
-	http.FileServer(http.Dir(root)).ServeHTTP(w, r)
+	s.renderBuildPendingPage(w)
 }
 
 // renderBuildErrorPage renders an error page when build fails.
@@ -120,7 +124,15 @@ func (s *Server) renderBuildPendingPage(w http.ResponseWriter) {
 
 	scriptTag := s.getLiveReloadScript()
 
-	_, _ = fmt.Fprintf(w, `<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasn't been rendered yet. This page will be replaced automatically once rendering completes.</p>%s</body></html>`, scriptTag)
+	// Show what the daemon is doing, so the page reads as "working on it"
+	// rather than a dead end.
+	state := ""
+	if s.runtime != nil {
+		state = fmt.Sprintf(`<p><small>Daemon: %s &middot; %d build(s) queued &middot; %d active</small></p>`,
+			s.runtime.GetStatus(), s.runtime.GetQueueLength(), s.runtime.GetActiveJobs())
+	}
+
+	_, _ = fmt.Fprintf(w, `<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasn't been rendered yet. This page will be replaced automatically once rendering completes.</p>%s%s</body></html>`, state, scriptTag)
 }
 
 // getLiveReloadScript returns the livereload script tag if enabled, empty string otherwise.

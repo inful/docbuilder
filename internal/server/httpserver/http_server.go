@@ -28,8 +28,8 @@ type Server struct {
 	opts             Options
 	errorAdapter     *derrors.HTTPErrorAdapter
 
-	// runtime exposes the daemon's current status to the readiness
-	// handler. It is the same runtime the handler modules wrap.
+	// runtime exposes the daemon's current status to the readiness and
+	// docs handlers. It is the same runtime the handler modules wrap.
 	runtime Runtime
 
 	// VS Code edit link behavior dependencies (injected for tests).
