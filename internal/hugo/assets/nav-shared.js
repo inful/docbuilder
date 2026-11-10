@@ -52,6 +52,39 @@
     }
   }
 
+  // The theme binds to the sidebar's contents on DOMContentLoaded, which
+  // happens before the fragment arrives. These are the theme's functions
+  // that need the real navigation: the menu scrollbar (without it the
+  // sidebar does not scroll), the collapsible-section handlers, the
+  // switchers in the sidebar footer, the touch handlers, and the scroll to
+  // the active entry.
+  var THEME_INIT = [
+    'initMenuScrollbar',
+    'initSwipeHandler',
+    'handleVariantSwitcher',
+    'handleLanguageSwitcher',
+    'handleHistoryClearer',
+    'scrollToPositions'
+  ];
+
+  function initTheme() {
+    for (var i = 0; i < THEME_INIT.length; i++) {
+      var fn = window[THEME_INIT[i]];
+      if (typeof fn !== 'function') continue;
+      if (THEME_INIT[i] === 'initMenuScrollbar') {
+        // Mounting a second scrollbar on the same element would fight the
+        // first one; the theme's own call found no element to mount on.
+        var wrap = document.getElementById('R-content-wrapper');
+        if (wrap && wrap.classList.contains('ps')) continue;
+      }
+      try {
+        fn();
+      } catch (e) {
+        /* one broken control must not take the rest of the sidebar down */
+      }
+    }
+  }
+
   function init() {
     var slot = document.getElementById(SLOT_ID);
     if (!slot) return;
@@ -69,14 +102,19 @@
         var host = slot.parentElement;
         host.innerHTML = aside.innerHTML;
         applyActiveState(host, currentPath());
+        initTheme();
       })
       .catch(function () {
         /* no nav without the fragment; the page still renders */
       });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+  // Wait for the theme to have initialised before injecting. The theme
+  // binds to the sidebar's contents on DOMContentLoaded, so injecting
+  // before that would make it bind to the real navigation and leave the
+  // re-run above binding everything a second time.
+  if (document.readyState === 'loading' || document.readyState === 'interactive') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {
     init();
   }

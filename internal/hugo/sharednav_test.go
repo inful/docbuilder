@@ -20,7 +20,7 @@ func TestSharedNavFiles(t *testing.T) {
 		filepath.Join("layouts", "partials", "menu.html"),
 		filepath.Join("layouts", "partials", "nav-full.html"),
 		filepath.Join("layouts", "_default", "home.sidebar.html"),
-		filepath.Join("static", "js", "nav-shared.js"),
+		filepath.Join("assets", "js", "nav-shared.js"),
 	}
 	for _, rel := range want {
 		if _, ok := files[rel]; !ok {
@@ -33,7 +33,7 @@ func TestSharedNavFiles(t *testing.T) {
 
 	// The placeholder must point at the fragment and load the script.
 	placeholder := files[filepath.Join("layouts", "partials", "menu.html")]
-	for _, needle := range []string{`id="R-sidebar-menu"`, `data-nav-src=`, "js/nav-shared.js"} {
+	for _, needle := range []string{`id="R-sidebar-menu"`, `data-nav-src=`, "js/nav-shared.js", "fingerprint"} {
 		if !strings.Contains(placeholder, needle) {
 			t.Errorf("placeholder is missing %q:\n%s", needle, placeholder)
 		}
@@ -78,6 +78,28 @@ func TestWriteSharedNavFiles(t *testing.T) {
 		path := filepath.Join(out, rel)
 		if _, err := os.Stat(path); err != nil {
 			t.Errorf("expected %s to exist: %v", rel, err)
+		}
+	}
+}
+
+// TestSharedNavScriptReinitialisesTheme guards the shared navigation script
+// against losing the theme's sidebar behavior. The theme binds to the
+// sidebar's contents on DOMContentLoaded, which happens before the fragment
+// arrives, so the script has to re-run the parts that need the real
+// navigation - above all the menu scrollbar, without which the sidebar does
+// not scroll at all.
+func TestSharedNavScriptReinitialisesTheme(t *testing.T) {
+	script := string(navSharedScript)
+	for _, needle := range []string{
+		"initMenuScrollbar",
+		"initSwipeHandler",
+		"handleVariantSwitcher",
+		"handleLanguageSwitcher",
+		"handleHistoryClearer",
+		"scrollToPositions",
+	} {
+		if !strings.Contains(script, needle) {
+			t.Errorf("shared navigation script does not re-run %s; the sidebar would not scroll", needle)
 		}
 	}
 }

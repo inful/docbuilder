@@ -1,4 +1,6 @@
 {{- if .Site.Params.enable_transitions -}}
 <!-- View Transitions API - CSS-only cross-page transitions -->
-<link rel="stylesheet" href="/view-transitions.css">
+{{- with resources.Get "css/view-transitions.css" }}
+<link rel="stylesheet" href="{{ (. | fingerprint "sha256").RelPermalink }}">
+{{- end }}
 {{- end -}}
