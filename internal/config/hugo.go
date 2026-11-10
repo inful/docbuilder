@@ -31,16 +31,23 @@ type HugoConfig struct {
 
 // SidebarConfig controls how DocBuilder wires the Relearn sidebar menus.
 //
-// The default mode (when Mode is unset or empty) is "auto": when the
-// build produces any documents, DocBuilder emits the categories
-// sidebar. The categories sidebar also includes a synthetic
-// "_uncategorized" bucket for any doc that has no `categories:` front
-// matter, so un-categorized docs never disappear from navigation. To
-// revert to the legacy Relearn single page menu, set Mode to "default".
+// The default mode (when Mode is unset or empty) is "auto": the
+// categories navigation is rendered once into a shared fragment and
+// injected in the browser. The navigation content is the same as the
+// categories sidebar; only the delivery differs. The categories sidebar
+// also includes a synthetic "_uncategorized" bucket for any doc that has
+// no `categories:` front matter, so un-categorized docs never disappear
+// from navigation.
+//
+// Set Mode to "categories" to embed the navigation in every page
+// (server-rendered, no JavaScript needed), or to "default" to revert to
+// the legacy Relearn single page menu.
 type SidebarConfig struct {
 	// Mode selects the sidebar wiring strategy.
-	//   "" or "auto"     - emit the categories sidebar (new default).
-	//   "categories"     - same as "" or "auto"; explicit opt-in.
+	//   "" or "auto"     - render the navigation once, inject it in the
+	//                      browser (the default).
+	//   "shared"         - same as "" or "auto"; explicit opt-in.
+	//   "categories"     - embed the categories sidebar in every page.
 	//   "default"        - emit Relearn's default single page menu.
 	Mode SidebarMode `yaml:"mode,omitempty"`
 
@@ -104,24 +111,26 @@ type SidebarConfig struct {
 type SidebarMode string
 
 const (
-	// SidebarModeAuto is the new default mode. It emits the categories
-	// sidebar whenever the build has any documents (categorized or
-	// not). An empty or unset Mode is treated as SidebarModeAuto.
+	// SidebarModeAuto is the default mode. It renders the categories
+	// navigation once into a shared fragment and injects it in the
+	// browser, instead of embedding it in every page. An empty or unset
+	// Mode is treated as SidebarModeAuto.
 	SidebarModeAuto SidebarMode = "auto"
 	// SidebarModeDefault keeps the Relearn default single page menu
-	// and suppresses the categories sidebar. Use this to opt out of
-	// the new behavior.
+	// and suppresses the categories sidebar. Use this to opt out of the
+	// categories navigation.
 	SidebarModeDefault SidebarMode = "default"
-	// SidebarModeCategories is an explicit alias for SidebarModeAuto
-	// (the new default). Provided for users who want to be explicit.
+	// SidebarModeCategories embeds the categories navigation in every
+	// page. Use it when the navigation must be present without
+	// JavaScript.
 	SidebarModeCategories SidebarMode = "categories"
 	// SidebarModeShared renders the navigation once into a shared fragment
 	// and injects it in the browser, instead of embedding it in every page.
-	// The navigation content is the same as the categories sidebar; only
-	// the way it reaches the page differs. Use it for sites with many
-	// pages, where embedding the whole tree in every page makes both the
-	// render time and the published site grow with the square of the page
-	// count.
+	// Explicit alias for SidebarModeAuto (the default). The navigation
+	// content is the same as the categories sidebar; only the way it
+	// reaches the page differs. Use it for sites with many pages, where
+	// embedding the whole tree in every page makes both the render time
+	// and the published site grow with the square of the page count.
 	SidebarModeShared SidebarMode = "shared"
 )
 
@@ -135,8 +144,8 @@ const SidebarUncategorizedCategory = "_uncategorized"
 
 // IsCategories reports whether the sidebar should be wired by categories.
 // Treats the zero value (Mode unset, including the nil-config case)
-// and "auto" as categories, so the new behavior is the default. The
-// only way to opt out is to set Mode to "default" explicitly.
+// and "auto" as categories, so the categories navigation is the default
+// content. The only way to opt out is to set Mode to "default" explicitly.
 func (s *SidebarConfig) IsCategories() bool {
 	if s == nil {
 		return true
@@ -159,11 +168,22 @@ func (s *SidebarConfig) IsCategories() bool {
 // IsShared reports whether the navigation is rendered once and injected in
 // the browser rather than embedded in every page. The navigation content is
 // the same as the categories sidebar either way.
+//
+// An unset mode (or "auto") means shared: it is the default. Only
+// "categories" and "default" opt out.
 func (s *SidebarConfig) IsShared() bool {
 	if s == nil {
+		return true
+	}
+	switch s.Mode {
+	case "", SidebarModeAuto, SidebarModeShared:
+		return true
+	case SidebarModeCategories, SidebarModeDefault:
+		return false
+	default:
+		// Unknown mode: opt out rather than guess.
 		return false
 	}
-	return s.Mode == SidebarModeShared
 }
 
 // ShouldKeepDefaultMenu reports whether the default main page menu

@@ -72,7 +72,8 @@ func TestGenerateHugoConfig_RelearnParams(t *testing.T) {
 
 // TestGenerateHugoConfig_SharedSidebarRegistersFragment pins that the
 // shared sidebar mode registers the output format that carries the
-// navigation fragment, and that the default mode does not.
+// navigation fragment — including the default mode, which is shared —
+// and that the per-page categories mode does not.
 func TestGenerateHugoConfig_SharedSidebarRegistersFragment(t *testing.T) {
 	generate := func(t *testing.T, mode config.SidebarMode) map[string]any {
 		t.Helper()
@@ -119,16 +120,29 @@ func TestGenerateHugoConfig_SharedSidebarRegistersFragment(t *testing.T) {
 	})
 
 	t.Run("default", func(t *testing.T) {
+		// The default mode is shared, so the fragment must be registered.
 		conf := generate(t, config.SidebarModeAuto)
 
+		formats, ok := conf["outputFormats"].(map[string]any)
+		if !ok {
+			t.Fatalf("expected outputFormats in the default sidebar config; got %v", conf)
+		}
+		if _, hasFormat := formats[SharedNavOutputFormat]; !hasFormat {
+			t.Errorf("missing %q output format: %v", SharedNavOutputFormat, formats)
+		}
+	})
+
+	t.Run("categories", func(t *testing.T) {
+		conf := generate(t, config.SidebarModeCategories)
+
 		if _, ok := conf["outputFormats"]; ok {
-			t.Errorf("default mode must not define output formats: %v", conf["outputFormats"])
+			t.Errorf("categories mode must not define output formats: %v", conf["outputFormats"])
 		}
 		outputs, _ := conf["outputs"].(map[string]any)
 		home, _ := outputs["home"].([]any)
 		for _, o := range home {
 			if o == SharedNavOutputFormat {
-				t.Errorf("default mode must not publish the %q output: %v", SharedNavOutputFormat, home)
+				t.Errorf("categories mode must not publish the %q output: %v", SharedNavOutputFormat, home)
 			}
 		}
 	})
