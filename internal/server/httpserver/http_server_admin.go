@@ -15,9 +15,11 @@ func (s *Server) startAdminServerWithListener(_ context.Context, ln net.Listener
 	// Health check endpoint
 	mux.HandleFunc(s.cfg.Monitoring.Health.Path, s.monitoringHandlers.HandleHealthCheck)
 	mux.HandleFunc("/healthz", s.monitoringHandlers.HandleHealthCheck) // Kubernetes-style alias
-	// Readiness endpoint: only ready when a rendered site exists under <output>/public
+	// Readiness endpoint: the daemon is up and able to serve.
 	mux.HandleFunc("/ready", s.handleReadiness)
 	mux.HandleFunc("/readyz", s.handleReadiness) // Kubernetes-style alias
+	// Render-state endpoint: ready only when a rendered site exists under <output>/public
+	mux.HandleFunc("/site-ready", s.handleSiteReadiness)
 	// Add enhanced health check endpoint (if daemon is available)
 	if s.opts.EnhancedHealthHandle != nil {
 		mux.HandleFunc("/health/detailed", s.opts.EnhancedHealthHandle)
@@ -55,7 +57,34 @@ func (s *Server) startAdminServerWithListener(_ context.Context, ln net.Listener
 	return s.startServerWithListener("admin", s.adminServer, ln)
 }
 
+// daemonStatusRunning mirrors internal/daemon.StatusRunning. This package
+// cannot import internal/daemon (the daemon imports this package), so the
+// value is duplicated with a pointer to its source.
+const daemonStatusRunning = "running"
+
+// handleReadiness reports whether the daemon is up and able to serve.
+//
+// It deliberately does NOT depend on the rendered site. A daemon whose
+// forge is unreachable, or whose first build has not finished yet, is
+// still a working daemon: gating readiness on the build turns a build
+// problem into a permanently unready pod (and, as a startup probe, into a
+// restart loop that can never fix the build). Use /site-ready when the
+// question is "is the site built".
 func (s *Server) handleReadiness(w http.ResponseWriter, _ *http.Request) {
+	if s.runtime == nil || s.runtime.GetStatus() != daemonStatusRunning {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write([]byte("not ready: daemon is not running"))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("ready"))
+}
+
+// handleSiteReadiness reports whether a rendered site exists
+// (<output.directory>/public). This is the render-state check that
+// /ready used to perform; it is kept under its own path so deployments
+// that gate traffic on "the site is built" can keep doing so.
+func (s *Server) handleSiteReadiness(w http.ResponseWriter, _ *http.Request) {
 	out := s.cfg.Output.Directory
 	if out == "" {
 		out = defaultSiteDir

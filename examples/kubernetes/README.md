@@ -164,8 +164,14 @@ spec:
 
 DocBuilder exposes health endpoints:
 
-- `/health` - Liveness probe
-- `/ready` - Readiness probe
+- `/health` - Liveness and startup probe (200 once the daemon is up)
+- `/ready` - Readiness probe (200 once the daemon is running and able to serve)
+- `/site-ready` - Optional readiness probe that additionally waits for the
+  first render to produce `<output>/public`
+
+Use `/health` for the startup probe: a startup probe on `/ready` (or
+`/site-ready`) ties container startup to a successful build, so a failing
+build makes Kubernetes restart the container in a loop.
 
 ### Metrics
 
