@@ -62,24 +62,84 @@
     if (typeof window.scrollToPositions === 'function') window.scrollToPositions();
   }
 
+  // The fragment is the same on every page of a build, so the browser can
+  // keep it and skip the download on every navigation. The cache is keyed
+  // by the build id and the fragment URL: a new build (or another site on
+  // the same origin) invalidates it.
+  var CACHE_KEY = 'docbuilder.nav';
+
+  function readCache(build, src) {
+    try {
+      var raw = window.localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      var entry = JSON.parse(raw);
+      if (!entry || entry.build !== build || entry.src !== src) return null;
+      return typeof entry.html === 'string' ? entry.html : null;
+    } catch (e) {
+      return null; // storage disabled or corrupt entry: fetch instead
+    }
+  }
+
+  function writeCache(build, src, html) {
+    try {
+      window.localStorage.setItem(CACHE_KEY, JSON.stringify({
+        build: build,
+        src: src,
+        html: html
+      }));
+    } catch (e) {
+      /* over quota or storage disabled: the fetch path still works */
+    }
+  }
+
+  function render(html, slot, themeInitialised) {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    var aside = doc.querySelector('#R-sidebar');
+    if (!aside) return;
+    var host = slot.parentElement;
+    host.innerHTML = aside.innerHTML;
+    applyActiveState(host, currentPath());
+    if (themeInitialised) initTheme();
+  }
+
+  // The theme binds to the sidebar on DOMContentLoaded. This script runs
+  // before that (it is deferred, and the theme's script sits in the
+  // footer), so a navigation restored from the cache is in place before the
+  // theme looks at it - the theme then binds to the real navigation and
+  // nothing has to be re-run. After DOMContentLoaded the theme has already
+  // bound to the placeholder, so the injected navigation needs the theme's
+  // sidebar initialisation re-run.
+  var themeReady = document.readyState === 'complete';
+  document.addEventListener('DOMContentLoaded', function () {
+    themeReady = true;
+  });
+
   function init() {
     var slot = document.getElementById(SLOT_ID);
     if (!slot) return;
     var src = slot.getAttribute('data-nav-src');
     if (!src) return;
+    var build = slot.getAttribute('data-build') || '';
+
+    var cached = readCache(build, src);
+    if (cached !== null) {
+      // Restore the navigation before the theme initialises, so the theme
+      // binds to it itself and nothing has to be re-run afterwards.
+      render(cached, slot, themeReady);
+      return;
+    }
+
+    // No cached fragment: fetch it. The injection happens after the theme
+    // has initialised against the placeholder, so the theme's own handlers
+    // have to be re-run against the real navigation.
     fetch(src)
       .then(function (r) {
         if (!r.ok) throw new Error('nav fragment: ' + r.status);
         return r.text();
       })
       .then(function (html) {
-        var doc = new DOMParser().parseFromString(html, 'text/html');
-        var aside = doc.querySelector('#R-sidebar');
-        if (!aside) return;
-        var host = slot.parentElement;
-        host.innerHTML = aside.innerHTML;
-        applyActiveState(host, currentPath());
-        initTheme();
+        writeCache(build, src, html);
+        render(html, slot, true);
       })
       .catch(function () {
         /* no nav without the fragment; the page still renders */
