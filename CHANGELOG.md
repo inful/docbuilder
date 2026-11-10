@@ -9,6 +9,8 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-10
+
 ### Added
 - **Shared sidebar mode**, now the **default**: the navigation is rendered
   once into a `/sidebar.html` fragment and injected into each page by a
