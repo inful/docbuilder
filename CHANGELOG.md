@@ -9,6 +9,14 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Fixed
+- **Docker image tags**: the release workflow publishes the version
+  **without** a `v` prefix (`0.20.0`, `0.20`, `0`) plus `latest`, but the
+  documentation showed `v1.2.3` / `v1.2` / `v1` — tags that were never
+  published, so every documented `docker pull` command 404'd. The docs now
+  use the real tag names, and the workflow additionally publishes a
+  `v`-prefixed alias (`v0.20.0`) so both spellings resolve.
+
 ## [0.20.0] - 2026-11-10
 
 ### Changed
