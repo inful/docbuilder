@@ -25,11 +25,19 @@ func TestSidebarConfig_SharedMode(t *testing.T) {
 	}
 }
 
-// TestSidebarConfig_SharedModeIsOptIn pins that no other mode renders the
-// navigation as a shared fragment.
-func TestSidebarConfig_SharedModeIsOptIn(t *testing.T) {
-	modes := []SidebarMode{"", SidebarModeAuto, SidebarModeCategories, SidebarModeDefault}
-	for _, m := range modes {
+// TestSidebarConfig_SharedModeIsDefault pins that the shared sidebar is
+// the default: an unset mode (including a nil config) and the explicit
+// "auto"/"shared" modes all render the navigation once, and only
+// "categories" and "default" opt out.
+func TestSidebarConfig_SharedModeIsDefault(t *testing.T) {
+	for _, m := range []SidebarMode{"", SidebarModeAuto, SidebarModeShared} {
+		s := &SidebarConfig{Mode: m}
+		if !s.IsShared() {
+			t.Errorf("mode %q must enable the shared sidebar", m)
+		}
+	}
+
+	for _, m := range []SidebarMode{SidebarModeCategories, SidebarModeDefault} {
 		s := &SidebarConfig{Mode: m}
 		if s.IsShared() {
 			t.Errorf("mode %q must not enable the shared sidebar", m)
@@ -37,7 +45,7 @@ func TestSidebarConfig_SharedModeIsOptIn(t *testing.T) {
 	}
 
 	var nilCfg *SidebarConfig
-	if nilCfg.IsShared() {
-		t.Error("a nil sidebar config must not enable the shared sidebar")
+	if !nilCfg.IsShared() {
+		t.Error("a nil sidebar config must enable the shared sidebar")
 	}
 }

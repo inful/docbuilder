@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-01T00:00:00Z
-fingerprint: 94e7f049b6b90baf8791e47f53abd157de3584424a145111b13f30bd3baea248
-lastmod: "2026-09-28"
+fingerprint: ec0ff0945c02247b30994bbd244bf4a9085a8cb7ce031c319cc757b7a68face1
+lastmod: "2026-11-10"
 tags:
   - best-practices
   - documentation
@@ -55,7 +55,7 @@ represents:
 | Security | `security/` | Threat model, security controls, audit notes |
 | Examples | `examples/` | Source-of-truth template files (`.template.md`) |
 
-**Why:** The `hugo.sidebar.mode: auto` (default) renders one sidebar
+**Why:** The `hugo.sidebar.mode` default (`auto`) renders one sidebar
 section per category. Mixing modes in one directory means a how-to
 recipe sits next to an architectural explanation with no visual cue
 that they answer different questions.

@@ -10,15 +10,17 @@ commits; pin to a SHA for reproducibility per the README.
 ## [Unreleased]
 
 ### Added
-- **Shared sidebar mode** (`hugo.sidebar.mode: shared`): the navigation is
-  rendered once into a `/sidebar.html` fragment and injected into each page
-  by a small script, instead of being embedded in every page. Relearn renders
+- **Shared sidebar mode**, now the **default**: the navigation is rendered
+  once into a `/sidebar.html` fragment and injected into each page by a
+  small script, instead of being embedded in every page. Relearn renders
   the whole navigation tree into every page, so both the render time and the
   published site grow with the square of the page count. Measured on a
   1517-page site: render step **3m42s → 4.0s**, published site
   **868 MB → 31 MB**. The navigation content is unchanged and the current
   entry is marked in the browser. The trade-off: without JavaScript the pages
-  show no sidebar. The default mode is unchanged.
+  show no sidebar — set `hugo.sidebar.mode: categories` to keep the previous
+  behaviour (the navigation embedded in every page, server-rendered), or
+  `default` for Relearn's legacy single-page menu.
 
 ### Changed
 - **Kubernetes example resources**: the example deployment limits the

@@ -46,11 +46,20 @@ module:
     imports:
         - path: github.com/McShelby/hugo-theme-relearn
           version: 9.0.3
+outputFormats:
+    sidebar:
+        baseName: sidebar
+        isHTML: true
+        mediaType: text/html
+        name: sidebar
+        noUgly: true
+        permalinkable: false
 outputs:
     home:
         - HTML
         - RSS
         - JSON
+        - sidebar
     taxonomy:
         - HTML
         - JSON
