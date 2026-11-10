@@ -10,6 +10,11 @@ commits; pin to a SHA for reproducibility per the README.
 ## [Unreleased]
 
 ### Changed
+- **Link verification is now opt-in**: `daemon.link_verification.enabled`
+  defaults to `false`, so a daemon no longer checks links (and no longer
+  connects to NATS) unless the config explicitly sets `enabled: true`.
+  Previously the defaults pass forced the flag back to `true`, which also
+  made the documented `enabled: false` opt-out impossible.
 - **Daemon internal architecture**: `internal/daemon.Daemon` is now a
   thin façade over six per-concern sub-structs (`lifecycleStack`,
   `stateStack`, `buildStack`, `discoveryStack`, `serveStack`,

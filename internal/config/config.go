@@ -355,7 +355,7 @@ func Init(configPath string, force bool) error {
 				OutputDir:    defaultOutputDir,
 			},
 			LinkVerification: &LinkVerificationConfig{
-				Enabled:            true,
+				Enabled:            false,
 				NATSURL:            "nats://localhost:4222",
 				Subject:            "docbuilder.links.broken",
 				KVBucket:           "docbuilder-link-cache",
