@@ -1,9 +1,9 @@
 package state
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -494,10 +494,10 @@ func TestLoadLegacyStateFileWithoutFormatVersion(t *testing.T) {
 	}
 }
 
-// TestLoadUnsupportedStateFileFormatVersionStillFails locks in that the
-// auto-upgrade only applies to the missing-field case, not to a file that
-// explicitly carries a forward-incompatible format_version.
-func TestLoadUnsupportedStateFileFormatVersionStillFails(t *testing.T) {
+// TestLoadUnsupportedStateFileFormatVersionIsQuarantined locks in that a file
+// carrying a forward-incompatible format_version does not brick the daemon:
+// it is moved aside and the daemon continues with empty state.
+func TestLoadUnsupportedStateFileFormatVersionIsQuarantined(t *testing.T) {
 	tmpDir := t.TempDir()
 	statePath := filepath.Join(tmpDir, "daemon-state.json")
 
@@ -517,10 +517,56 @@ func TestLoadUnsupportedStateFileFormatVersionStillFails(t *testing.T) {
 	}
 
 	result := NewJSONStore(tmpDir)
-	if !result.IsErr() {
-		t.Fatalf("expected unsupported format_version to fail, but load succeeded")
+	if result.IsErr() {
+		t.Fatalf("expected unsupported format_version to be quarantined, got error: %v", result.UnwrapErr())
 	}
-	if errMsg := result.UnwrapErr().Error(); !strings.Contains(errMsg, "unsupported state snapshot format_version") {
-		t.Errorf("expected 'unsupported state snapshot format_version' error, got: %v", errMsg)
+
+	assertStateFileQuarantined(t, tmpDir, future)
+}
+
+// TestLoadCorruptStateFileIsQuarantined pins that a corrupt (unparseable)
+// state file does not brick the daemon: the file is moved aside with its
+// content intact and the daemon continues with empty state.
+func TestLoadCorruptStateFileIsQuarantined(t *testing.T) {
+	tmpDir := t.TempDir()
+	statePath := filepath.Join(tmpDir, "daemon-state.json")
+
+	corrupt := []byte(`{"format_version":"1", "repositories": {`)
+	if err := os.WriteFile(statePath, corrupt, 0o600); err != nil {
+		t.Fatalf("write corrupt state file: %v", err)
+	}
+
+	result := NewJSONStore(tmpDir)
+	if result.IsErr() {
+		t.Fatalf("expected corrupt state file to be quarantined, got error: %v", result.UnwrapErr())
+	}
+
+	assertStateFileQuarantined(t, tmpDir, corrupt)
+}
+
+// assertStateFileQuarantined verifies that the original state file was moved
+// aside and that its content was preserved.
+func assertStateFileQuarantined(t *testing.T, dir string, wantContent []byte) {
+	t.Helper()
+
+	statePath := filepath.Join(dir, "daemon-state.json")
+	if _, err := os.Stat(statePath); !os.IsNotExist(err) {
+		t.Errorf("expected original state file to be moved aside, stat error = %v", err)
+	}
+
+	quarantined, err := filepath.Glob(filepath.Join(dir, "daemon-state.json.corrupt-*"))
+	if err != nil {
+		t.Fatalf("glob quarantined state files: %v", err)
+	}
+	if len(quarantined) != 1 {
+		t.Fatalf("expected exactly 1 quarantined state file, got %d: %v", len(quarantined), quarantined)
+	}
+
+	data, err := os.ReadFile(quarantined[0])
+	if err != nil {
+		t.Fatalf("read quarantined state file: %v", err)
+	}
+	if !bytes.Equal(data, wantContent) {
+		t.Errorf("quarantined content = %q, want %q", data, wantContent)
 	}
 }

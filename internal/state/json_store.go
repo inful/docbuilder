@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
@@ -80,15 +81,36 @@ func NewJSONStore(dataDir string) foundation.Result[*JSONStore, error] {
 	}
 
 	if err := store.loadFromDisk(); err != nil {
-		return foundation.Err[*JSONStore, error](
-			errors.InternalError("failed to load daemon state").
-				WithCause(err).
-				WithContext("data_dir", dataDir).
-				Build(),
-		)
+		// An unreadable state file must not brick the daemon. Move it aside and
+		// continue with empty state; the original file is preserved next to it.
+		quarantinePath, quarantineErr := store.quarantineStateFile()
+		if quarantineErr != nil {
+			slog.Warn("daemon state could not be loaded and could not be quarantined; continuing with empty state",
+				"error", err, "quarantine_error", quarantineErr, "data_dir", dataDir)
+		} else {
+			slog.Warn("daemon state could not be loaded; continuing with empty state",
+				"error", err, "quarantined_path", quarantinePath, "data_dir", dataDir)
+		}
 	}
 
 	return foundation.Ok[*JSONStore, error](store)
+}
+
+// stateFilePath returns the path of the on-disk state snapshot.
+func (js *JSONStore) stateFilePath() string {
+	return filepath.Join(js.dataDir, "daemon-state.json")
+}
+
+// quarantineStateFile moves an unreadable state file aside so the daemon can
+// start with empty state without destroying the original data. The returned
+// path is the new location of the quarantined file.
+func (js *JSONStore) quarantineStateFile() (string, error) {
+	statePath := js.stateFilePath()
+	quarantinePath := fmt.Sprintf("%s.corrupt-%s", statePath, time.Now().UTC().Format("20060102T150405.000000000"))
+	if err := os.Rename(statePath, quarantinePath); err != nil {
+		return "", err
+	}
+	return quarantinePath, nil
 }
 
 // Repositories returns the repository store interface.
@@ -194,7 +216,7 @@ func (js *JSONStore) Close(_ context.Context) foundation.Result[struct{}, error]
 
 // loadFromDisk loads the state from JSON files.
 func (js *JSONStore) loadFromDisk() error {
-	statePath := filepath.Join(js.dataDir, "daemon-state.json")
+	statePath := js.stateFilePath()
 
 	// #nosec G304 - statePath is internal, dataDir is controlled by application
 	data, err := os.ReadFile(statePath)
@@ -224,7 +246,7 @@ func (js *JSONStore) saveToDiskUnsafe() error {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
 
-	statePath := filepath.Join(js.dataDir, "daemon-state.json")
+	statePath := js.stateFilePath()
 	tempPath := statePath + ".tmp"
 
 	// Atomic write using temporary file

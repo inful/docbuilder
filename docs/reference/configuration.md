@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: b47ff06d70933b3e12901e7122a92f23041958ff415147ed59296b05fd5f7f99
-lastmod: "2026-09-27"
+fingerprint: a60c3346b725f8589442dc581af00a9aafdef2442088205f86531bf53d0fe693
+lastmod: "2026-11-10"
 tags:
   - configuration
   - yaml
@@ -290,7 +290,9 @@ Semantics:
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | output_dir | string | ./site | Output directory (must match `output.directory`). |
-| repo_cache_dir | string | - | Persistent repository cache directory. |
+| repo_cache_dir | string | - | Persistent repository cache directory. Holds the daemon state file (`daemon-state.json`). |
+
+If `daemon-state.json` cannot be read, the daemon quarantines it as `daemon-state.json.corrupt-<timestamp>` and starts with empty state rather than failing.
 
 ### Daemon Configuration Example
 
