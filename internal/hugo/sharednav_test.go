@@ -41,6 +41,11 @@ func TestSharedNavFiles(t *testing.T) {
 	if strings.Contains(placeholder, "inline/menu") {
 		t.Error("the placeholder must not render the navigation itself")
 	}
+	// The build id lets the script keep the fragment in the browser and
+	// invalidate it when the site is rebuilt.
+	if !strings.Contains(placeholder, `data-build="{{ site.Params.build_date }}"`) {
+		t.Errorf("placeholder must carry the build id:\n%s", placeholder)
+	}
 
 	// The fragment layout renders the vendored navigation.
 	fragment := files[filepath.Join("layouts", "_default", "home.sidebar.html")]
@@ -93,6 +98,25 @@ func TestSharedNavScriptReinitialisesTheme(t *testing.T) {
 	for _, needle := range []string{"initMenuScrollbar", "initSwipeHandler", "scrollToPositions"} {
 		if !strings.Contains(script, needle) {
 			t.Errorf("shared navigation script does not re-run %s; the sidebar would not scroll", needle)
+		}
+	}
+}
+
+// TestSharedNavScriptCachesFragment guards the browser-side cache: the
+// fragment is the same on every page of a build, so the script keeps it in
+// local storage and restores it instead of downloading it again on every
+// navigation. The cache is keyed by the build id and the fragment URL, so a
+// rebuild invalidates it.
+func TestSharedNavScriptCachesFragment(t *testing.T) {
+	script := string(navSharedScript)
+	for _, needle := range []string{
+		"localStorage.getItem",
+		"localStorage.setItem",
+		"data-build",
+		"entry.build !== build",
+	} {
+		if !strings.Contains(script, needle) {
+			t.Errorf("shared navigation script does not use the browser cache (%q); the navigation is downloaded on every page", needle)
 		}
 	}
 }

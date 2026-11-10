@@ -9,6 +9,15 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Fixed
+- **The shared sidebar is no longer re-downloaded on every navigation**: the
+  navigation fragment is the same on every page of a build, so the browser
+  now keeps it in its local storage, keyed by the build id, and restores it
+  instead of fetching it again. Measured on the 1517-page site: the first
+  page downloads the 560 KB fragment, every page after that restores it in
+  14 ms with no request at all. A rebuild changes the build id and
+  invalidates the copy.
+
 ## [0.21.0] - 2026-11-10
 
 ### Added

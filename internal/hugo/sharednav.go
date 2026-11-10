@@ -41,8 +41,13 @@ const SharedNavOutputFormat = "sidebar"
 //
 // The script tag sits next to the sidebar, not inside it: the fragment
 // replaces the sidebar's contents, which would take the tag with it.
+//
+// data-build carries the build id. The script keeps the fragment in the
+// browser's local storage under that id, so a page after the first one
+// restores the navigation instead of downloading it again. A new build
+// changes the id and invalidates the copy.
 const sharedNavPlaceholder = `<aside id="R-sidebar" class="default-animation">
-  <div id="R-sidebar-menu" data-nav-src="{{ with site.Home.OutputFormats.Get "sidebar" }}{{ .RelPermalink }}{{ end }}"></div>
+  <div id="R-sidebar-menu" data-nav-src="{{ with site.Home.OutputFormats.Get "sidebar" }}{{ .RelPermalink }}{{ end }}" data-build="{{ site.Params.build_date }}"></div>
 </aside>
 {{- with resources.Get "js/nav-shared.js" }}
 <script src="{{ (. | fingerprint "sha256").RelPermalink }}" defer></script>
