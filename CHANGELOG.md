@@ -69,6 +69,19 @@ commits; pin to a SHA for reproducibility per the README.
   `gitCorruptionPatterns` in `internal/git/recovery.go` extended
   to match.
 
+### Fixed
+- **Daemon state load no longer bricks startup**: an unreadable
+  `daemon-state.json` (corrupt JSON, or a `format_version` this build
+  does not understand) previously aborted daemon startup with
+  `failed to load daemon state` (category `internal`). The file is now
+  moved aside to `daemon-state.json.corrupt-<timestamp>` and the daemon
+  continues with empty state, logging the cause and the quarantine path
+  at WARN. The original file is preserved, so no state data is lost.
+  Trade-off: a file written by a *newer* binary is quarantined rather
+  than refused, so running an older binary against a newer state file
+  resets the live state (the newer file stays recoverable in the
+  `.corrupt-*` copy).
+
 ## [0.19.2] - 2026-09-30
 
 ### Changed

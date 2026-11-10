@@ -12,11 +12,11 @@ on:
       - 'internal/lint/**'
       - 'internal/hugo/**'
       - 'internal/docs/**'
+  # No path filter here: "detect-rule-drift" is a required status check on
+  # main, so it must report on every pull request. With a paths filter the
+  # workflow never starts for unrelated PRs and the check stays "Expected"
+  # forever, which blocks the merge.
   pull_request:
-    paths:
-      - 'internal/lint/**'
-      - 'internal/hugo/**'
-      - 'internal/docs/**'
   schedule:
     # Run weekly to catch drift over time
     - cron: '0 0 * * 0'
@@ -33,7 +33,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version-file: go.mod
       
       - name: Install DocBuilder
         run: |
@@ -106,14 +106,14 @@ jobs:
             echo ""
             
             # Show details
-            cat drift-report.json | jq -r '.issues[] | "- \(.file):\(.line) - \(.rule): \(.message)"'
+            cat drift-report.json | jq -r '.issues[] | "- \(.file_path):\(.line) - \(.rule): \(.message)"'
             
             exit 1
           elif [ "${EXIT_CODE}" = "1" ]; then
             echo "⚠️ Warnings detected in generated content"
             echo "Generated content has warnings but no errors"
             
-            cat drift-report.json | jq -r '.issues[] | select(.severity=="warning") | "- \(.file) - \(.rule): \(.message)"'
+            cat drift-report.json | jq -r '.issues[] | select(.severity=="WARNING") | "- \(.file_path) - \(.rule): \(.message)"'
             
             # Don't fail on warnings, just report
             exit 0
@@ -143,15 +143,15 @@ jobs:
             comment += 'This PR may have introduced drift between linting rules and DocBuilder output.\n\n';
             
             comment += `### Summary\n\n`;
-            comment += `- **Errors**: ${report.summary.errors}\n`;
-            comment += `- **Warnings**: ${report.summary.warnings}\n`;
-            comment += `- **Files affected**: ${report.summary.total_files}\n\n`;
+            comment += `- **Errors**: ${report.error_count}\n`;
+            comment += `- **Warnings**: ${report.warning_count}\n`;
+            comment += `- **Files affected**: ${report.files_total}\n\n`;
             
             if (report.issues && report.issues.length > 0) {
               comment += '### Issues\n\n';
               const issues = report.issues.slice(0, 10);
               for (const issue of issues) {
-                comment += `- \`${issue.file}\` (L${issue.line}): **${issue.rule}** - ${issue.message}\n`;
+                comment += `- \`${issue.file_path}\` (L${issue.line}): **${issue.rule}** - ${issue.message}\n`;
               }
               if (report.issues.length > 10) {
                 comment += `\n... and ${report.issues.length - 10} more issue(s)\n`;

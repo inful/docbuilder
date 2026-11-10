@@ -231,6 +231,8 @@ DocBuilder uses three distinct path roles when running the daemon:
 | Repo Cache Directory | `daemon.storage.repo_cache_dir` | Persistent daemon state (`daemon-state.json`) and (for incremental strategies) parent for the working clone directory. |
 | Workspace Directory | `build.workspace_dir` or derived | Actual working checkouts used by the build pipeline (clone/update, doc discovery). |
 
+If `daemon-state.json` in the repo cache directory cannot be read (corrupt JSON, or a `format_version` this build does not understand), the daemon moves it aside to `daemon-state.json.corrupt-<timestamp>` and continues with empty state instead of failing startup. The log line names the quarantine path; the original file is left untouched.
+
 Workspace selection logic (effective when `build.workspace_dir` is NOT explicitly set):
 
 1. `clone_strategy: fresh` → `output.directory/_workspace` (ephemeral; removed if `output.clean: true`).
