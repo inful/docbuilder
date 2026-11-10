@@ -9,6 +9,8 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-11-10
+
 ### Changed
 - **Link verification is now opt-in**: `daemon.link_verification.enabled`
   defaults to `false`, so a daemon no longer checks links (and no longer
