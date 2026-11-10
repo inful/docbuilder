@@ -52,6 +52,16 @@
     }
   }
 
+  function initTheme() {
+    // The theme binds to the sidebar's contents on DOMContentLoaded, which
+    // happens before the fragment arrives. Re-run the parts that need the
+    // real navigation: the menu scrollbar (without it the sidebar does not
+    // scroll at all), the swipe handlers, and the scroll to the active entry.
+    if (typeof window.initMenuScrollbar === 'function') window.initMenuScrollbar();
+    if (typeof window.initSwipeHandler === 'function') window.initSwipeHandler();
+    if (typeof window.scrollToPositions === 'function') window.scrollToPositions();
+  }
+
   function init() {
     var slot = document.getElementById(SLOT_ID);
     if (!slot) return;
@@ -69,6 +79,7 @@
         var host = slot.parentElement;
         host.innerHTML = aside.innerHTML;
         applyActiveState(host, currentPath());
+        initTheme();
       })
       .catch(function () {
         /* no nav without the fragment; the page still renders */

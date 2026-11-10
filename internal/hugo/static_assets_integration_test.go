@@ -40,8 +40,8 @@ func TestViewTransitionsIntegration(t *testing.T) {
 	require.NoError(t, err, "should generate site successfully")
 
 	// Verify CSS asset was created
-	cssPath := filepath.Join(outputDir, "static", "view-transitions.css")
-	assert.FileExists(t, cssPath, "CSS asset should be written to static directory")
+	cssPath := filepath.Join(outputDir, "assets", "css", "view-transitions.css")
+	assert.FileExists(t, cssPath, "CSS asset should be written to the assets directory")
 
 	// #nosec G304 -- test utility reading from test output directory
 	cssContent, err := os.ReadFile(cssPath)
@@ -57,7 +57,8 @@ func TestViewTransitionsIntegration(t *testing.T) {
 	htmlContent, err := os.ReadFile(partialPath)
 	require.NoError(t, err)
 	assert.Contains(t, string(htmlContent), ".Site.Params.enable_transitions", "HTML should check for enable_transitions param")
-	assert.Contains(t, string(htmlContent), "/view-transitions.css", "HTML should reference CSS file")
+	assert.Contains(t, string(htmlContent), `resources.Get "css/view-transitions.css"`, "HTML should reference the CSS through Hugo's resource pipeline")
+	assert.Contains(t, string(htmlContent), "fingerprint", "HTML should publish the CSS with a content-addressed URL")
 
 	// Verify Hugo config has enable_transitions param
 	hugoConfigPath := filepath.Join(outputDir, "hugo.yaml")
@@ -91,7 +92,7 @@ func TestViewTransitionsDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify view transitions assets were NOT created
-	cssPath := filepath.Join(outputDir, "static", "view-transitions.css")
+	cssPath := filepath.Join(outputDir, "assets", "css", "view-transitions.css")
 	assert.NoFileExists(t, cssPath, "CSS asset should not be created when transitions disabled")
 
 	partialPath := filepath.Join(outputDir, "layouts", "partials", "custom-header.html")
@@ -101,7 +102,7 @@ func TestViewTransitionsDisabled(t *testing.T) {
 	partialContent, err := os.ReadFile(partialPath)
 	require.NoError(t, err)
 	assert.Contains(t, string(partialContent), "docbuilder:template", "HTML partial should include template metadata tags")
-	assert.NotContains(t, string(partialContent), "/view-transitions.css", "HTML partial should not include transitions CSS when disabled")
+	assert.NotContains(t, string(partialContent), "view-transitions.css", "HTML partial should not include transitions CSS when disabled")
 
 	// Verify Hugo config does NOT have enable_transitions param
 	hugoConfigPath := filepath.Join(outputDir, "hugo.yaml")
@@ -144,7 +145,7 @@ func TestViewTransitionsWithContent(t *testing.T) {
 	require.NoError(t, err)
 
 	// Assets should still be generated with content
-	cssPath := filepath.Join(outputDir, "static", "view-transitions.css")
+	cssPath := filepath.Join(outputDir, "assets", "css", "view-transitions.css")
 	assert.FileExists(t, cssPath, "CSS asset should be created with content")
 
 	partialPath := filepath.Join(outputDir, "layouts", "partials", "custom-header.html")

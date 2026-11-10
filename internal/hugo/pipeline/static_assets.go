@@ -20,7 +20,7 @@ var templateMetadataHeadPartial []byte
 // StaticAsset represents a static file to be copied to the Hugo site.
 // Unlike Document, StaticAsset doesn't go through the transform pipeline.
 type StaticAsset struct {
-	Path    string // Relative path from Hugo root (e.g., "static/view-transitions.css")
+	Path    string // Relative path from Hugo root (e.g., "assets/css/view-transitions.css")
 	Content []byte // Raw file content
 }
 
@@ -77,7 +77,11 @@ func generateCustomHeaderAssets(ctx *GenerationContext) ([]*StaticAsset, error) 
 	if transitionsEnabled {
 		blocks = append(blocks, viewTransitionsHeadPartial)
 		assets = append(assets, &StaticAsset{
-			Path:    "static/view-transitions.css",
+			// The stylesheet lives in assets/ so the partial can publish
+			// it through Hugo's resource pipeline: the docs server serves
+			// .css with a one-year immutable cache header, which is only
+			// safe for a content-addressed URL.
+			Path:    "assets/css/view-transitions.css",
 			Content: viewTransitionsCSS,
 		})
 	}

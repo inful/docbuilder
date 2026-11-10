@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: c101fc02d15bbdf4f9e58c91ee8b57aab29eaacaacd6dc62111a02d7604068f2
-lastmod: "2026-09-27"
+fingerprint: f8f4bc43152d202c9940e9e1e5b10b88b14ec2cfb29d0495706e4c48087e2833
+lastmod: "2026-11-10"
 tags:
   - ui
   - transitions
@@ -100,7 +100,11 @@ After enabling transitions and rebuilding your site:
 - Check browser compatibility (use Chrome 126+ or Safari 18.2+ for testing)
 - Ensure you rebuilt the site after changing configuration
 - In daemon mode, restart the daemon to apply configuration changes
-- Verify the CSS file exists at `/static/view-transitions.css`
+- Verify the stylesheet is referenced from the page head: it is published
+  through Hugo's resource pipeline, so its URL carries a content hash
+  (for example `/css/view-transitions.<hash>.css`). A stable URL would be
+  cached by the docs server for a year, which is only safe for a
+  content-addressed one.
 
 **Interactive elements not working after transition:**
 - This should not happen with the CSS-only implementation
