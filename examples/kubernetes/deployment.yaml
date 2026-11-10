@@ -138,6 +138,16 @@ spec:
           limits:
             cpu: 1000m
             memory: 1Gi
+        # Startup probe: the daemon is up. Do not use /ready here — tying
+        # startup to a successful build makes Kubernetes restart the
+        # container in a loop whenever a build fails.
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 30
         livenessProbe:
           httpGet:
             path: /healthz
@@ -146,6 +156,8 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
+        # Readiness: the daemon is running and able to serve. Use
+        # /site-ready instead to additionally wait for the first render.
         readinessProbe:
           httpGet:
             path: /readyz

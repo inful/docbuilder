@@ -267,12 +267,16 @@ func (r *Runner) triggerBuildForDiscoveredRepos(ctx context.Context, result *for
 
 // SafeRun executes discovery with a timeout and panic protection.
 // It is suitable for use in goroutines.
-func (r *Runner) SafeRun(ctx context.Context, shouldRun func() bool) {
+//
+// It returns the discovery error (nil on success) so callers can decide
+// whether to retry — the daemon retries a failed *initial* discovery
+// instead of waiting for the next cron tick.
+func (r *Runner) SafeRun(ctx context.Context, shouldRun func() bool) error {
 	if r.discovery == nil {
-		return
+		return nil
 	}
 	if shouldRun != nil && !shouldRun() {
-		return
+		return nil
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
@@ -285,10 +289,11 @@ func (r *Runner) SafeRun(ctx context.Context, shouldRun func() bool) {
 	}()
 
 	if err := r.Run(timeoutCtx); err != nil {
-		slog.Warn("Periodic discovery failed", "error", err)
-	} else {
-		slog.Info("Periodic discovery completed")
+		slog.Warn("Discovery failed", "error", err)
+		return err
 	}
+	slog.Info("Discovery completed")
+	return nil
 }
 
 // TriggerManual triggers a manual discovery run in a separate goroutine.

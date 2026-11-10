@@ -645,7 +645,7 @@ func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 		} else {
 			workCtx, cancel := d.stopAwareContext(ctx)
 			defer cancel()
-			d.discover.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
+			_ = d.discover.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
 		}
 	}
 

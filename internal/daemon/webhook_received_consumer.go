@@ -280,7 +280,9 @@ func (d *Daemon) handleWebhookWithNoRepos(ctx context.Context, evt events.Webhoo
 	// In forge mode, repository lists come from discovery. If discovery hasn't completed
 	// yet, retry once it has populated the cache.
 	if d.discover.discoveryRunner != nil {
-		go d.discover.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning })
+		go func() {
+			_ = d.discover.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning })
+		}()
 	}
 
 	slog.Warn("Webhook received but no repositories available; will retry after discovery",

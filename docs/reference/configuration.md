@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 2e0e08062d67c723bd00856f45d2fa60e86a56c17ca2e0c6fe4088e05e6a267e
+fingerprint: 9126f5e4cc566ceab314ce7fd6a68796c530856bbfd605924c4eeb0a0818589f
 lastmod: "2026-11-10"
 tags:
   - configuration
@@ -110,7 +110,8 @@ The admin server also exposes:
 
 - `GET <health.path>` and `GET /healthz`: health.
 - `GET /health/detailed`: enhanced health if available, otherwise basic health.
-- `GET /ready` and `GET /readyz`: readiness (ready once `<output>/public` exists).
+- `GET /ready` and `GET /readyz`: daemon readiness (ready once the daemon is running).
+- `GET /site-ready`: render readiness (ready once `<output>/public` exists).
 
 ### Debouncer Metrics
 
@@ -766,14 +767,23 @@ Values like `${GIT_ACCESS_TOKEN}` in YAML are expanded using the current process
 
 - Endpoints are exposed on both the docs port and the admin port.
 - `GET /health`: basic liveness endpoint; returns 200 when the server is responsive.
-- `GET /ready`: readiness endpoint tied to render state.
-  - Returns 200 only when `<output.directory>/public` exists.
-  - Returns 503 before the first successful render or if the public folder is missing.
+- `GET /ready`: daemon readiness; returns 200 once the daemon is running and able to serve.
+  - It does **not** depend on the rendered site. A daemon whose forge is unreachable, or
+    whose first build has not finished, is still a working daemon.
+- `GET /site-ready`: render readiness; returns 200 only when `<output.directory>/public` exists,
+  503 before the first successful render or if the public folder is missing.
+  - Use this instead of `/ready` when traffic must wait for a rendered site.
 - When serving on the docs port, if the site is not yet rendered and the request path is `/`, DocBuilder returns a short 503 HTML placeholder indicating that the documentation is being prepared. This switches automatically to the rendered site once available.
 
 ## Kubernetes Probes
 
-- Probe either the docs port or the admin port. Use `/ready` for readiness and `/health` for liveness.
+- Probe either the docs port or the admin port.
+- Use `/health` for the **startup** and **liveness** probes. A startup probe on `/ready`
+  ties container startup to a successful build: if the build fails, Kubernetes restarts
+  the container, which restarts the build, which fails again — a loop that never resolves.
+- Use `/ready` for the **readiness** probe when the daemon's API should only receive
+  traffic once it is up, or `/site-ready` when traffic must additionally wait for a
+  rendered site.
 - Prefer probing `/ready` instead of the docs root `/`, since the root may return a temporary 503 placeholder before the first render.
 
 Example: probe the docs port (8080)
@@ -785,6 +795,12 @@ containers:
       - containerPort: 8080 # docs
       - containerPort: 8081 # webhooks
       - containerPort: 8082 # admin
+    startupProbe:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 5
+      failureThreshold: 30
     readinessProbe:
       httpGet:
         path: /ready
@@ -804,6 +820,12 @@ Example: probe the admin port (8082)
 ```yaml
 containers:
   - name: docbuilder
+    startupProbe:
+      httpGet:
+        path: /health
+        port: 8082
+      periodSeconds: 5
+      failureThreshold: 30
     readinessProbe:
       httpGet:
         path: /ready
@@ -817,6 +839,9 @@ containers:
       initialDelaySeconds: 5
       periodSeconds: 10
 ```
+
+Swap `path: /ready` for `path: /site-ready` in the readiness probe to hold traffic
+until the first render has produced `<output.directory>/public`.
 
 ## Namespacing Behavior
 
