@@ -28,6 +28,10 @@ type Server struct {
 	opts             Options
 	errorAdapter     *derrors.HTTPErrorAdapter
 
+	// runtime exposes the daemon's current status to the docs handlers.
+	// It is the same runtime the handler modules wrap.
+	runtime Runtime
+
 	// VS Code edit link behavior dependencies (injected for tests).
 	vscodeFindCLI       func(context.Context) string
 	vscodeFindIPCSocket func() string
@@ -58,6 +62,7 @@ func New(cfg *config.Config, runtime Runtime, opts Options) *Server {
 		cfg:                 cfg,
 		opts:                opts,
 		errorAdapter:        derrors.NewHTTPErrorAdapter(slog.Default()),
+		runtime:             runtime,
 		vscodeFindCLI:       findCodeCLI,
 		vscodeFindIPCSocket: findVSCodeIPCSocket,
 	}

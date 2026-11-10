@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 2e0e08062d67c723bd00856f45d2fa60e86a56c17ca2e0c6fe4088e05e6a267e
+fingerprint: e541b44ed840f4c7fa4db44b274b41bc179e8480ae77546a25cbd373f9828dc7
 lastmod: "2026-11-10"
 tags:
   - configuration
@@ -769,7 +769,8 @@ Values like `${GIT_ACCESS_TOKEN}` in YAML are expanded using the current process
 - `GET /ready`: readiness endpoint tied to render state.
   - Returns 200 only when `<output.directory>/public` exists.
   - Returns 503 before the first successful render or if the public folder is missing.
-- When serving on the docs port, if the site is not yet rendered and the request path is `/`, DocBuilder returns a short 503 HTML placeholder indicating that the documentation is being prepared. This switches automatically to the rendered site once available.
+- When serving on the docs port, if no rendered site exists yet (the first build is still running, or the previous one was lost), DocBuilder returns a short 503 HTML placeholder for every documentation URL, showing the daemon's status and build queue depth. Asset paths still 404. The placeholder is replaced automatically by the rendered site once it exists.
+- During a rebuild the previous site keeps being served from `<output>.prev/public`, so the site never goes blank while a new version renders.
 
 ## Kubernetes Probes
 
