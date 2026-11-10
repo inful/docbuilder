@@ -203,14 +203,12 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 
 	applyDaemonBuildDebounceDefaults(cfg.Daemon)
 
-	// Link verification defaults
+	// Link verification defaults. Verification is opt-in: Enabled stays false
+	// unless the config explicitly turns it on.
 	if cfg.Daemon.LinkVerification == nil {
 		cfg.Daemon.LinkVerification = &LinkVerificationConfig{}
 	}
 	lv := cfg.Daemon.LinkVerification
-	if !lv.Enabled {
-		lv.Enabled = true // Default enabled
-	}
 	if lv.NATSURL == "" {
 		lv.NATSURL = "nats://localhost:4222"
 	}

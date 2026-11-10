@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: a60c3346b725f8589442dc581af00a9aafdef2442088205f86531bf53d0fe693
+fingerprint: 2e0e08062d67c723bd00856f45d2fa60e86a56c17ca2e0c6fe4088e05e6a267e
 lastmod: "2026-11-10"
 tags:
   - configuration
@@ -140,7 +140,7 @@ DocBuilder stores link verification results and page hashes in a JetStream KV bu
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| enabled | bool | true | Enable automatic link verification after builds. |
+| enabled | bool | false | Enable automatic link verification after builds. Opt-in: leave it off unless the daemon should check links. |
 | nats_url | string | nats://localhost:4222 | NATS server connection URL (supports clustering). |
 | subject | string | docbuilder.links.broken | NATS subject for publishing broken link events. |
 | kv_bucket | string | docbuilder-link-cache | KV bucket name for caching link verification results. |
@@ -155,6 +155,8 @@ DocBuilder stores link verification results and page hashes in a JetStream KV bu
 | max_redirects | int | 3 | Maximum number of redirects to follow. |
 
 ### Link Verification Examples
+
+Link verification is **opt-in**. The daemon does not check links unless `enabled: true` is set; the examples below all turn it on.
 
 **Basic Configuration:**
 
@@ -225,6 +227,8 @@ daemon:
   link_verification:
     enabled: false
 ```
+
+This is the default: omitting `link_verification` entirely, or setting `enabled: false`, leaves link checking off.
 
 ### NATS Requirements
 
@@ -299,7 +303,7 @@ If `daemon-state.json` cannot be read, the daemon quarantines it as `daemon-stat
 ```yaml
 daemon:
   link_verification:
-    enabled: true
+    enabled: false                # Opt-in: link checking is off by default
     nats_url: "nats://localhost:4222"
     cache_ttl: "24h"
   sync:

@@ -44,7 +44,7 @@ Add to your `config.yaml` under `daemon`:
 ```yaml
 daemon:
   link_verification:
-    enabled: true                      # Default: true
+    enabled: true                      # Opt-in (default: false)
     nats_url: "nats://localhost:4222"  # NATS server
     subject: "docbuilder.links.broken" # Event subject
     kv_bucket: "docbuilder-link-cache" # Cache bucket
