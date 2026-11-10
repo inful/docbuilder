@@ -28,6 +28,7 @@ type Generator interface {
 	ComputeCategoriesMenu(bs *BuildState) (*CategoriesMenu, error)
 	AttachCategoriesMenu(*CategoriesMenu)
 	ApplyCategoriesMenuToConfig(root *RootConfig)
+	WriteSharedNavFiles() error
 }
 
 // GitState manages git repository operations and state tracking.

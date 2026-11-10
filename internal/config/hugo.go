@@ -115,6 +115,14 @@ const (
 	// SidebarModeCategories is an explicit alias for SidebarModeAuto
 	// (the new default). Provided for users who want to be explicit.
 	SidebarModeCategories SidebarMode = "categories"
+	// SidebarModeShared renders the navigation once into a shared fragment
+	// and injects it in the browser, instead of embedding it in every page.
+	// The navigation content is the same as the categories sidebar; only
+	// the way it reaches the page differs. Use it for sites with many
+	// pages, where embedding the whole tree in every page makes both the
+	// render time and the published site grow with the square of the page
+	// count.
+	SidebarModeShared SidebarMode = "shared"
 )
 
 // SidebarUncategorizedCategory is the synthetic category name emitted
@@ -134,7 +142,7 @@ func (s *SidebarConfig) IsCategories() bool {
 		return true
 	}
 	switch s.Mode {
-	case "", SidebarModeAuto, SidebarModeCategories:
+	case "", SidebarModeAuto, SidebarModeCategories, SidebarModeShared:
 		return true
 	case SidebarModeDefault:
 		return false
@@ -146,6 +154,16 @@ func (s *SidebarConfig) IsCategories() bool {
 		// unknown values before this fallback is reached.
 		return false
 	}
+}
+
+// IsShared reports whether the navigation is rendered once and injected in
+// the browser rather than embedded in every page. The navigation content is
+// the same as the categories sidebar either way.
+func (s *SidebarConfig) IsShared() bool {
+	if s == nil {
+		return false
+	}
+	return s.Mode == SidebarModeShared
 }
 
 // ShouldKeepDefaultMenu reports whether the default main page menu
@@ -174,7 +192,7 @@ func (s *SidebarConfig) Normalize(res *NormalizationResult) {
 		return
 	}
 	switch s.Mode {
-	case "", SidebarModeAuto, SidebarModeDefault, SidebarModeCategories:
+	case "", SidebarModeAuto, SidebarModeDefault, SidebarModeCategories, SidebarModeShared:
 		// Known values; nothing to normalize.
 	default:
 		res.Warnings = append(res.Warnings, fmt.Sprintf(

@@ -21,6 +21,10 @@ type RootConfig struct {
 	Menu       map[string]any      `yaml:"menu,omitempty"`
 	Taxonomies map[string]string   `yaml:"taxonomies,omitempty"`
 
+	// OutputFormats defines additional output formats, e.g. the shared
+	// navigation fragment.
+	OutputFormats map[string]any `yaml:"outputFormats,omitempty"`
+
 	// Theme selection: use either Modules or Theme string
 	Module *ModuleConfig `yaml:"module,omitempty"`
 	Theme  string        `yaml:"theme,omitempty"`

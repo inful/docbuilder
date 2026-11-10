@@ -60,7 +60,7 @@ func (g *Generator) GenerateHugoConfig() error {
 
 	// Phase 5: Configure Relearn theme via Hugo Modules
 	root.Module = &models.ModuleConfig{
-		Imports: []models.ModuleImport{{Path: "github.com/McShelby/hugo-theme-relearn", Version: "9.0.3"}},
+		Imports: []models.ModuleImport{{Path: "github.com/McShelby/hugo-theme-relearn", Version: relearnVersion}},
 	}
 
 	// Enable math passthrough for Relearn
@@ -75,6 +75,21 @@ func (g *Generator) GenerateHugoConfig() error {
 	if !g.config.Build.LiveReload {
 		root.SetHomeOutputsHTMLRSSJSON()
 		root.SetTaxonomyOutputsHTMLJSON()
+	}
+
+	// Shared sidebar: the navigation is rendered once into its own output
+	// format and injected in the browser, so it is not embedded in every
+	// page. The home page carries the fragment.
+	if g.config.Hugo.Sidebar.IsShared() {
+		root.OutputFormats = SharedNavOutputFormats()
+		root.EnsureOutputs()
+		home := root.Outputs["home"]
+		if len(home) == 0 {
+			// Live-reload builds leave the home outputs unset, so Hugo's
+			// defaults apply; spell them out before adding the fragment.
+			home = []string{"HTML", "RSS", "JSON"}
+		}
+		root.Outputs["home"] = append(home, SharedNavOutputFormat)
 	}
 
 	// Phase 5.5: Taxonomies configuration
