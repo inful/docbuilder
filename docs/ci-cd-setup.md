@@ -4,8 +4,8 @@ aliases:
 categories:
   - ci-cd
 date: 2025-12-15T00:00:00Z
-fingerprint: dde9b8ba47d933ad837ef8277474e7b26e28f82b29e283c05e6a2039a8f3c80d
-lastmod: "2026-01-22"
+fingerprint: 3c24d6c95142d2abeb20e4d173c5b8b297961fc251239e08363d0b45478366b3
+lastmod: "2026-11-10"
 tags:
   - continuous-integration
   - docker
@@ -30,7 +30,7 @@ Workflow: `.github/workflows/docker-multiarch.yml`
 
 **Features:**
 - Multi-arch builds (linux/amd64, linux/arm64)
-- Automatic semver tagging (`v1.2.3`, `v1.2`, `v1`, `latest`)
+- Automatic semver tagging (`0.20.0`, `0.20`, `0`, `latest`, plus a `v0.20.0` alias)
 - GitHub Container Registry (ghcr.io)
 - Build caching
 
@@ -41,7 +41,7 @@ Workflow: `.github/workflows/docker-multiarch.yml`
 docker pull ghcr.io/inful/docbuilder:latest
 
 # Pull specific version
-docker pull ghcr.io/inful/docbuilder:v1.0.0
+docker pull ghcr.io/inful/docbuilder:0.20.0
 
 # Pull branch build
 docker pull ghcr.io/inful/docbuilder:main

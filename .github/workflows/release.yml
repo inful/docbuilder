@@ -188,6 +188,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            type=semver,pattern={{raw}}
             type=sha,prefix={{branch}}-,suffix=-${{ github.run_number }},enable=${{ needs.goreleaser.outputs.is_release != 'true' }}
             type=raw,value=latest,enable=${{ needs.goreleaser.outputs.is_release == 'true' }}
 

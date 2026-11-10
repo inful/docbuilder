@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2026-01-01T00:00:00Z
-fingerprint: 2d76b333a127bf3dc7b7bd4fada6f293b3e205b66a677edbb0b05276f5890e6a
-lastmod: "2026-09-27"
+fingerprint: dbde72b6b71559f4a7ec71242f89313b1db9c1196865d91d6c2b8eb6dee5aac1
+lastmod: "2026-11-10"
 tags:
   - releases
   - devcontainer
@@ -36,7 +36,9 @@ git push origin main --tags
 That's it! The following happens automatically:
 
 1. **GoReleaser** (`.github/workflows/release.yml`): Creates binaries for all platforms
-2. **Docker** (`.github/workflows/ci.yml`): Builds and publishes multi-arch images
+2. **Docker** (`.github/workflows/release.yml`, `docker-multiarch` job): Builds and publishes multi-arch images to GitHub Container Registry
+
+The published image tags are the version **without** a `v` prefix (`0.20.0`, `0.20`, `0`) plus `latest`; a `v`-prefixed alias (`v0.20.0`) is published as well.
 
 > **Note**: DevContainer features have been moved to a separate repository ([docbuilder-devcontainer-features](https://github.com/inful/docbuilder-devcontainer-features)) for independent versioning and maintenance.
 
@@ -63,7 +65,7 @@ DocBuilder follows semantic versioning:
 - **MINOR** (0.x.X): New features, theme additions, backwards-compatible changes
 - **PATCH** (0.1.x): Bug fixes, documentation, minor improvements
 
-Currently in **0.1.x** series (pre-1.0 development).
+Currently in the **0.x** series (pre-1.0 development).
 
 ## Related Documentation
 

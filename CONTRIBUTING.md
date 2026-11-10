@@ -533,8 +533,10 @@ Releases are automated using [GoReleaser](https://goreleaser.com/) and GitHub Ac
    - Verify binaries are attached
    - Test Docker images:
      ```bash
-     docker pull ghcr.io/inful/docbuilder:v1.2.3
-     docker run ghcr.io/inful/docbuilder:v1.2.3 --version
+     # Version tags carry no "v" prefix (e.g. 0.20.0); a "v"-prefixed
+     # alias (v0.20.0) is published as well.
+     docker pull ghcr.io/inful/docbuilder:0.20.0
+     docker run ghcr.io/inful/docbuilder:0.20.0 --version
      ```
 
 ### Release Artifacts
@@ -544,9 +546,9 @@ Each release includes:
 - **Archives**: Tar.gz archives with LICENSE, README, and example config
 - **Checksums**: SHA256 checksums for all artifacts
 - **Docker Images**: Multi-arch images tagged with:
-  - `v1.2.3` - Specific version
-  - `v1.2` - Minor version
-  - `v1` - Major version
+  - `0.20.0` - Specific version (also published as `v0.20.0`)
+  - `0.20` - Minor version
+  - `0` - Major version
   - `latest` - Latest release
 
 ### Docker Image Usage
