@@ -92,6 +92,115 @@
     }
   }
 
+  // The theme scrolls the active entry into view after every page load, so
+  // the navigation jumps on every navigation. The navigation is the same on
+  // every page of a build, so a reader who scrolled it expects it to stay
+  // where they left it: remember the entry they were looking at and put it
+  // back.
+  //
+  // The anchor is an entry, not a pixel offset: the tree grows and shrinks
+  // as sections open and close (the path to the current page is open), so
+  // the same offset can show a different part of the tree on the next page.
+  var SCROLL_KEY = 'docbuilder.nav.scroll';
+  var scrolledByUser = false;
+
+  function entryVisible(link) {
+    // an entry inside a collapsed section is not on screen
+    var li = link.closest ? link.closest('li') : null;
+    li = li && li.parentElement ? li.parentElement.closest('li') : null;
+    while (li) {
+      var box = ownCheckbox(li);
+      if (box && !box.checked) return false;
+      li = li.parentElement ? li.parentElement.closest('li') : null;
+    }
+    return true;
+  }
+
+  function readScroll() {
+    try {
+      var raw = window.sessionStorage.getItem(SCROLL_KEY);
+      if (!raw) return null;
+      var anchor = JSON.parse(raw);
+      return anchor && typeof anchor.index === 'number' ? anchor : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveScroll() {
+    // Only a position the reader chose counts. Without this the theme's
+    // own scroll to the active entry would be saved and the navigation
+    // would always jump to the current page.
+    if (!scrolledByUser) return;
+    var wrap = document.getElementById('R-content-wrapper');
+    if (!wrap) return;
+    var links = wrap.querySelectorAll('a[href]');
+    var box = wrap.getBoundingClientRect();
+    for (var i = 0; i < links.length; i++) {
+      var r = links[i].getBoundingClientRect();
+      if (r.bottom <= box.top || r.top >= box.bottom) continue;
+      if (!entryVisible(links[i])) continue;
+      try {
+        window.sessionStorage.setItem(SCROLL_KEY, JSON.stringify({
+          index: i,
+          offset: Math.round(r.top - box.top)
+        }));
+      } catch (e) {
+        /* storage disabled: the position is simply not remembered */
+      }
+      return;
+    }
+  }
+
+  function keepScrollPosition() {
+    var wrap = document.getElementById('R-content-wrapper');
+    if (!wrap) return;
+
+    // Any input on the navigation counts as the reader choosing a position:
+    // the wheel, a touch, dragging the scrollbar rail (a pointer event on
+    // the rail inside the wrapper), or the keyboard. The theme's own scroll
+    // to the active entry is none of these, so it does not count.
+    var markUser = function () {
+      scrolledByUser = true;
+    };
+    wrap.addEventListener('wheel', markUser, { passive: true, once: true });
+    wrap.addEventListener('touchmove', markUser, { passive: true, once: true });
+    wrap.addEventListener('pointerdown', markUser, { once: true });
+    wrap.addEventListener('keydown', markUser, { once: true });
+
+    var anchor = readScroll();
+    if (!anchor) return;
+
+    // The same entry, wherever it ended up in the tree: the navigation is
+    // the same on every page, so the index is stable.
+    var target = wrap.querySelectorAll('a[href]')[anchor.index];
+    if (!target) return;
+
+    var restore = function () {
+      if (!entryVisible(target)) return;
+      var box = wrap.getBoundingClientRect();
+      var r = target.getBoundingClientRect();
+      wrap.scrollTop += (r.top - box.top) - anchor.offset;
+    };
+
+    // The theme scrolls the active entry into view a moment after the page
+    // loads. Hold the reader's position until that has happened - setting
+    // the scroll position from inside a scroll event does not stick.
+    var done = false;
+    var deadline = Date.now() + 5000;
+    window.addEventListener('load', function () {
+      window.setTimeout(function () {
+        done = true;
+      }, 300);
+    });
+    var hold = function () {
+      if (done || scrolledByUser || Date.now() > deadline) return;
+      restore();
+      window.requestAnimationFrame(hold);
+    };
+    window.requestAnimationFrame(hold);
+  }
+
   function render(html, slot, themeInitialised) {
     var doc = new DOMParser().parseFromString(html, 'text/html');
     var aside = doc.querySelector('#R-sidebar');
@@ -99,6 +208,7 @@
     var host = slot.parentElement;
     host.innerHTML = aside.innerHTML;
     applyActiveState(host, currentPath());
+    keepScrollPosition();
     if (themeInitialised) initTheme();
   }
 
@@ -151,4 +261,7 @@
   } else {
     init();
   }
+
+  // The page is leaving: remember where the reader left the navigation.
+  window.addEventListener('pagehide', saveScroll);
 })();

@@ -120,3 +120,24 @@ func TestSharedNavScriptCachesFragment(t *testing.T) {
 		}
 	}
 }
+
+// TestSharedNavScriptKeepsScrollPosition guards the navigation's scroll
+// position: the theme scrolls the active entry into view after every page
+// load, so without this the navigation jumps on every navigation. The
+// position is anchored on the entry the reader was looking at - a pixel
+// offset is not enough, because the tree grows and shrinks as the path to
+// the current page opens.
+func TestSharedNavScriptKeepsScrollPosition(t *testing.T) {
+	script := string(navSharedScript)
+	for _, needle := range []string{
+		"sessionStorage.getItem", // read the remembered position
+		"sessionStorage.setItem", // remember it when leaving the page
+		"pagehide",               // the page is going away
+		"entryVisible",           // skip entries inside collapsed sections
+		"requestAnimationFrame",  // hold the position against the theme's scroll
+	} {
+		if !strings.Contains(script, needle) {
+			t.Errorf("shared navigation script does not keep the scroll position (%q); the navigation jumps on every page", needle)
+		}
+	}
+}
