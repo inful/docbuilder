@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 362ebb11e7013b8244c08dfeda111188b612c5f5bc8298df9b6d449290bbf94f
-lastmod: "2026-11-10"
+fingerprint: 0994076329ba8fa34bc429229d892cdb38e1e002b577aedcdfd58c503adac175
+lastmod: "2026-11-11"
 tags:
   - configuration
   - yaml
@@ -460,6 +460,8 @@ The categories sidebar wiring solves this by emitting one Relearn sidebar block 
 **Shared sidebar (`mode: shared`, the default):** the navigation is rendered **once**, into its own output format published as `/sidebar.html`, and injected into each page by a small script; the script also marks the current entry in the browser, so the result is the same sidebar the server-side render produces. That removes the per-page duplication behind the build cost described below: on a 1517-page site the render step drops from **3m42s to 4.0s** and the published site from **868 MB to 31 MB**, with the navigation fragment (560 KB) served once and cached by the browser.
 
 The browser keeps the fragment in its local storage, keyed by the build id, so only the **first** page of a visit downloads it — every page after that restores the navigation from the browser (measured: 14 ms to restore 3057 entries, against a 560 KB download). A rebuild changes the build id and invalidates the copy.
+
+The browser also remembers where the reader scrolled the navigation and puts it back on the next page, so clicking a link in the navigation does not move it. The position is anchored on the entry that was in view: the tree opens the path to the current page, so a pixel offset would show a different part of the tree on the next page. When the reader jumps to a different part of the tree, the navigation follows the current page instead (the theme's behaviour).
 
 The trade-off is that the navigation is rendered client-side: without JavaScript the pages show no sidebar. Use `mode: categories` for sites that need the navigation without JavaScript.
 

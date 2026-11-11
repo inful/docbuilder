@@ -9,6 +9,16 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Fixed
+- **The shared navigation keeps its scroll position**: the theme scrolls the
+  active entry into view after every page load, so the navigation jumped on
+  every navigation. The browser now remembers the entry the reader was
+  looking at and puts it back. The position is anchored on the entry, not
+  on a pixel offset: the tree opens the path to the current page, so the
+  same offset would show a different part of the tree on the next page.
+  When the reader jumps to a different part of the tree, the navigation
+  follows the current page instead.
+
 ## [0.21.1] - 2026-11-10
 
 ### Fixed
