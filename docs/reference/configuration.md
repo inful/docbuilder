@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 362ebb11e7013b8244c08dfeda111188b612c5f5bc8298df9b6d449290bbf94f
-lastmod: "2026-11-10"
+fingerprint: 0994076329ba8fa34bc429229d892cdb38e1e002b577aedcdfd58c503adac175
+lastmod: "2026-11-11"
 tags:
   - configuration
   - yaml
