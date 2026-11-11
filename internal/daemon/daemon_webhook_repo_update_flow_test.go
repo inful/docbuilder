@@ -99,6 +99,13 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteChanged_EnqueuesBuild(t *testing.T) 
 			require.Eventually(t, func() bool {
 				return events.SubscriberCount[events.WebhookReceived](bus) > 0
 			}, 1*time.Second, 10*time.Millisecond)
+			// The debouncer emits BuildNow after the quiet window. If the
+			// build-now consumer has not subscribed by then, the event is
+			// dropped and no build is ever enqueued — the job below would
+			// never reach a completed state.
+			require.Eventually(t, func() bool {
+				return events.SubscriberCount[events.BuildNow](bus) > 0
+			}, 2*time.Second, 10*time.Millisecond)
 
 			jobID := d.TriggerWebhookBuild("", "org/repo", tc.branch, []string{"docs/README.md"})
 			require.NotEmpty(t, jobID)
@@ -112,10 +119,12 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteChanged_EnqueuesBuild(t *testing.T) 
 				t.Fatal("timed out waiting for RepoUpdated")
 			}
 
+			// Generous budget: CI runs this under -race with the whole
+			// package suite in parallel.
 			require.Eventually(t, func() bool {
 				job, ok := bq.JobSnapshot(jobID)
 				return ok && job != nil && job.Status == queue.BuildStatusCompleted
-			}, 5*time.Second, 10*time.Millisecond)
+			}, 15*time.Second, 10*time.Millisecond)
 		})
 	}
 }
@@ -187,6 +196,12 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteUnchanged_DoesNotEnqueueBuild(t *tes
 	require.Eventually(t, func() bool {
 		return events.SubscriberCount[events.WebhookReceived](bus) > 0
 	}, 1*time.Second, 10*time.Millisecond)
+	// The build-now consumer must be subscribed too: otherwise a dropped
+	// BuildNow would make the "no build enqueued" assertions below pass
+	// for the wrong reason.
+	require.Eventually(t, func() bool {
+		return events.SubscriberCount[events.BuildNow](bus) > 0
+	}, 2*time.Second, 10*time.Millisecond)
 
 	jobID := d.TriggerWebhookBuild("", "org/repo", "main", nil)
 	require.NotEmpty(t, jobID)
@@ -297,6 +312,12 @@ func TestDaemon_WebhookRepoUpdateFlow_DiscoveryMode_RemoteUnchanged_DoesNotEnque
 	require.Eventually(t, func() bool {
 		return events.SubscriberCount[events.WebhookReceived](bus) > 0
 	}, 1*time.Second, 10*time.Millisecond)
+	// The build-now consumer must be subscribed too: otherwise a dropped
+	// BuildNow would make the "no build enqueued" assertions below pass
+	// for the wrong reason.
+	require.Eventually(t, func() bool {
+		return events.SubscriberCount[events.BuildNow](bus) > 0
+	}, 2*time.Second, 10*time.Millisecond)
 
 	jobID := d.TriggerWebhookBuild("forge-1", "org/repo", "main", nil)
 	require.NotEmpty(t, jobID)
