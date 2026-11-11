@@ -9,6 +9,8 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.21.2] - 2026-11-11
+
 ### Fixed
 - **The shared navigation keeps its scroll position**: the theme scrolls the
   active entry into view after every page load, so the navigation jumped on
