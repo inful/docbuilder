@@ -9,6 +9,70 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-15
+
+### Security
+- **The admin API is no longer open to the network**: it has no password
+  and it can start a build, but it listened on every interface. It now
+  binds to `daemon.http.admin_bind`, which defaults to `127.0.0.1`. Reach
+  it through an SSH tunnel or a reverse proxy, or set
+  `admin_bind: "0.0.0.0"` and protect the port yourself.
+- **Webhook payloads are limited to 5 MiB**: the webhook port is the one
+  port that has to be reachable from the internet, and it read the whole
+  body into memory with no limit. The read timeout limited the time, not
+  the size.
+- **A forge webhook now needs a secret**: an endpoint without a secret
+  accepted any POST and started a build - usually because the config
+  pointed at an environment variable that was not set and expanded to
+  nothing. The daemon refuses to start when a forge has a webhook path
+  but no secret, and the error names the forge and the field to set.
+  **Breaking**: set `forges[].webhook.secret`, or remove
+  `forges[].webhook.path` to disable the endpoint.
+
+### Fixed
+- **Link verification looks in the right folder**: it walked
+  `daemon.storage.output_dir` while the daemon writes the site to
+  `output.base_directory` + `output.directory`. With a base directory
+  set, it found nothing, logged one warning and did nothing at all.
+- **Link verification reads every page once**: it read each rendered page
+  for the change hash and then read it again to pull the links out.
+- **`/api/build/status` and `/api/repositories` answer with real data**:
+  they always reported zero builds and an empty repository list. They now
+  come from the daemon's state, and `/api/daemon/status` carries the
+  last build report with its per-stage timings, as the README promised.
+- **The state store no longer offers a transaction that deadlocks**:
+  `WithTransaction` took the store lock and then called your function
+  with the store, and every store method took the same lock again. Its
+  own test was switched off with "FIXME: Deadlock". It had no caller, so
+  it is gone.
+- **The outbound dispatcher no longer keeps its "close once" flag in a
+  global map** that could only grow.
+
+### Changed
+- **Discovery does not ask the forge about repositories that did not
+  move**: the documentation check costs two API calls per repository and
+  the answer only changes when the repository changes. The result is
+  now cached per repository and invalidated by its last-updated
+  timestamp.
+- **Pushing a document to ragabast costs nothing when it did not
+  change**: the dispatcher remembers the fingerprint it uploaded and
+  skips both the preflight and the upload, so the outbound cost follows
+  the number of changes instead of the number of pages. Limit: if
+  ragabast loses a document on its own, docbuilder does not notice until
+  the document changes or the daemon restarts.
+- **`concurrent_builds` is documented honestly**: the daemon runs one
+  build at a time - a build owns the staging directory - so the extra
+  queue workers wait their turn.
+- **The hugo version is detected once per process** instead of three
+  times per build, and the detection has a timeout: a stuck `hugo`
+  binary used to hang the build with no way out.
+
+### Removed
+- **The old index generator is gone** (719 lines plus 534 lines of its
+  own tests): the content pipeline has generated the index pages since
+  ADR-003, and the old copy was reachable only from its own tests. The
+  per-page `TransformedBytes` copy that only it read is gone too.
+
 ## [0.21.2] - 2026-11-11
 
 ### Fixed
