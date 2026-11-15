@@ -6,6 +6,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 )
 
 // Runtime is the minimal interface required by shared HTTP handlers.
@@ -30,6 +31,12 @@ type Runtime interface {
 	// forges.
 	TriggerWebhookBuild(forgeName, repoFullName, branch string, changedFiles []string) string
 	GetQueueLength() int
+
+	// RepositoryStatuses returns the known repositories with their last
+	// known state.
+	RepositoryStatuses() []responses.RepositoryInfo
+	// BuildStats returns the build statistics and the last build.
+	BuildStats() (responses.BuildStatistics, *responses.BuildInfo)
 }
 
 // BuildStatus is used to render preview-mode error pages when no good build exists yet.

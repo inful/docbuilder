@@ -19,6 +19,21 @@ func docWithUIDAndFingerprint(fp string) []byte {
 	return fmt.Appendf(nil, "---\nuid: uid-1\nfingerprint: %s\n---\n# Body\n\ntext\n", fp)
 }
 
+// waitFor polls until cond is true, or fails the test when the deadline
+// passes. Wait on the dispatcher's own counters, not on the server-side
+// hit counters: the server increments its counter before the dispatcher
+// has read the response, so waiting on it races the assertions.
+func waitFor(t *testing.T, what string, cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(3 * time.Second)
+	for !cond() && time.Now().Before(deadline) {
+		time.Sleep(5 * time.Millisecond)
+	}
+	if !cond() {
+		t.Fatalf("timed out waiting for %s", what)
+	}
+}
+
 // TestOutboundDispatcher_Preflight_SkipsOnFingerprintMatch verifies the happy
 // path: preflight returns 200 with a fingerprint that matches the
 // document's frontmatter, so the upload is skipped and the skip counter
@@ -61,10 +76,7 @@ func TestOutboundDispatcher_Preflight_SkipsOnFingerprintMatch(t *testing.T) {
 	d.Enqueue(docWithUIDAndFingerprint(fp), "docs/x.md")
 
 	// Wait for the preflight call to land.
-	deadline := time.Now().Add(2 * time.Second)
-	for preflightHits.Load() == 0 && time.Now().Before(deadline) {
-		time.Sleep(5 * time.Millisecond)
-	}
+	waitFor(t, "the preflight skip", func() bool { return d.PreflightSkipsTotal() == 1 })
 
 	if preflightHits.Load() != 1 {
 		t.Fatalf("preflight hits = %d, want 1", preflightHits.Load())
@@ -113,10 +125,7 @@ func TestOutboundDispatcher_Preflight_UploadsOnFingerprintMismatch(t *testing.T)
 
 	d.Enqueue(docWithUIDAndFingerprint(localFP), "docs/x.md")
 
-	deadline := time.Now().Add(2 * time.Second)
-	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
-		time.Sleep(5 * time.Millisecond)
-	}
+	waitFor(t, "the upload", func() bool { return d.SendsTotal() == 1 })
 
 	if uploadHits.Load() != 1 {
 		t.Errorf("upload hits = %d, want 1", uploadHits.Load())
@@ -159,10 +168,7 @@ func TestOutboundDispatcher_Preflight_UploadsOn404(t *testing.T) {
 
 	d.Enqueue(docWithUIDAndFingerprint("any-fp"), "docs/x.md")
 
-	deadline := time.Now().Add(2 * time.Second)
-	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
-		time.Sleep(5 * time.Millisecond)
-	}
+	waitFor(t, "the upload", func() bool { return d.SendsTotal() == 1 })
 
 	if uploadHits.Load() != 1 {
 		t.Errorf("upload hits = %d, want 1", uploadHits.Load())
@@ -205,8 +211,7 @@ func TestOutboundDispatcher_Preflight_AuthFailureDoesNotUpload(t *testing.T) {
 
 	d.Enqueue(docWithUIDAndFingerprint("any-fp"), "docs/x.md")
 
-	// Give the worker time to complete (or not).
-	time.Sleep(200 * time.Millisecond)
+	waitFor(t, "the auth failure", func() bool { return d.FailsTotal() == 1 })
 
 	if uploadHits.Load() != 0 {
 		t.Errorf("upload hits = %d, want 0 (auth failed)", uploadHits.Load())
@@ -245,10 +250,7 @@ func TestOutboundDispatcher_Preflight_FailsOpenOnServerError(t *testing.T) {
 
 	d.Enqueue(docWithUIDAndFingerprint("any-fp"), "docs/x.md")
 
-	deadline := time.Now().Add(2 * time.Second)
-	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
-		time.Sleep(5 * time.Millisecond)
-	}
+	waitFor(t, "the upload", func() bool { return d.SendsTotal() == 1 })
 
 	if uploadHits.Load() != 1 {
 		t.Errorf("upload hits = %d, want 1 (fail-open)", uploadHits.Load())
@@ -297,10 +299,7 @@ func TestOutboundDispatcher_Preflight_FailsOpenOnNetworkError(t *testing.T) {
 
 	d.Enqueue(docWithUIDAndFingerprint("any-fp"), "docs/x.md")
 
-	deadline := time.Now().Add(3 * time.Second)
-	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
-		time.Sleep(10 * time.Millisecond)
-	}
+	waitFor(t, "the upload", func() bool { return d.SendsTotal() == 1 })
 
 	if uploadHits.Load() != 1 {
 		t.Errorf("upload hits = %d, want 1 (fail-open on network error)", uploadHits.Load())
@@ -344,10 +343,7 @@ func assertPreflightSkipped(t *testing.T, doc []byte, sharedBy string) {
 
 	d.Enqueue(doc, "docs/x.md")
 
-	deadline := time.Now().Add(2 * time.Second)
-	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
-		time.Sleep(5 * time.Millisecond)
-	}
+	waitFor(t, "the upload", func() bool { return d.SendsTotal() == 1 })
 
 	if preflightHits.Load() != 0 {
 		t.Errorf("preflight hits = %d, want 0 (%s)", preflightHits.Load(), sharedBy)
@@ -411,10 +407,7 @@ func TestOutboundDispatcher_Preflight_DisabledByFlag(t *testing.T) {
 
 	d.Enqueue(docWithUIDAndFingerprint("any-fp"), "docs/x.md")
 
-	deadline := time.Now().Add(2 * time.Second)
-	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
-		time.Sleep(5 * time.Millisecond)
-	}
+	waitFor(t, "the upload", func() bool { return d.SendsTotal() == 1 })
 
 	if preflightHits.Load() != 0 {
 		t.Errorf("preflight hits = %d, want 0 (disabled by flag)", preflightHits.Load())
@@ -458,10 +451,7 @@ func TestOutboundDispatcher_Preflight_DerivesBaseURLFromIngestURL(t *testing.T) 
 
 	d.Enqueue(docWithUIDAndFingerprint(strings.Repeat("a", 64)), "docs/x.md")
 
-	deadline := time.Now().Add(2 * time.Second)
-	for preflightHits.Load() == 0 && time.Now().Before(deadline) {
-		time.Sleep(5 * time.Millisecond)
-	}
+	waitFor(t, "the preflight skip", func() bool { return d.PreflightSkipsTotal() == 1 })
 
 	if preflightHits.Load() != 1 {
 		t.Errorf("preflight hits = %d, want 1 (base derived from IngestURL)", preflightHits.Load())

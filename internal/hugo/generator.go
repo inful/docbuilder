@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
@@ -38,8 +39,6 @@ type Generator struct {
 	renderer       models.Renderer      // pluggable renderer abstraction (defaults to BinaryRenderer)
 	// editLinkResolver centralizes per-page edit link resolution
 	editLinkResolver *EditLinkResolver
-	// indexTemplateUsage captures which index template (main/repository/section) source was used
-	indexTemplateUsage map[string]models.IndexTemplateInfo
 	// stateManager (optional) allows stages to persist per-repo metadata (doc counts, hashes, commits) without daemon-specific code.
 	stateManager state.RepositoryMetadataWriter
 	// keepStaging preserves staging directory on failure for debugging (set via WithKeepStaging)
@@ -58,7 +57,7 @@ type Generator struct {
 
 // NewGenerator creates a new Hugo site generator.
 func NewGenerator(cfg *config.Config, outputDir string) *Generator {
-	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}, indexTemplateUsage: make(map[string]models.IndexTemplateInfo)}
+	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}}
 	// Renderer defaults to nil; models.StageRunHugo will use BinaryRenderer when needed.
 	// Use WithRenderer to inject custom/test renderers.
 	// Default observer bridges to recorder until dedicated observers added.
@@ -316,14 +315,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 			f := &docFiles[i]
 			paths = append(paths, f.GetHugoPath(isSingleRepo))
 		}
-		// Simple insertion sort to avoid importing sort (small slice typical for tests)
-		for i := 1; i < len(paths); i++ {
-			j := i
-			for j > 0 && paths[j-1] > paths[j] {
-				paths[j-1], paths[j] = paths[j], paths[j-1]
-				j--
-			}
-		}
+		sort.Strings(paths)
 		h := sha256.New()
 		for _, p := range paths {
 			_, _ = h.Write([]byte(p))

@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 0994076329ba8fa34bc429229d892cdb38e1e002b577aedcdfd58c503adac175
-lastmod: "2026-11-11"
+fingerprint: 50db0028f0c108e18d05ce0884a4aa5f0e3b3d9df5b4c1abb33b5e173d7af106
+lastmod: "2026-11-15"
 tags:
   - configuration
   - yaml
@@ -100,6 +100,11 @@ monitoring:
 
 ### Monitoring Endpoints (Admin Server)
 
+The admin server listens on the loopback interface only (`daemon.http.admin_bind`,
+default `127.0.0.1`). It has no password and can start builds, so it is not
+reachable from the network unless the operator sets `admin_bind: "0.0.0.0"` and
+protects the port. Reach it through an SSH tunnel or a reverse proxy.
+
 When `monitoring.metrics.enabled=true`, the admin server exposes:
 
 - `GET <metrics.path>`: basic metrics JSON.
@@ -132,6 +137,42 @@ Build debouncer metrics are emitted in daemon mode and show up under `GET /metri
 ## Daemon Section
 
 Configuration for daemon mode operation, including link verification, sync scheduling, and storage paths.
+
+### HTTP Servers
+
+The daemon runs three HTTP servers.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| docs_port | int | 8080 | Serves the rendered site. Listens on every interface. |
+| webhook_port | int | 8081 | Receives forge webhooks. Listens on every interface. |
+| admin_port | int | 8082 | Health, metrics and the build triggers. Listens on `admin_bind`. |
+| livereload_port | int | 8083 | LiveReload SSE endpoint, only when `build.livereload` is on. |
+| admin_bind | string | 127.0.0.1 | Address the admin server listens on. The admin API has no password, so it stays on the loopback interface. Use `0.0.0.0` to listen on every interface - only when something in front of the daemon restricts who can reach the port. |
+
+### Build Queue
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| schedule | string | `0 */4 * * *` | Cron expression for the discovery/sync tick. |
+| concurrent_builds | int | 3 | Number of build queue workers. The daemon runs **one build at a time** — a build owns the staging directory, so the other workers wait their turn. The value decides how many requests can be in flight, not how many builds run in parallel. |
+| queue_size | int | 100 | How many build requests can wait in the queue. |
+| build_on_discovery | bool | true | Whether a discovery run asks for a build. |
+
+### Webhooks
+
+A forge webhook endpoint needs a secret. The daemon refuses to start when a
+forge has `webhook.path` (or a default path) but no `webhook.secret`, because
+an endpoint without a secret accepts any POST and starts a build.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| secret | string | none | Shared secret used to sign the payload. Required when a webhook path is configured. |
+| path | string | `/webhooks/<type>` | Path the forge posts to. |
+| events | list | none | Event types to listen for. |
+
+Webhook payloads are limited to 5 MiB. A bigger body is rejected before it is
+read into memory.
 
 ### Link Verification
 

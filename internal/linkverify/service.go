@@ -37,6 +37,11 @@ type PageMetadata struct {
 	BuildID      string         // Build identifier
 	BuildTime    time.Time      // Build timestamp
 	ContentHash  string         // MD5 hash of page content for change detection
+
+	// Links are the links extracted from the rendered page. The caller
+	// that already read the page fills them in, so the page does not
+	// have to be read a second time.
+	Links []*Link
 }
 
 // VerificationService manages link verification operations.
@@ -159,13 +164,18 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 		}
 	}
 
-	// Extract links from HTML
-	links, err := ExtractLinks(page.HTMLPath, page.BaseURL)
-	if err != nil {
-		slog.Warn("Failed to extract links from page",
-			"path", page.HTMLPath,
-			"error", err)
-		return
+	// Extract links from HTML. The caller may have extracted them already
+	// while reading the page for its content hash - do not read it twice.
+	links := page.Links
+	if links == nil {
+		var err error
+		links, err = ExtractLinks(page.HTMLPath, page.BaseURL)
+		if err != nil {
+			slog.Warn("Failed to extract links from page",
+				"path", page.HTMLPath,
+				"error", err)
+			return
+		}
 	}
 
 	// Filter links based on configuration

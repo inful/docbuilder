@@ -152,9 +152,6 @@ type Store interface {
 	// Daemon info operations
 	DaemonInfo() DaemonInfoStore
 
-	// Transaction operations
-	WithTransaction(ctx context.Context, fn func(Store) error) foundation.Result[struct{}, error]
-
 	// Health and lifecycle
 	Health(ctx context.Context) foundation.Result[StoreHealth, error]
 	Close(ctx context.Context) foundation.Result[struct{}, error]

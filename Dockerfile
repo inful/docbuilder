@@ -112,4 +112,6 @@ ENV HUGO_MODULE_PROXY=https://proxy.golang.org,direct
 
 ENTRYPOINT ["/usr/local/bin/docbuilder"]
 CMD ["daemon", "--config", "/config/config.yaml"]
-EXPOSE 1313 8080 9090
+# The daemon's default ports: 8080 docs, 8081 webhook, 8082 admin.
+# 8083 (livereload) is only used when build.livereload is enabled.
+EXPOSE 8080 8081 8082

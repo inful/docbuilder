@@ -13,6 +13,14 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
+// MaxWebhookBodyBytes bounds the size of a webhook payload.
+//
+// The webhook port is the one port that has to be reachable from the
+// internet, so an unbounded body is a denial of service: one request
+// could ask the daemon to hold gigabytes in memory. The read timeout
+// limits the time, not the size.
+const MaxWebhookBodyBytes = 5 << 20 // 5 MiB
+
 // WebhookTrigger provides the interface for triggering webhook-based builds.
 type WebhookTrigger interface {
 	// TriggerWebhookBuild triggers a build for the given repository/branch.
@@ -92,6 +100,7 @@ func (h *WebhookHandlers) HandleWebhook(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Read raw payload for logging or future signature checks
+	r.Body = http.MaxBytesReader(w, r.Body, MaxWebhookBodyBytes)
 	var payload any
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		derr := errors.ValidationError("invalid JSON payload").
@@ -135,6 +144,7 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 	}
 
 	// Read body for validation and parsing
+	r.Body = http.MaxBytesReader(w, r.Body, MaxWebhookBodyBytes)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		derr := errors.ValidationError("failed to read request body").

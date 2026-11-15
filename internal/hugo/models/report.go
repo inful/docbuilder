@@ -9,18 +9,50 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sync"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
-// DetectHugoVersion attempts to detect the version of the hugo binary on PATH.
-func DetectHugoVersion(ctx context.Context) string {
+// hugoVersionTimeout bounds the `hugo version` call so a stuck binary
+// cannot block a build.
+const hugoVersionTimeout = 5 * time.Second
+
+// hugoVersionOnce guards the one-time detection of the hugo binary's
+// version. The version is a property of the binary on disk and does not
+// change while the process runs, so it is detected once instead of once
+// per call site (a build asked for it three times).
+//
+// Limit: an upgraded hugo binary is only noticed after a restart. That
+// matches how hugo ships - it lives in the container image, and the
+// daemon is restarted with it.
+var (
+	hugoVersionOnce sync.Once
+	hugoVersion     string
+)
+
+// DetectHugoVersion returns the version of the hugo binary on PATH,
+// e.g. "0.152.2". Empty when the binary is not available.
+//
+// The result is cached for the lifetime of the process.
+func DetectHugoVersion(_ context.Context) string {
+	hugoVersionOnce.Do(func() {
+		hugoVersion = detectHugoVersion()
+	})
+	return hugoVersion
+}
+
+// detectHugoVersion runs `hugo version` once and parses the output.
+func detectHugoVersion() string {
 	hugoPath, err := exec.LookPath("hugo")
 	if err != nil {
 		return ""
 	}
+	// A binary that never answers must not hang the build.
+	ctx, cancel := context.WithTimeout(context.Background(), hugoVersionTimeout)
+	defer cancel()
 	// #nosec G204 - hugoPath is derived from config/discovery
 	cmd := exec.CommandContext(ctx, hugoPath, "version")
 	output, err := cmd.Output()

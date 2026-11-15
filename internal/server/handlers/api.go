@@ -21,6 +21,8 @@ type APIHandlers struct {
 type DaemonAPIInterface interface {
 	GetStatus() string
 	GetStartTime() time.Time
+	// BuildStats returns the build statistics and the last build.
+	BuildStats() (responses.BuildStatistics, *responses.BuildInfo)
 }
 
 // NewAPIHandlers creates a new API handlers instance.
@@ -71,6 +73,8 @@ func (h *APIHandlers) HandleDaemonStatus(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	_, lastBuild := h.daemon.BuildStats()
+
 	status := &responses.DaemonStatusResponse{
 		Status:    h.daemon.GetStatus(),
 		Uptime:    time.Since(h.daemon.GetStartTime()).Seconds(),
@@ -81,6 +85,7 @@ func (h *APIHandlers) HandleDaemonStatus(w http.ResponseWriter, r *http.Request)
 			ConcurrentBuilds: h.config.Daemon.Sync.ConcurrentBuilds,
 			QueueSize:        h.config.Daemon.Sync.QueueSize,
 		},
+		LastBuild: lastBuild,
 	}
 
 	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil {

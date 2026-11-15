@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
@@ -96,7 +96,7 @@ func (r VersionMismatchRule) Validate(ctx context.Context, vctx Context) Result 
 	// Check Hugo version (only if Hugo was used in previous build)
 	// Empty previous Hugo version means Hugo wasn't executed
 	if vctx.PrevReport.HugoVersion != "" {
-		currentHugoVersion := hugo.DetectHugoVersion(ctx)
+		currentHugoVersion := models.DetectHugoVersion(ctx)
 		if currentHugoVersion != vctx.PrevReport.HugoVersion {
 			return Failure("hugo version changed")
 		}

@@ -7,12 +7,16 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 )
 
 type stubDaemon struct{}
 
 func (s *stubDaemon) GetStatus() string       { return "ready" }
 func (s *stubDaemon) GetStartTime() time.Time { return time.Now().Add(-time.Hour) }
+func (s *stubDaemon) BuildStats() (responses.BuildStatistics, *responses.BuildInfo) {
+	return responses.BuildStatistics{}, nil
+}
 
 func TestHandleDocsStatus_OK(t *testing.T) {
 	cfg := &config.Config{}

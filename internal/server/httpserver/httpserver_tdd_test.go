@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 )
 
 type stubRuntime struct{}
@@ -20,6 +21,10 @@ func (stubRuntime) TriggerDiscovery() string                                    
 func (stubRuntime) TriggerBuild() string                                        { return "" }
 func (stubRuntime) TriggerWebhookBuild(string, string, string, []string) string { return "" }
 func (stubRuntime) GetQueueLength() int                                         { return 0 }
+func (stubRuntime) RepositoryStatuses() []responses.RepositoryInfo              { return nil }
+func (stubRuntime) BuildStats() (responses.BuildStatistics, *responses.BuildInfo) {
+	return responses.BuildStatistics{}, nil
+}
 
 func TestNewServer_TDDCompile(t *testing.T) {
 	_ = New(&config.Config{}, stubRuntime{}, Options{})

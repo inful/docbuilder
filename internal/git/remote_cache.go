@@ -216,8 +216,17 @@ func (c *RemoteHeadCache) Save() error {
 			Build()
 	}
 
-	if err := os.WriteFile(c.path, data, 0o600); err != nil {
+	// Atomic write: a crash mid-write must not leave a half-written cache
+	// behind. Write to a temporary file and rename it over the real one.
+	tempPath := c.path + ".tmp"
+	if err := os.WriteFile(tempPath, data, 0o600); err != nil {
 		return errors.NewError(errors.CategoryFileSystem, "failed to write cache file").
+			WithCause(err).
+			WithContext("path", tempPath).
+			Build()
+	}
+	if err := os.Rename(tempPath, c.path); err != nil {
+		return errors.NewError(errors.CategoryFileSystem, "failed to replace cache file").
 			WithCause(err).
 			WithContext("path", c.path).
 			Build()

@@ -76,58 +76,11 @@ func (c *Client) CloneRepoWithMetadata(repo appcfg.Repository) (CloneResult, err
 }
 
 func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
-	repoPath := filepath.Join(c.workspaceDir, repo.Name)
-	slog.Debug("Cloning repository", logfields.URL(repo.URL), logfields.Name(repo.Name), slog.String("branch", repo.Branch), logfields.Path(repoPath))
-	if err := os.RemoveAll(repoPath); err != nil {
-		return "", GitError("failed to remove existing directory").
-			WithCause(err).
-			WithContext("path", repoPath).
-			Build()
-	}
-
-	cloneOptions := &git.CloneOptions{URL: repo.URL, Tags: git.NoTags}
-	// Default to cloning only the remote HEAD branch.
-	// This dramatically reduces memory/network usage vs fetching all branches/tags.
-	if repo.IsTag {
-		if repo.Branch != "" {
-			cloneOptions.ReferenceName = plumbing.ReferenceName("refs/tags/" + repo.Branch)
-			slog.Debug("Cloning tag reference", logfields.Name(repo.Name), slog.String("tag", repo.Branch), slog.String("ref", string(cloneOptions.ReferenceName)))
-		}
-		cloneOptions.SingleBranch = true
-	} else {
-		if repo.Branch != "" {
-			cloneOptions.ReferenceName = plumbing.ReferenceName("refs/heads/" + repo.Branch)
-			slog.Debug("Cloning branch reference", logfields.Name(repo.Name), slog.String("branch", repo.Branch), slog.String("ref", string(cloneOptions.ReferenceName)))
-		}
-		cloneOptions.SingleBranch = true
-	}
-	if c.buildCfg != nil && c.buildCfg.ShallowDepth > 0 {
-		cloneOptions.Depth = c.buildCfg.ShallowDepth
-	}
-	if repo.Auth != nil {
-		auth, err := c.getAuth(repo.Auth)
-		if err != nil {
-			return "", GitError("failed to setup authentication").
-				WithCause(err).
-				Build()
-		}
-		cloneOptions.Auth = auth
-	}
-	repository, err := git.PlainClone(repoPath, false, cloneOptions)
+	result, err := c.cloneOnceWithMetadata(repo)
 	if err != nil {
-		return "", ClassifyGitError(err, "clone", repo.URL)
+		return "", err
 	}
-	if ref, herr := repository.Head(); herr == nil {
-		slog.Info("Repository cloned successfully", logfields.Name(repo.Name), logfields.URL(repo.URL), slog.String("commit", ref.Hash().String()[:8]), logfields.Path(repoPath))
-	} else {
-		slog.Info("Repository cloned successfully", logfields.Name(repo.Name), logfields.URL(repo.URL), logfields.Path(repoPath))
-	}
-	if c.buildCfg != nil && c.buildCfg.PruneNonDocPaths {
-		if err := c.pruneNonDocTopLevel(repoPath, repo); err != nil {
-			slog.Warn("prune non-doc paths failed", logfields.Name(repo.Name), slog.String("error", err.Error()))
-		}
-	}
-	return repoPath, nil
+	return result.Path, nil
 }
 
 func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, error) {

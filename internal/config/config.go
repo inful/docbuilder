@@ -169,12 +169,21 @@ type HTTPConfig struct {
 	WebhookPort    int `yaml:"webhook_port"`    // Webhook reception port
 	AdminPort      int `yaml:"admin_port"`      // Admin/status endpoints port
 	LiveReloadPort int `yaml:"livereload_port"` // LiveReload SSE endpoint port (separate to avoid HTTP/1.1 blocking)
+
+	// AdminBind is the address the admin server listens on.
+	//
+	// The admin API can start builds and shows the forge layout, and it
+	// has no password, so it is bound to the loopback interface by
+	// default. Set it to 0.0.0.0 to listen on every interface - only do
+	// that when something in front of the daemon (a reverse proxy, a
+	// firewall) restricts who can reach the port.
+	AdminBind string `yaml:"admin_bind"`
 }
 
 // SyncConfig represents synchronization configuration for repository discovery and build queueing.
 type SyncConfig struct {
 	Schedule         string `yaml:"schedule"`          // Cron expression for discovery
-	ConcurrentBuilds int    `yaml:"concurrent_builds"` // Max parallel repository builds
+	ConcurrentBuilds int    `yaml:"concurrent_builds"` // Number of build queue workers. The daemon runs one build at a time (the build holds the staging directory), so the extra workers wait.
 	QueueSize        int    `yaml:"queue_size"`        // Max queued build requests
 	// BuildOnDiscovery controls whether a forge discovery run should enqueue a
 	// build for discovered repositories. When unset, defaults to true.

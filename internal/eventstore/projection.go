@@ -4,6 +4,7 @@ package eventstore
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"sync"
 	"time"
 
@@ -200,12 +201,9 @@ func (p *BuildHistoryProjection) addToHistoryLocked(summary *BuildSummary) {
 
 // sortHistoryLocked sorts history by start time, newest first.
 func (p *BuildHistoryProjection) sortHistoryLocked() {
-	// Simple insertion sort (history is usually small)
-	for i := 1; i < len(p.history); i++ {
-		for j := i; j > 0 && p.history[j].StartedAt.After(p.history[j-1].StartedAt); j-- {
-			p.history[j], p.history[j-1] = p.history[j-1], p.history[j]
-		}
-	}
+	slices.SortFunc(p.history, func(a, b *BuildSummary) int {
+		return b.StartedAt.Compare(a.StartedAt)
+	})
 }
 
 // GetHistory returns the build history, newest first.
