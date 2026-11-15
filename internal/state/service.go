@@ -138,12 +138,6 @@ func (ss *Service) GetConfigurationStore() ConfigurationStore {
 	return ss.store.Configuration()
 }
 
-// WithTransaction executes operations within a transaction-like context.
-// This ensures consistency across multiple state operations.
-func (ss *Service) WithTransaction(ctx context.Context, fn func(Store) error) foundation.Result[struct{}, error] {
-	return ss.store.WithTransaction(ctx, fn)
-}
-
 // Migrate performs any necessary data migrations for schema changes.
 // This would be called during service initialization if schema versions differ.
 func (ss *Service) Migrate(_ context.Context, _, _ string) foundation.Result[struct{}, error] {

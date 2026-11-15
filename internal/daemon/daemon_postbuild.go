@@ -1,7 +1,9 @@
 package daemon
 
 import (
+	"bytes"
 	"context"
+
 	// #nosec G501 -- MD5 used for content change detection, not cryptographic security
 	"crypto/md5"
 	"encoding/hex"
@@ -124,7 +126,11 @@ func shouldRunLinkVerification(report *models.BuildReport) bool {
 
 // collectPageMetadata collects metadata for all pages in the build.
 func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata, error) {
-	outputDir := d.config.Daemon.Storage.OutputDir
+	// The build writes to the resolved output directory (base_directory +
+	// directory), which is where the HTTP server reads from too. Using
+	// daemon.storage.output_dir here pointed at a different folder and
+	// the verification silently found nothing.
+	outputDir := resolveOutputDir(d.config)
 	publicDir, ok := resolvePublicDirForVerification(outputDir)
 	if !ok {
 		slog.Warn("No public directory available for link verification; skipping page metadata collection",
@@ -179,13 +185,25 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 		}
 		renderedURL += strings.TrimPrefix(relPath, "/")
 
-		// Compute MD5 hash of HTML content for change detection
+		// Read the rendered page once: the hash detects changes, the links
+		// are what gets verified. Reading it twice doubled the I/O of the
+		// whole site on every build.
 		var contentHash string
+		var links []*linkverify.Link
 		if htmlBytes, err := os.ReadFile(filepath.Clean(path)); err == nil { //nolint:gosec // walk within controlled output dir
 			// #nosec G401 -- MD5 is used for content hashing, not cryptographic security
 			hash := md5.New()
 			hash.Write(htmlBytes)
 			contentHash = hex.EncodeToString(hash.Sum(nil))
+
+			extracted, extractErr := linkverify.ExtractLinksFromReader(bytes.NewReader(htmlBytes), d.config.Hugo.BaseURL)
+			if extractErr != nil {
+				slog.Warn("Failed to extract links from rendered page",
+					"path", path,
+					"error", extractErr)
+			} else {
+				links = extracted
+			}
 		}
 
 		page := &linkverify.PageMetadata{
@@ -199,6 +217,7 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 			BuildID:      buildID,
 			BuildTime:    time.Now(),
 			ContentHash:  contentHash,
+			Links:        links,
 		}
 
 		pages = append(pages, page)

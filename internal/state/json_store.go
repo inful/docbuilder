@@ -143,30 +143,6 @@ func (js *JSONStore) DaemonInfo() DaemonInfoStore {
 	return &jsonDaemonInfoStore{store: js}
 }
 
-// WithTransaction executes a function within a transaction-like context.
-// For the JSON store, this uses a mutex to ensure consistency.
-func (js *JSONStore) WithTransaction(_ context.Context, fn func(Store) error) foundation.Result[struct{}, error] {
-	js.mu.Lock()
-	defer js.mu.Unlock()
-
-	if err := fn(js); err != nil {
-		return foundation.Err[struct{}, error](err)
-	}
-
-	// Auto-save after transaction if enabled
-	if js.autoSaveEnabled {
-		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				errors.InternalError("failed to save after transaction").
-					WithCause(err).
-					Build(),
-			)
-		}
-	}
-
-	return foundation.Ok[struct{}, error](struct{}{})
-}
-
 // Health returns the health status of the store.
 func (js *JSONStore) Health(_ context.Context) foundation.Result[StoreHealth, error] {
 	js.mu.RLock()

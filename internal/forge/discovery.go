@@ -2,6 +2,7 @@ package forge
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 	"sync"
@@ -15,6 +16,19 @@ import (
 type DiscoveryService struct {
 	forgeManager *Manager
 	filtering    *config.FilteringConfig
+
+	// docsCache remembers the documentation check of repositories that
+	// have not moved since the last discovery run. The check costs two
+	// API calls per repository (docs folder, .docignore) and the answer
+	// only changes when the repository changes.
+	docsCacheMu sync.Mutex
+	docsCache   map[string]docsCheckResult
+}
+
+// docsCheckResult is the cached answer of CheckDocumentation.
+type docsCheckResult struct {
+	hasDocs      bool
+	hasDocIgnore bool
 }
 
 type repoFilterDecision struct {
@@ -28,6 +42,7 @@ func NewDiscoveryService(manager *Manager, filtering *config.FilteringConfig) *D
 	return &DiscoveryService{
 		forgeManager: manager,
 		filtering:    filtering,
+		docsCache:    make(map[string]docsCheckResult),
 	}
 }
 
@@ -208,7 +223,7 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 			defer func() { <-sem }() // Release semaphore
 
 			// Check if repository has documentation
-			if err := client.CheckDocumentation(ctx, r); err != nil {
+			if err := ds.checkDocumentation(ctx, client, r); err != nil {
 				slog.Warn("Failed to check documentation status",
 					"forge", client.GetName(),
 					"repository", r.FullName,
@@ -338,6 +353,62 @@ func (ds *DiscoveryService) filterDecision(repo *Repository) repoFilterDecision 
 	}
 
 	return repoFilterDecision{include: true, reason: "included"}
+}
+
+// checkDocumentation asks the forge whether the repository has a docs
+// folder and a .docignore file.
+//
+// The check costs two API calls per repository, and the answer only
+// changes when the repository changes. A repository that has not moved
+// since the last discovery run reuses the answer from the cache.
+//
+// The cache key includes the repository's last-updated timestamp, so any
+// commit invalidates it. A repository without that timestamp is never
+// cached - the forge did not say when it last changed, so the answer
+// cannot be trusted to still hold.
+func (ds *DiscoveryService) checkDocumentation(ctx context.Context, client Client, repo *Repository) error {
+	key := docsCacheKey(repo)
+	if key != "" {
+		if cached, ok := ds.cachedDocsCheck(key); ok {
+			repo.HasDocs = cached.hasDocs
+			repo.HasDocIgnore = cached.hasDocIgnore
+			return nil
+		}
+	}
+
+	if err := client.CheckDocumentation(ctx, repo); err != nil {
+		return err
+	}
+
+	if key != "" {
+		ds.rememberDocsCheck(key, docsCheckResult{
+			hasDocs:      repo.HasDocs,
+			hasDocIgnore: repo.HasDocIgnore,
+		})
+	}
+	return nil
+}
+
+// docsCacheKey returns the cache key for a repository, or "" when the
+// repository cannot be cached.
+func docsCacheKey(repo *Repository) string {
+	if repo == nil || repo.FullName == "" || repo.LastUpdated.IsZero() {
+		return ""
+	}
+	return fmt.Sprintf("%s|%s|%s", repo.FullName, repo.DefaultBranch, repo.LastUpdated.UTC().Format(time.RFC3339Nano))
+}
+
+func (ds *DiscoveryService) cachedDocsCheck(key string) (docsCheckResult, bool) {
+	ds.docsCacheMu.Lock()
+	defer ds.docsCacheMu.Unlock()
+	result, ok := ds.docsCache[key]
+	return result, ok
+}
+
+func (ds *DiscoveryService) rememberDocsCheck(key string, result docsCheckResult) {
+	ds.docsCacheMu.Lock()
+	defer ds.docsCacheMu.Unlock()
+	ds.docsCache[key] = result
 }
 
 // ShouldIncludeRepository applies the same inclusion logic used during full
