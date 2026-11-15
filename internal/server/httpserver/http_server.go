@@ -15,6 +15,7 @@ import (
 	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	handlers "git.home.luguber.info/inful/docbuilder/internal/server/handlers"
 	smw "git.home.luguber.info/inful/docbuilder/internal/server/middleware"
+	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 )
 
 const defaultSiteDir = "./site"
@@ -99,6 +100,14 @@ func (a *runtimeAdapter) TriggerWebhookBuild(forgeName, repoFullName, branch str
 	return a.runtime.TriggerWebhookBuild(forgeName, repoFullName, branch, changedFiles)
 }
 func (a *runtimeAdapter) GetQueueLength() int { return a.runtime.GetQueueLength() }
+
+func (a *runtimeAdapter) RepositoryStatuses() []responses.RepositoryInfo {
+	return a.runtime.RepositoryStatuses()
+}
+
+func (a *runtimeAdapter) BuildStats() (responses.BuildStatistics, *responses.BuildInfo) {
+	return a.runtime.BuildStats()
+}
 
 // Start initializes and starts all HTTP servers.
 func (s *Server) Start(ctx context.Context) error {

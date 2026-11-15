@@ -183,7 +183,7 @@ type HTTPConfig struct {
 // SyncConfig represents synchronization configuration for repository discovery and build queueing.
 type SyncConfig struct {
 	Schedule         string `yaml:"schedule"`          // Cron expression for discovery
-	ConcurrentBuilds int    `yaml:"concurrent_builds"` // Max parallel repository builds
+	ConcurrentBuilds int    `yaml:"concurrent_builds"` // Number of build queue workers. The daemon runs one build at a time (the build holds the staging directory), so the extra workers wait.
 	QueueSize        int    `yaml:"queue_size"`        // Max queued build requests
 	// BuildOnDiscovery controls whether a forge discovery run should enqueue a
 	// build for discovered repositories. When unset, defaults to true.

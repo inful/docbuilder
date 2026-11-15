@@ -52,6 +52,13 @@ type RepositoryBuildCounter interface {
 	IncrementRepoBuild(url string, success bool)
 }
 
+// RepositoryStateReader reads the full state of one repository.
+type RepositoryStateReader interface {
+	// GetRepository returns the state of a repository, or nil when the
+	// repository is unknown.
+	GetRepository(url string) *RepositoryState
+}
+
 // ConfigurationStateStore stores daemon configuration state (hashes, checksums).
 type ConfigurationStateStore interface {
 	// SetLastConfigHash stores the hash of the last successful config.
@@ -97,6 +104,7 @@ type DaemonStateManager interface {
 	RepositoryMetadataStore
 	RepositoryCommitTracker
 	RepositoryBuildCounter
+	RepositoryStateReader
 	ConfigurationStateStore
 	DiscoveryRecorder
 }

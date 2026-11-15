@@ -670,6 +670,26 @@ Disable metrics at runtime (JSON + Prometheus) by setting `monitoring.metrics.en
 | `/metrics/detailed` | Extended JSON including histogram summaries & system metrics (goroutines, memory). |
 | `/api/daemon/status` | Includes latest build report with per-stage timings & counts. |
 
+### Daemon Admin API
+
+The admin server (default port 8082) exposes the daemon's control and
+status endpoints:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/daemon/status` | Daemon status, uptime and the last build report with per-stage timings. |
+| `GET /api/daemon/config` | The sanitized configuration (no tokens). |
+| `GET /api/build/status` | Build queue length, build statistics and the last build. |
+| `GET /api/repositories` | The known repositories with their last build, commit and document count. |
+| `POST /api/build/trigger` | Start a build. |
+| `POST /api/discovery/trigger` | Start a discovery run. |
+
+The admin server has **no password** and can start builds, so it listens
+on the loopback interface only (`daemon.http.admin_bind`, default
+`127.0.0.1`). Reach it through an SSH tunnel or a reverse proxy. Set
+`admin_bind: "0.0.0.0"` to listen on every interface — only do that
+when something in front of the daemon restricts who can reach the port.
+
 ### Metric Naming Conventions
 
 Prometheus metric names are prefixed with `docbuilder_` and use `_seconds` suffix for duration histograms. Stage label values mirror internal stage identifiers.

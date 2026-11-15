@@ -20,6 +20,9 @@ type DaemonStatusResponse struct {
 	Uptime    float64             `json:"uptime"`
 	StartTime time.Time           `json:"start_time"`
 	Config    DaemonConfigSummary `json:"config"`
+	// LastBuild describes the last build the daemon ran, with the
+	// per-stage timings and counts of its report.
+	LastBuild *BuildInfo `json:"last_build,omitempty"`
 }
 
 // DaemonConfigSummary represents a summary of daemon configuration.

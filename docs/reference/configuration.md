@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: c6893170a9e433977bc67e5a7c661fe6e55392c51350be0489266cf9530b3b3a
+fingerprint: 50db0028f0c108e18d05ce0884a4aa5f0e3b3d9df5b4c1abb33b5e173d7af106
 lastmod: "2026-11-15"
 tags:
   - configuration
@@ -149,6 +149,15 @@ The daemon runs three HTTP servers.
 | admin_port | int | 8082 | Health, metrics and the build triggers. Listens on `admin_bind`. |
 | livereload_port | int | 8083 | LiveReload SSE endpoint, only when `build.livereload` is on. |
 | admin_bind | string | 127.0.0.1 | Address the admin server listens on. The admin API has no password, so it stays on the loopback interface. Use `0.0.0.0` to listen on every interface - only when something in front of the daemon restricts who can reach the port. |
+
+### Build Queue
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| schedule | string | `0 */4 * * *` | Cron expression for the discovery/sync tick. |
+| concurrent_builds | int | 3 | Number of build queue workers. The daemon runs **one build at a time** — a build owns the staging directory, so the other workers wait their turn. The value decides how many requests can be in flight, not how many builds run in parallel. |
+| queue_size | int | 100 | How many build requests can wait in the queue. |
+| build_on_discovery | bool | true | Whether a discovery run asks for a build. |
 
 ### Webhooks
 

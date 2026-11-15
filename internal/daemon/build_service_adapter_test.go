@@ -100,6 +100,9 @@ func (*fakeDaemonStateManager) SetRepoLastCommit(string, string, string, string)
 func (*fakeDaemonStateManager) IncrementRepoBuild(string, bool) {}
 func (*fakeDaemonStateManager) SetLastConfigHash(string)        {}
 func (*fakeDaemonStateManager) RecordDiscovery(string, int)     {}
+func (*fakeDaemonStateManager) GetRepository(string) *state.RepositoryState {
+	return nil
+}
 
 // Compile-time check that the fake satisfies state.DaemonStateManager.
 // If the interface gains a new method, this fails to compile and forces

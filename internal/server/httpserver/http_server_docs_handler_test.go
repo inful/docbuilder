@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 )
 
 type testRuntime struct{}
@@ -27,6 +28,10 @@ func (testRuntime) TriggerDiscovery() string                              { retu
 func (testRuntime) TriggerBuild() string                                  { return "" }
 func (testRuntime) TriggerWebhookBuild(_, _, _ string, _ []string) string { return "" }
 func (testRuntime) GetQueueLength() int                                   { return 0 }
+func (testRuntime) RepositoryStatuses() []responses.RepositoryInfo        { return nil }
+func (testRuntime) BuildStats() (responses.BuildStatistics, *responses.BuildInfo) {
+	return responses.BuildStatistics{}, nil
+}
 
 type testBuildStatus struct {
 	hasError     bool

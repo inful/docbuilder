@@ -21,6 +21,10 @@ type DaemonBuildInterface interface {
 	TriggerBuild() string
 	GetQueueLength() int
 	GetActiveJobs() int
+	// BuildStats returns the build statistics and the last build.
+	BuildStats() (responses.BuildStatistics, *responses.BuildInfo)
+	// RepositoryStatuses returns the known repositories with their state.
+	RepositoryStatuses() []responses.RepositoryInfo
 }
 
 // NewBuildHandlers creates a new build handlers instance.
@@ -82,15 +86,14 @@ func (h *BuildHandlers) HandleBuildStatus(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	statistics, lastBuild := h.daemon.BuildStats()
+
 	status := &responses.BuildStatusResponse{
 		Status:      "ok",
+		LastBuild:   lastBuild,
 		QueueLength: h.daemon.GetQueueLength(),
-		Statistics: responses.BuildStatistics{
-			TotalBuilds:      0, // populated by daemon state when available
-			SuccessfulBuilds: 0,
-			FailedBuilds:     0,
-		},
-		Timestamp: time.Now().UTC(),
+		Statistics:  statistics,
+		Timestamp:   time.Now().UTC(),
 	}
 
 	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil {
@@ -113,7 +116,7 @@ func (h *BuildHandlers) HandleRepositories(w http.ResponseWriter, r *http.Reques
 
 	repos := &responses.RepositoryStatusResponse{
 		Status:       "ok",
-		Repositories: []responses.RepositoryInfo{}, // populated from daemon state when available
+		Repositories: h.daemon.RepositoryStatuses(),
 		Timestamp:    time.Now().UTC(),
 	}
 

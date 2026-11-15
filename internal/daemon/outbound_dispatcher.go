@@ -68,6 +68,11 @@ type OutboundDispatcher struct {
 	// closeOnce guards the single close of the job channel.
 	closeOnce sync.Once
 
+	// uploaded remembers the fingerprint this dispatcher last uploaded
+	// for a document uid. A document whose fingerprint did not change
+	// needs no request at all.
+	uploaded sync.Map
+
 	wg sync.WaitGroup
 
 	// Observability counters. Read via accessor methods; atomic so
@@ -77,6 +82,7 @@ type OutboundDispatcher struct {
 	failsTotal           atomic.Int64
 	preflightSkipsTotal  atomic.Int64
 	preflightErrorsTotal atomic.Int64
+	unchangedTotal       atomic.Int64
 }
 
 // ingestJob is a single document pending ingest.
@@ -321,6 +327,15 @@ func (d *OutboundDispatcher) PreflightErrorsTotal() int64 {
 	return d.preflightErrorsTotal.Load()
 }
 
+// UnchangedTotal returns the number of documents that were skipped
+// because this dispatcher had already uploaded the same content.
+func (d *OutboundDispatcher) UnchangedTotal() int64 {
+	if d == nil {
+		return 0
+	}
+	return d.unchangedTotal.Load()
+}
+
 func (d *OutboundDispatcher) worker(ctx context.Context) {
 	defer d.wg.Done()
 	for job := range d.queue {
@@ -332,12 +347,30 @@ func (d *OutboundDispatcher) worker(ctx context.Context) {
 // document. The preflight URL is constructed from d.preflightBase plus
 // the uid parsed from the document's frontmatter. The frontmatter
 // fingerprint is the authoritative local value to compare against.
+//
+// A document this dispatcher already uploaded, unchanged since, needs no
+// request at all: ragabast has that exact content. Skipping both calls
+// is what keeps a rebuild that changed one page cheap - without it every
+// page costs a preflight GET and an upload POST, and the outbound cost
+// grows with the page count instead of with the number of changes.
+//
+// Limit: if ragabast loses a document on its own (its database is
+// wiped, say), docbuilder does not notice until the document changes or
+// the daemon restarts.
 func (d *OutboundDispatcher) send(ctx context.Context, job ingestJob) {
+	uid, fp := parseUIDAndFingerprint(job.content)
+	if uid != "" && fp != "" {
+		if uploaded, ok := d.uploaded.Load(uid); ok && uploaded == fp {
+			d.unchangedTotal.Add(1)
+			return
+		}
+	}
+
 	if d.preflightBase != "" {
-		uid, fp := parseUIDAndFingerprint(job.content)
 		if uid != "" && fp != "" {
 			if !d.preflight(ctx, uid, fp, job.path) {
 				// preflight returned false → skip the upload
+				d.rememberUploaded(uid, fp)
 				return
 			}
 		}
@@ -345,14 +378,22 @@ func (d *OutboundDispatcher) send(ctx context.Context, job ingestJob) {
 		// means we have nothing to ask ragabast about. Fall through to
 		// the upload so we still push the doc.
 	}
-	d.upload(ctx, job)
+	d.upload(ctx, job, uid, fp)
+}
+
+// rememberUploaded records that ragabast now holds this exact document.
+func (d *OutboundDispatcher) rememberUploaded(uid, fingerprint string) {
+	if uid == "" || fingerprint == "" {
+		return
+	}
+	d.uploaded.Store(uid, fingerprint)
 }
 
 // upload POSTs the document to ragabast's ingest endpoint as
 // multipart/form-data with a single `file` field. This matches the
 // /api/ingest/file contract in the ragabast example script; the older
 // /api/ingest/async JSON path was retired upstream.
-func (d *OutboundDispatcher) upload(ctx context.Context, job ingestJob) {
+func (d *OutboundDispatcher) upload(ctx context.Context, job ingestJob, uid, fingerprint string) {
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
 	fw, err := mw.CreateFormFile("file", job.path)
@@ -409,6 +450,7 @@ func (d *OutboundDispatcher) upload(ctx context.Context, job ingestJob) {
 	switch {
 	case resp.StatusCode >= 200 && resp.StatusCode < 300:
 		d.sendsTotal.Add(1)
+		d.rememberUploaded(uid, fingerprint)
 	default:
 		d.failsTotal.Add(1)
 		slog.Warn("outbound dispatcher: non-2xx response, dropping",
