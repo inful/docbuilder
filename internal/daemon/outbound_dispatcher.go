@@ -65,6 +65,9 @@ type OutboundDispatcher struct {
 	workers  int
 	queueCap int
 
+	// closeOnce guards the single close of the job channel.
+	closeOnce sync.Once
+
 	wg sync.WaitGroup
 
 	// Observability counters. Read via accessor methods; atomic so
@@ -246,16 +249,10 @@ func (d *OutboundDispatcher) Stop() {
 		slog.Int64("preflight_errors_total", d.preflightErrorsTotal.Load()))
 }
 
-// closeQueueOnce closes the job channel exactly once. Uses sync.Once via a
-// flag because Stop can be called from multiple paths in tests.
-var (
-	closeOnce sync.Map // *OutboundDispatcher -> *sync.Once
-)
-
+// closeQueueOnce closes the job channel exactly once. Stop can be called
+// from several paths, so the guard lives on the dispatcher itself.
 func (d *OutboundDispatcher) closeQueueOnce() {
-	v, _ := closeOnce.LoadOrStore(d, &sync.Once{})
-	once := v.(*sync.Once)
-	once.Do(func() {
+	d.closeOnce.Do(func() {
 		close(d.queue)
 	})
 }

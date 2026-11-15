@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2025-12-13T00:00:00Z
-fingerprint: 7c063e617779cefaf79c927782787084ddbbc7ae4273ec063f8e34423e5e3863
-lastmod: "2026-09-27"
+fingerprint: 837761231e2f1187e50974641e8521e487b145ee96abc6f0d74802ca20ea0bec
+lastmod: "2026-11-15"
 tags:
   - pipeline
   - content-processing
@@ -308,7 +308,7 @@ If issues discovered:
 ## References
 
 - [Transform pipeline implementation](../../internal/hugo/content_copy.go)
-- [Index generation](../../internal/hugo/indexes.go)
+- [Index generation](../../internal/hugo/pipeline/generators.go)
 - [DocFile struct](../../internal/docs/discovery.go)
 - [Transform pipeline design](../reference/content-transforms.md)
 

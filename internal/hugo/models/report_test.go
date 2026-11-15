@@ -1,8 +1,6 @@
-package hugo
+package models
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestParseHugoVersion(t *testing.T) {
 	tests := []struct {
@@ -43,34 +41,34 @@ func TestParseHugoVersion(t *testing.T) {
 		{
 			name:     "invalid format",
 			output:   "not a version",
-			expected: "not a version", // Fallback to trimmed output
+			expected: "", // no version in the output
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := parseHugoVersion(tt.output)
+			result := ParseHugoVersion(tt.output)
 			if result != tt.expected {
-				t.Errorf("parseHugoVersion(%q) = %q, want %q", tt.output, result, tt.expected)
+				t.Errorf("ParseHugoVersion(%q) = %q, want %q", tt.output, result, tt.expected)
 			}
 		})
 	}
 }
 
 func TestDetectHugoVersion(t *testing.T) {
-	// This test verifies the function exists and handles both cases:
-	// 1. Hugo available (returns version string)
-	// 2. Hugo not available (returns empty string)
-
+	// The version depends on the environment: empty when hugo is not
+	// installed, a version string otherwise. It is detected once per
+	// process and cached.
 	version := DetectHugoVersion(t.Context())
 
-	// We can't assert the exact value since it depends on the environment
-	// But we can verify it returns a string (empty or with version)
-	if version != "" {
-		t.Logf("Hugo detected: version %s", version)
-		// If version is returned, it should match semantic versioning pattern
-		// We already test the parser above, so just log here
-	} else {
+	if version == "" {
 		t.Log("Hugo not detected (not available in PATH)")
+		return
+	}
+	t.Logf("Hugo detected: version %s", version)
+
+	// A second call must return the same cached value.
+	if again := DetectHugoVersion(t.Context()); again != version {
+		t.Errorf("DetectHugoVersion() = %q on the second call, want %q", again, version)
 	}
 }

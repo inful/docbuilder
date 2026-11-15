@@ -7,6 +7,7 @@ import (
 	"maps"
 	"net/http"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -244,19 +245,10 @@ func (h *Histogram) GetStats() HistogramStats {
 		// Create a sorted copy for percentile calculations
 		sorted := make([]float64, len(h.values))
 		copy(sorted, h.values)
-
-		// Simple bubble sort (adequate for small datasets)
-		n := len(sorted)
-		for i := range n - 1 {
-			for j := range n - i - 1 {
-				if sorted[j] > sorted[j+1] {
-					sorted[j], sorted[j+1] = sorted[j+1], sorted[j]
-				}
-			}
-		}
+		slices.Sort(sorted)
 
 		stats.Min = sorted[0]
-		stats.Max = sorted[n-1]
+		stats.Max = sorted[len(sorted)-1]
 		stats.P50 = percentile(sorted, 0.50)
 		stats.P95 = percentile(sorted, 0.95)
 		stats.P99 = percentile(sorted, 0.99)
