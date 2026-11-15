@@ -178,6 +178,11 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Daemon.HTTP.LiveReloadPort == 0 {
 		cfg.Daemon.HTTP.LiveReloadPort = 8083
 	}
+	if cfg.Daemon.HTTP.AdminBind == "" {
+		// The admin API has no password, so it stays on the loopback
+		// interface unless the operator asks for another address.
+		cfg.Daemon.HTTP.AdminBind = defaultAdminBind
+	}
 	if cfg.Daemon.Sync.Schedule == "" {
 		cfg.Daemon.Sync.Schedule = defaultSyncScheduleEvery4h // Every 4 hours
 	}

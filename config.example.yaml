@@ -37,6 +37,12 @@ build:
 
 # Optional daemon configuration (enables scheduled sync/discovery and admin/webhook servers)
 daemon:
+  http:
+    # The admin API (build trigger, daemon status, metrics) has no
+    # password, so it listens on the loopback interface only. Set it to
+    # "0.0.0.0" to listen on every interface - only do that when
+    # something in front of the daemon restricts who can reach the port.
+    admin_bind: "127.0.0.1"
   sync:
     schedule: "0 */4 * * *"         # Cron schedule (5-field)
     build_on_discovery: true        # Set false to discover without enqueuing builds

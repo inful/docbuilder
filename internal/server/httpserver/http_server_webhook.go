@@ -41,6 +41,17 @@ func (s *Server) webhookMux() (*http.ServeMux, error) {
 		}
 		seen[path] = forgeCfg.Name
 
+		// A webhook without a secret accepts any POST and starts a build.
+		// An unset secret is the usual reason: the config template points
+		// at an environment variable that may not be set, and the empty
+		// expansion left the endpoint open. Refuse to start rather than
+		// serve an open build trigger.
+		if forgeCfg.Webhook.Secret == "" {
+			return nil, fmt.Errorf(
+				"forge %q has a webhook endpoint (%s) but no secret: set forges[].webhook.secret, or remove forges[].webhook.path to disable the endpoint",
+				forgeCfg.Name, path)
+		}
+
 		forgeName := forgeCfg.Name
 		forgeType := forgeCfg.Type
 		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {

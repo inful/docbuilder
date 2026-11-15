@@ -169,6 +169,15 @@ type HTTPConfig struct {
 	WebhookPort    int `yaml:"webhook_port"`    // Webhook reception port
 	AdminPort      int `yaml:"admin_port"`      // Admin/status endpoints port
 	LiveReloadPort int `yaml:"livereload_port"` // LiveReload SSE endpoint port (separate to avoid HTTP/1.1 blocking)
+
+	// AdminBind is the address the admin server listens on.
+	//
+	// The admin API can start builds and shows the forge layout, and it
+	// has no password, so it is bound to the loopback interface by
+	// default. Set it to 0.0.0.0 to listen on every interface - only do
+	// that when something in front of the daemon (a reverse proxy, a
+	// firewall) restricts who can reach the port.
+	AdminBind string `yaml:"admin_bind"`
 }
 
 // SyncConfig represents synchronization configuration for repository discovery and build queueing.

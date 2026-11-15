@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -109,13 +110,16 @@ func (s *Server) Start(ctx context.Context) error {
 	// logging three independent 'address already in use' lines after partial initialization.
 	type preBind struct {
 		name string
+		bind string
 		port int
 		ln   net.Listener
 	}
 	binds := []preBind{
 		{name: "docs", port: s.cfg.Daemon.HTTP.DocsPort},
 		{name: "webhook", port: s.cfg.Daemon.HTTP.WebhookPort},
-		{name: "admin", port: s.cfg.Daemon.HTTP.AdminPort},
+		// The admin API has no password, so it binds to the loopback
+		// interface unless the operator set another address.
+		{name: "admin", bind: s.cfg.Daemon.HTTP.AdminBind, port: s.cfg.Daemon.HTTP.AdminPort},
 	}
 	// Add LiveReload port if LiveReload is enabled
 	if s.cfg.Build.LiveReload && s.opts.LiveReloadHub != nil {
@@ -124,7 +128,7 @@ func (s *Server) Start(ctx context.Context) error {
 	var bindErrs []error
 	lc := net.ListenConfig{}
 	for i := range binds {
-		addr := fmt.Sprintf(":%d", binds[i].port)
+		addr := net.JoinHostPort(binds[i].bind, strconv.Itoa(binds[i].port))
 		ln, err := lc.Listen(ctx, "tcp", addr)
 		if err != nil {
 			bindErrs = append(bindErrs, fmt.Errorf("%s port %d: %w", binds[i].name, binds[i].port, err))
