@@ -107,7 +107,7 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		slog.Int("output", len(processedDocs)))
 
 	// Write processed documents to Hugo content directory
-	for i, doc := range processedDocs {
+	for _, doc := range processedDocs {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -148,12 +148,6 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		// Update page counter
 		if g.onPageRendered != nil {
 			g.onPageRendered()
-		}
-
-		// Store transformed bytes for index generation
-		// Find corresponding DocFile and update it
-		if i < len(markdownFiles) && !doc.Generated {
-			markdownFiles[i].TransformedBytes = contentBytes
 		}
 	}
 

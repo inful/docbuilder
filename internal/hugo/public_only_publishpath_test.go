@@ -147,9 +147,9 @@ func TestPublicOnly_CaseDifferentRepoDirs_DriftVsDrift(t *testing.T) {
 // filesystems it produces a "Drift/" sibling next to "drift/", and Hugo
 // may treat them as the same section with conflicting index files.
 //
-// The test calls generateIndexPages with one public doc and asserts that
-// the index file lands at content/drift/_index.md (lowercased) - matching
-// where the doc was written.
+// The test copies one public doc through the content pipeline (which also
+// generates the index pages) and asserts that the index file lands at
+// content/drift/_index.md (lowercased) - matching where the doc was written.
 func TestPublicOnly_IndexStage_CaseDifferentRepoNoCollision(t *testing.T) {
 	dir := t.TempDir()
 	cfg := &config.Config{
@@ -180,9 +180,6 @@ func TestPublicOnly_IndexStage_CaseDifferentRepoNoCollision(t *testing.T) {
 	files := []docs.DocFile{publicDoc, otherDoc}
 	if err := gen.copyContentFiles(t.Context(), files); err != nil {
 		t.Fatalf("copy: %v", err)
-	}
-	if err := gen.generateIndexPages(files); err != nil {
-		t.Fatalf("generateIndexPages: %v", err)
 	}
 
 	// Dump content/ tree for debugging.

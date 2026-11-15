@@ -34,7 +34,6 @@ type DocFile struct {
 	Name             string            // File name without extension
 	Extension        string            // File extension
 	Content          []byte            // File content (loaded on demand)
-	TransformedBytes []byte            // Content after transform pipeline (populated during copyContentFiles)
 	Metadata         map[string]string // Additional metadata from config
 	IsAsset          bool              // True for images and other non-markdown files
 }
