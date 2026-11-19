@@ -9,6 +9,26 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.24.3] - 2026-11-19
+
+### Changed
+- **The Docker image is a sixth smaller**: the runtime stage chowned
+  everything after the copy, and a chown writes the ownership of every
+  file into a layer of its own. The Go toolchain alone is about ten
+  thousand files, so that layer held nothing but metadata — 25 MB of the
+  image. `COPY --chown` sets the ownership while the files are copied,
+  so the metadata lands in the layer that holds the content.
+
+  Measured on the arm64 image: **495.0 MB → 424.7 MB** uncompressed,
+  **149.4 MB → 124.8 MB** gzipped.
+
+  The image also passes `hadolint` now, which it did not before: the
+  download stage uses wget for both downloads instead of wget and curl,
+  the binary lookup uses `find` with a path pattern so the path can
+  stay quoted, and the daemon runs as the numeric user id with the
+  home directory the name used to give it (the Go module cache for
+  Hugo Modules lives there).
+
 ## [0.24.2] - 2026-11-19
 
 ### Fixed
