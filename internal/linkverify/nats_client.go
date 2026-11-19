@@ -93,10 +93,24 @@ func (c *NATSClient) connectWithContext(ctx context.Context) error {
 		nats.ReconnectHandler(func(nc *nats.Conn) {
 			slog.Info("NATS reconnected", "url", nc.ConnectedUrl())
 			c.reconnecting.Store(false)
-			// Reinitialize KV bucket after reconnect
-			if err := c.initKVBucket(context.Background()); err != nil {
-				slog.Error("Failed to reinitialize KV bucket after reconnect", "error", err)
+			// Reinitialize KV bucket after reconnect. The bucket is
+			// stored under the lock, because that is where the readers
+			// take it from - a half-written interface value would
+			// crash the daemon.
+			c.mu.RLock()
+			js := c.js
+			c.mu.RUnlock()
+			if js == nil {
+				return
 			}
+			kv, err := c.createKVBucket(context.Background(), js)
+			if err != nil {
+				slog.Error("Failed to reinitialize KV bucket after reconnect", "error", err)
+				return
+			}
+			c.mu.Lock()
+			c.kv = kv
+			c.mu.Unlock()
 		}),
 		nats.ClosedHandler(func(nc *nats.Conn) {
 			slog.Info("NATS connection closed")
@@ -120,12 +134,14 @@ func (c *NATSClient) connectWithContext(ctx context.Context) error {
 	c.js = js
 
 	// Initialize KV bucket
-	if err := c.initKVBucket(ctx); err != nil {
+	kv, err := c.createKVBucket(ctx, js)
+	if err != nil {
 		conn.Close()
 		c.conn = nil
 		c.js = nil
-		return fmt.Errorf("failed to initialize KV bucket: %w", err)
+		return err
 	}
+	c.kv = kv
 
 	// Initialize stream for broken link events
 	if err := c.initStream(ctx); err != nil {
@@ -187,8 +203,10 @@ func cacheBucketTTL(cfg *config.LinkVerificationConfig) time.Duration {
 	return successTTL
 }
 
-// initKVBucket creates or gets the KV bucket for link cache.
-func (c *NATSClient) initKVBucket(ctx context.Context) error {
+// createKVBucket creates or gets the KV bucket for link cache and returns
+// it. The caller stores it under the lock, because that is where the
+// readers take it from.
+func (c *NATSClient) createKVBucket(ctx context.Context, js jetstream.JetStream) (jetstream.KeyValue, error) {
 	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -196,7 +214,7 @@ func (c *NATSClient) initKVBucket(ctx context.Context) error {
 	// Note: this TTL applies to all keys in the bucket (link cache + page hashes).
 	ttl := cacheBucketTTL(c.cfg)
 
-	kv, err := c.js.CreateOrUpdateKeyValue(timeoutCtx, jetstream.KeyValueConfig{
+	kv, err := js.CreateOrUpdateKeyValue(timeoutCtx, jetstream.KeyValueConfig{
 		Bucket:      c.kvBucket,
 		Description: "Link verification cache for DocBuilder",
 		MaxBytes:    100 * 1024 * 1024, // 100MB max
@@ -204,12 +222,11 @@ func (c *NATSClient) initKVBucket(ctx context.Context) error {
 		TTL:         ttl,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create or update KV bucket: %w", err)
+		return nil, fmt.Errorf("failed to create or update KV bucket: %w", err)
 	}
 
-	c.kv = kv
 	slog.Info("Initialized KV bucket for link cache", "bucket", c.kvBucket, "ttl", ttl.String())
-	return nil
+	return kv, nil
 }
 
 // initStream creates or gets the JetStream stream for broken link events.
