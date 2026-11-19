@@ -143,6 +143,7 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	// Hugo writes a lot at debug level - tens of megabytes for a big
 	// site - and the daemon drops those lines at the usual log level
 	// anyway. Ask for them only when the daemon logs at debug level.
+	//nolint:gosec // the log level is one of two constants this file picks
 	cmd := exec.CommandContext(ctx, "hugo", "--logLevel", hugoLogLevelArg(ctx))
 	cmd.Dir = rootDir
 	// Be explicit about environment inheritance. Also, ensure PATH contains the

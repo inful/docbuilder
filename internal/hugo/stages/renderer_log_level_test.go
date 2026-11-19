@@ -1,7 +1,7 @@
 package stages
 
 import (
-	"io"
+	"bytes"
 	"log/slog"
 	"testing"
 )
@@ -13,12 +13,14 @@ func TestHugoLogLevelArg(t *testing.T) {
 	old := slog.Default()
 	defer slog.SetDefault(old)
 
-	slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelInfo})))
+	var sink bytes.Buffer
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(&sink, &slog.HandlerOptions{Level: slog.LevelInfo})))
 	if got := hugoLogLevelArg(t.Context()); got != "info" {
 		t.Errorf("hugoLogLevelArg = %q, want %q", got, "info")
 	}
 
-	slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	slog.SetDefault(slog.New(slog.NewTextHandler(&sink, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	if got := hugoLogLevelArg(t.Context()); got != "debug" {
 		t.Errorf("hugoLogLevelArg = %q, want %q", got, "debug")
 	}
