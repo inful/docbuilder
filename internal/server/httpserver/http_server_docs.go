@@ -178,32 +178,40 @@ func (s *Server) startDocsServerWithListener(_ context.Context, ln net.Listener)
 
 	// Wrap with 404 fallback that redirects to nearest parent path on LiveReload
 	rootWithFallback := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Only a LiveReload request can end up at the nearest parent
+		// page, and only that request needs its response captured.
+		// Every other request goes straight to the file server: the
+		// capture holds the whole file in memory until the response
+		// has been written, so a big file and a few readers at once
+		// is a lot of memory for nothing.
+		if r.Method != http.MethodGet || !hasLiveReloadCookie(r) {
+			rootHandler.ServeHTTP(w, r)
+			return
+		}
+
 		// Capture the response to detect 404s
 		rec := &responseRecorder{ResponseWriter: w, statusCode: http.StatusOK}
 		rootHandler.ServeHTTP(rec, r)
 
-		// If we got a 404 and this is a GET request from LiveReload, try to redirect to parent
-		if rec.statusCode == http.StatusNotFound && r.Method == http.MethodGet {
-			// Check if this is a LiveReload-triggered reload via Cookie
-			if cookie, err := r.Cookie("docbuilder_lr_reload"); err == nil && cookie.Value == "1" {
-				root := s.resolveDocsRoot()
-				redirectPath := s.findNearestValidParent(root, r.URL.Path)
-				if redirectPath != "" && redirectPath != r.URL.Path {
-					// Clear the cookie and redirect
-					//nolint:gosec // local preview commonly runs on HTTP; Secure cookies would not be sent
-					http.SetCookie(w, &http.Cookie{
-						Name:     "docbuilder_lr_reload",
-						Value:    "",
-						MaxAge:   -1,
-						Path:     "/",
-						HttpOnly: true,
-						Secure:   r.TLS != nil,
-						SameSite: http.SameSiteLaxMode,
-					})
-					w.Header().Set("Location", redirectPath)
-					w.WriteHeader(http.StatusTemporaryRedirect)
-					return
-				}
+		// If we got a 404, try to redirect to the nearest parent
+		if rec.statusCode == http.StatusNotFound {
+			root := s.resolveDocsRoot()
+			redirectPath := s.findNearestValidParent(root, r.URL.Path)
+			if redirectPath != "" && redirectPath != r.URL.Path {
+				// Clear the cookie and redirect
+				//nolint:gosec // local preview commonly runs on HTTP; Secure cookies would not be sent
+				http.SetCookie(w, &http.Cookie{
+					Name:     "docbuilder_lr_reload",
+					Value:    "",
+					MaxAge:   -1,
+					Path:     "/",
+					HttpOnly: true,
+					Secure:   r.TLS != nil,
+					SameSite: http.SameSiteLaxMode,
+				})
+				w.Header().Set("Location", redirectPath)
+				w.WriteHeader(http.StatusTemporaryRedirect)
+				return
 			}
 		}
 
@@ -388,6 +396,14 @@ func determineCacheControl(path string) string {
 
 	// For all other files, don't set Cache-Control (let browser use default behavior)
 	return ""
+}
+
+// hasLiveReloadCookie reports whether the request carries the LiveReload
+// reload cookie, the one case where a missing page is redirected to the
+// nearest page that does exist.
+func hasLiveReloadCookie(r *http.Request) bool {
+	cookie, err := r.Cookie("docbuilder_lr_reload")
+	return err == nil && cookie.Value == "1"
 }
 
 // responseRecorder captures the status code and body from the underlying handler.

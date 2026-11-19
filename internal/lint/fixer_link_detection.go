@@ -61,8 +61,27 @@ func (f *Fixer) findLinksToFile(targetPath, rootPath string) ([]LinkReference, e
 	return links, err
 }
 
-// findLinksInFile scans a single markdown file for links to the target.
-func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference, error) {
+// resolvedLink is one link from a markdown file, with the path it
+// points at already resolved.
+type resolvedLink struct {
+	ref      docmodel.LinkRef
+	resolved string // the path the link points at
+	linkType LinkType
+	target   string // the destination without the fragment
+	fragment string
+}
+
+// parsedLinks returns the links of one markdown file.
+//
+// The result is cached. Reading and parsing a file is the slow part
+// of looking for the links to a renamed file, and the fixer looks for
+// them once per renamed file. A file that is written afterwards is
+// taken out of the cache, so the next look sees the new content.
+func (f *Fixer) parsedLinks(sourceFile string) ([]resolvedLink, error) {
+	if links, ok := f.linkCache[sourceFile]; ok {
+		return links, nil
+	}
+
 	doc, err := docmodel.ParseFile(sourceFile, docmodel.Options{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
@@ -73,7 +92,7 @@ func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference,
 		return nil, fmt.Errorf("failed to parse markdown links: %w", err)
 	}
 
-	links := make([]LinkReference, 0)
+	links := make([]resolvedLink, 0, len(refs))
 	for _, ref := range refs {
 		link := ref.Link
 		// Maintain parity with the current fixer: only inline links, images, and
@@ -105,9 +124,6 @@ func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference,
 		if err != nil {
 			continue
 		}
-		if !pathsEqualCaseInsensitive(resolved, targetPath) {
-			continue
-		}
 
 		fragment := ""
 		targetNoFrag := dest
@@ -116,12 +132,41 @@ func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference,
 			targetNoFrag = dest[:idx]
 		}
 
+		links = append(links, resolvedLink{
+			ref:      ref,
+			resolved: resolved,
+			linkType: linkType,
+			target:   targetNoFrag,
+			fragment: fragment,
+		})
+	}
+
+	if f.linkCache == nil {
+		f.linkCache = make(map[string][]resolvedLink)
+	}
+	f.linkCache[sourceFile] = links
+	return links, nil
+}
+
+// findLinksInFile scans a single markdown file for links to the target.
+func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference, error) {
+	parsed, err := f.parsedLinks(sourceFile)
+	if err != nil {
+		return nil, err
+	}
+
+	links := make([]LinkReference, 0)
+	for _, link := range parsed {
+		if !pathsEqualCaseInsensitive(link.resolved, targetPath) {
+			continue
+		}
+
 		links = append(links, LinkReference{
 			SourceFile: sourceFile,
-			LineNumber: ref.FileLine,
-			LinkType:   linkType,
-			Target:     targetNoFrag,
-			Fragment:   fragment,
+			LineNumber: link.ref.FileLine,
+			LinkType:   link.linkType,
+			Target:     link.target,
+			Fragment:   link.fragment,
 			FullMatch:  "",
 		})
 	}

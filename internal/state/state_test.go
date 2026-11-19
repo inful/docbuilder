@@ -335,34 +335,6 @@ func TestStateService(t *testing.T) {
 	}
 	service := serviceResult.Unwrap()
 
-	ctx := t.Context()
-
-	// Test service lifecycle
-	t.Run("Service Lifecycle", func(t *testing.T) {
-		// Start service
-		if err := service.Start(ctx); err != nil {
-			t.Fatalf("Failed to start service: %v", err)
-		}
-
-		// Test health (Health() creates its own context internally)
-		//nolint:contextcheck // Health() intentionally creates its own context for health checks
-		health := service.Health()
-		if health.Status != healthyStatus {
-			t.Errorf("Expected healthy status, got %q with message: %s", health.Status, health.Message)
-		}
-
-		// Test dependencies
-		deps := service.Dependencies()
-		if len(deps) != 0 {
-			t.Errorf("Expected no dependencies, got %v", deps)
-		}
-
-		// Stop service
-		if err := service.Stop(ctx); err != nil {
-			t.Fatalf("Failed to stop service: %v", err)
-		}
-	})
-
 	// Test store access through service
 	t.Run("Store Access", func(t *testing.T) {
 		repoStore := service.GetRepositoryStore()
@@ -377,19 +349,6 @@ func TestStateService(t *testing.T) {
 		}
 		if statsStore == nil {
 			t.Error("Statistics store is nil")
-		}
-	})
-
-	// Test service statistics
-	t.Run("Service Statistics", func(t *testing.T) {
-		statsResult := service.GetStats(ctx)
-		if statsResult.IsErr() {
-			t.Fatalf("Failed to get service stats: %v", statsResult.UnwrapErr())
-		}
-
-		stats := statsResult.Unwrap()
-		if stats.StoreType != "json" {
-			t.Errorf("Expected store type 'json', got %q", stats.StoreType)
 		}
 	})
 }

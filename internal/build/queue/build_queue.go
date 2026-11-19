@@ -89,6 +89,7 @@ type BuildQueue struct {
 	history     []*BuildJob
 	historySize int
 	stopChan    chan struct{}
+	stopOnce    sync.Once
 	wg          sync.WaitGroup
 	builder     Builder
 
@@ -160,7 +161,11 @@ func (bq *BuildQueue) Start(ctx context.Context) {
 
 // Stop gracefully shuts down the build queue.
 func (bq *BuildQueue) Stop(_ context.Context) {
-	close(bq.stopChan)
+	// Stop can be called twice (a signal handler and a deferred
+	// shutdown), and closing a closed channel panics.
+	bq.stopOnce.Do(func() {
+		close(bq.stopChan)
+	})
 
 	// Cancel all active jobs
 	bq.mu.Lock()
@@ -247,11 +252,13 @@ func (bq *BuildQueue) worker(ctx context.Context, workerID string) {
 
 func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID string) {
 	jobCtx, cancel := context.WithCancel(ctx)
-	job.cancel = cancel
 	defer cancel()
 
 	startTime := time.Now()
 	bq.mu.Lock()
+	// The cancel function is read by Stop under the same lock, so it
+	// has to be written under it too.
+	job.cancel = cancel
 	job.StartedAt = &startTime
 	job.Status = BuildStatusRunning
 	bq.active[job.ID] = job

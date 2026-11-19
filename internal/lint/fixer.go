@@ -27,6 +27,13 @@ type Fixer struct {
 	gitAware    bool
 	autoConfirm bool // Skip confirmation prompts (for CI/automated use)
 	nowFn       func() time.Time
+
+	// linkCache holds the links of the markdown files that were read
+	// during this fix run. Reading and parsing a file is the slow part
+	// of looking for the links to a renamed file, and the fixer looks
+	// for them once per renamed file. A file that is written is taken
+	// out of the cache, so the next look sees the new content.
+	linkCache map[string][]resolvedLink
 }
 
 // NewFixer creates a new fixer with the given linter and options.
@@ -104,6 +111,10 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 
 // fix is the internal implementation that actually performs the fixes.
 func (f *Fixer) fix(path string) (*FixResult, error) {
+	// Every run starts with an empty link cache: the files may have
+	// changed since the last run.
+	f.linkCache = make(map[string][]resolvedLink)
+
 	// First, run linter to find issues
 	result, err := f.linter.LintPath(path)
 	if err != nil {

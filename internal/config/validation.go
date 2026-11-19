@@ -282,8 +282,37 @@ func (cv *configurationValidator) validateForgeScopes(forge *ForgeConfig) error 
 
 // validateRepositories validates repository-specific configuration.
 func (cv *configurationValidator) validateRepositories() error {
+	seenNames := make(map[string]struct{}, len(cv.config.Repositories))
+
 	for i := range cv.config.Repositories {
 		repo := &cv.config.Repositories[i]
+
+		// The name of a repository is its identity in a build: the clone
+		// folder, the state map and the content path all use it. Two
+		// repositories with one name eat each other and one of them
+		// vanishes from the site without a word.
+		name := strings.TrimSpace(repo.Name)
+		if name == "" {
+			return errors.NewError(errors.CategoryValidation, "repository name cannot be empty").Build()
+		}
+		key := strings.ToLower(name)
+		if _, taken := seenNames[key]; taken {
+			return errors.NewError(errors.CategoryValidation, "duplicate repository name").
+				WithContext("name", name).
+				WithContext("hint", "give every repository its own name").
+				Build()
+		}
+		seenNames[key] = struct{}{}
+
+		// The name becomes a folder name (the clone folder) and a path
+		// in the site. A name with a slash or a dot would point outside
+		// the workspace.
+		if strings.ContainsAny(name, `/\`) || name == "." || name == ".." {
+			return errors.NewError(errors.CategoryValidation, "repository name must be a single path segment").
+				WithContext("name", name).
+				Build()
+		}
+
 		if repo.Auth != nil {
 			if err := cv.validateRepoAuth(*repo); err != nil {
 				return err
