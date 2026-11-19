@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -206,12 +207,13 @@ func handleListTemplates(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallT
 }
 
 func handleDescribeTemplate(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	state := stateFromContext(ctx)
 	url, err := req.RequireString("url")
 	if err != nil {
 		return toolErrMsg("missing required argument: url")
 	}
 
-	page, err := fetchTemplatePage(ctx, url)
+	page, err := fetchTemplatePage(ctx, state, url)
 	if err != nil {
 		return toolErr("fetch template page", err)
 	}
@@ -245,7 +247,7 @@ func handleResolveTemplateInputs(ctx context.Context, req mcp.CallToolRequest) (
 	if err != nil {
 		return toolErrMsg("missing required argument: url")
 	}
-	page, err := fetchTemplatePage(ctx, url)
+	page, err := fetchTemplatePage(ctx, state, url)
 	if err != nil {
 		return toolErr("fetch template page", err)
 	}
@@ -309,7 +311,7 @@ func handleCreateFromTemplate(ctx context.Context, req mcp.CallToolRequest) (*mc
 		return toolErrMsg("missing required argument: url")
 	}
 
-	page, err := fetchTemplatePage(ctx, url)
+	page, err := fetchTemplatePage(ctx, state, url)
 	if err != nil {
 		return toolErr("fetch template page", err)
 	}
@@ -649,13 +651,44 @@ func handleUpdateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 
 // fetchTemplatePage is the common boilerplate for any tool that needs to
 // load a template by URL.
-func fetchTemplatePage(ctx context.Context, url string) (*templating.TemplatePage, error) {
+//
+// The URL has to be on the host of the configured template base URL.
+// Without that, the LLM could make this server fetch any address on the
+// machine or on the network - the cloud metadata service with the
+// credentials in it, the daemon's own admin port - and read the answer
+// out of the tool result.
+func fetchTemplatePage(ctx context.Context, state *serverState, rawURL string) (*templating.TemplatePage, error) {
+	if err := checkTemplateHost(state, rawURL); err != nil {
+		return nil, err
+	}
+
 	client := templating.NewTemplateHTTPClient()
-	page, err := templating.FetchTemplatePage(ctx, url, client)
+	page, err := templating.FetchTemplatePage(ctx, rawURL, client)
 	if err != nil {
 		return nil, err
 	}
 	return page, nil
+}
+
+// checkTemplateHost makes sure a template URL is on the host of the
+// template base URL.
+func checkTemplateHost(state *serverState, rawURL string) error {
+	if state == nil || state.baseURL == "" {
+		return errors.New("no template base URL configured; pass --base-url or DOCBUILDER_TEMPLATE_BASE_URL, or set hugo.base_url in config.yaml")
+	}
+
+	base, err := url.Parse(state.baseURL)
+	if err != nil {
+		return fmt.Errorf("invalid template base URL %q: %w", state.baseURL, err)
+	}
+	target, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid template URL %q: %w", rawURL, err)
+	}
+	if !strings.EqualFold(target.Host, base.Host) {
+		return fmt.Errorf("template URL %q is not on the template host %q", rawURL, base.Host)
+	}
+	return nil
 }
 
 // buildSequenceResolver mirrors the CLI's logic: pull the page's sequence
