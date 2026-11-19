@@ -51,24 +51,6 @@ func (o Option[T]) UnwrapOr(fallback T) T {
 	return fallback
 }
 
-// MapOption transforms an Option[T] to Option[U] using the given function.
-// If the Option is None, it returns None[U].
-func MapOption[T, U any](o Option[T], fn func(T) U) Option[U] {
-	if o.present {
-		return Some(fn(o.value))
-	}
-	return None[U]()
-}
-
-// FlatMapOption transforms an Option[T] to Option[U] using a function that returns Option[U].
-// This prevents Option[Option[U]].
-func FlatMapOption[T, U any](o Option[T], fn func(T) Option[U]) Option[U] {
-	if o.present {
-		return fn(o.value)
-	}
-	return None[U]()
-}
-
 // Filter returns the Option if the predicate is true, otherwise None.
 func (o Option[T]) Filter(predicate func(T) bool) Option[T] {
 	if o.present && predicate(o.value) {

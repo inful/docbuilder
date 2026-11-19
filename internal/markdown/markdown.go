@@ -9,13 +9,6 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
-// ParseBody parses a Markdown body (frontmatter already removed) into a Goldmark AST.
-func ParseBody(body []byte, _ Options) (gmast.Node, error) {
-	md := goldmark.New()
-	root := md.Parser().Parse(text.NewReader(body))
-	return root, nil
-}
-
 // ExtractLinks parses a Markdown body and extracts link-like constructs.
 //
 // This is an analysis API; it does not attempt to re-render Markdown.

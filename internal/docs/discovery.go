@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -28,7 +27,6 @@ type DocFile struct {
 	RelativePath string            // Path relative to the docs directory
 	DocsBase     string            // The configured docs base path for this repo (e.g., "docs" or ".")
 	Repository   string            // Repository name
-	Group        string            // GitLab/GitHub group for collision resolution
 	Forge        string            // Optional forge namespace (empty when single or not namespaced)
 	Section      string            // Documentation section/directory
 	Name         string            // File name without extension
@@ -94,18 +92,6 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 		namespaceForges = forgeCount > 1
 	}
 
-	// Determine which repository names collide (case-insensitive). Group
-	// is an *opt-in* collision-resolution segment: it only appears in the
-	// content path when two repositories would otherwise produce the same
-	// directory. Computing this set up front keeps DocFile.Group empty
-	// for the common, non-colliding case so the content tree is not
-	// polluted with a `<group>/` directory that is not needed for
-	// disambiguation.
-	collidingRepos := d.findCollidingRepositoryNames(repoPaths)
-	if err := d.validateGroupCoverage(repoPaths, collidingRepos); err != nil {
-		return nil, err
-	}
-
 	for repoName, repoPath := range repoPaths {
 		repo, exists := d.repositories[repoName]
 		if !exists {
@@ -150,16 +136,7 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 				continue
 			}
 
-			// Group is opt-in: only include it in the content path when
-			// the repository name collides with another repository. For
-			// the common non-colliding case, the group segment would
-			// otherwise turn into a spurious top-level directory under
-			// content/.
-			group := ""
-			if collidingRepos[strings.ToLower(repoName)] {
-				group = repo.Group
-			}
-			files, err := d.walkDocsDirectory(fullDocsPath, repoName, forgeNS, group, docsPath, repo.Tags)
+			files, err := d.walkDocsDirectory(fullDocsPath, repoName, forgeNS, docsPath, repo.Tags)
 			if err != nil {
 				return nil, errors.WrapError(err, errors.CategoryDocs, "documentation directory walk failed").
 					WithContext("path", docsPath).
@@ -197,7 +174,7 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 }
 
 // walkDocsDirectory recursively walks a documentation directory.
-func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, group, relativePath string, metadata map[string]string) ([]DocFile, error) {
+func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, relativePath string, metadata map[string]string) ([]DocFile, error) {
 	var files []DocFile
 
 	err := filepath.Walk(docsPath, func(path string, info os.FileInfo, err error) error {
@@ -250,7 +227,6 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, group, relati
 			RelativePath: relPath,
 			DocsBase:     relativePath,
 			Repository:   repoName,
-			Group:        group,
 			Forge:        forgeNS,
 			Section:      section,
 			Name:         strings.TrimSuffix(info.Name(), filepath.Ext(info.Name())),
@@ -297,7 +273,7 @@ func (df *DocFile) LoadContent() error {
 
 // GetHugoPath returns the Hugo-compatible path for this documentation file.
 func (df *DocFile) GetHugoPath(isSingleRepo bool) string {
-	return HugoContentPath(df.Forge, df.Group, df.Repository, df.Section, df.Name, df.Extension, isSingleRepo)
+	return HugoContentPath(df.Forge, df.Repository, df.Section, df.Name, df.Extension, isSingleRepo)
 }
 
 // HugoContentPath returns the Hugo content path for a file described by its
@@ -307,8 +283,7 @@ func (df *DocFile) GetHugoPath(isSingleRepo bool) string {
 // Path shapes:
 //
 //	Single repository:            content/{section}/{name}{ext}
-//	With Group:                   content/{group}/{repository}/{section}/{name}{ext}
-//	With Forge:                   content/{forge}/{group}/{repository}/{section}/{name}{ext}
+//	With Forge:                   content/{forge}/{repository}/{section}/{name}{ext}
 //	Multiple repos, single forge: content/{repository}/{section}/{name}{ext}
 //	Multiple forges:              content/{forge}/{repository}/{section}/{name}{ext}
 //
@@ -321,17 +296,10 @@ func (df *DocFile) GetHugoPath(isSingleRepo bool) string {
 // the doc-copy stage and the index generators agree on the case of the
 // directory. Otherwise case-insensitive filesystems alias "Drift" and
 // "drift" to the same directory and Hugo produces doubled publish paths.
-func HugoContentPath(forge, group, repository, section, name, ext string, isSingleRepo bool) string {
+func HugoContentPath(forge, repository, section, name, ext string, isSingleRepo bool) string {
 	parts := []string{"content"}
 	if forge != "" {
 		parts = append(parts, strings.ToLower(forge))
-	}
-
-	// Include Group if present for collision resolution. Group is a
-	// GitLab/GitHub organization segment that disambiguates repos
-	// sharing a name across different orgs.
-	if group != "" {
-		parts = append(parts, strings.ToLower(group))
 	}
 
 	if !isSingleRepo && repository != "" {
@@ -516,60 +484,4 @@ func (d *Discovery) detectPathCollisions() error {
 // Used by Hugo generator to determine if repository namespace should be skipped in paths.
 func (d *Discovery) IsSingleRepo() bool {
 	return d.isSingleRepo
-}
-
-// findCollidingRepositoryNames returns the set of lowercased repository
-// names that appear more than once in the active build. The returned map
-// is keyed by lowercased name so callers can do case-insensitive
-// lookups. Repositories whose names do not collide never need a group
-// segment in their content path; including one would add a spurious
-// top-level sidebar entry in the rendered Hugo site.
-func (d *Discovery) findCollidingRepositoryNames(repoPaths map[string]string) map[string]bool {
-	seen := make(map[string]string) // lowercased name -> original (first occurrence)
-	colliding := make(map[string]bool)
-	for repoName := range repoPaths {
-		// Skip repos that discovery has already filtered out (e.g. via
-		// .docignore) - they are not in repoPaths, so they are absent
-		// here and do not contribute to collisions.
-		key := strings.ToLower(repoName)
-		if _, exists := seen[key]; exists {
-			colliding[key] = true
-			continue
-		}
-		seen[key] = repoName
-	}
-	return colliding
-}
-
-// validateGroupCoverage returns an error if any repository whose name
-// collides with another repository does not have a Group set. Without
-// a group, the two colliding repos would land at the same content path
-// and the case-insensitive path-collision check downstream would fail
-// with a less actionable error. Surfacing the misconfiguration here
-// gives the user a clear remediation: set `group:` on the colliding
-// repositories.
-func (d *Discovery) validateGroupCoverage(repoPaths map[string]string, collidingRepos map[string]bool) error {
-	var missing []string
-	for repoName := range repoPaths {
-		key := strings.ToLower(repoName)
-		if !collidingRepos[key] {
-			continue
-		}
-		repo, ok := d.repositories[repoName]
-		if !ok {
-			continue
-		}
-		if strings.TrimSpace(repo.Group) == "" {
-			missing = append(missing, repoName)
-		}
-	}
-	if len(missing) == 0 {
-		return nil
-	}
-	sort.Strings(missing)
-	return errors.DocsError("colliding repositories are missing 'group' for disambiguation").
-		WithContext("repositories", missing).
-		WithContext("hint", "set a distinct 'group' value on each colliding repository in the config so the content tree can disambiguate them").
-		WithCause(derrors.ErrPathCollision).
-		Build()
 }

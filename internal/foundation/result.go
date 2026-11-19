@@ -80,23 +80,6 @@ func Map[T, U any, E error](r Result[T, E], fn func(T) U) Result[U, E] {
 	return Err[U, E](r.err)
 }
 
-// FlatMap transforms a successful Result[T, E] to Result[U, E] using a function
-// that itself returns a Result. This prevents Result[Result[U, E], E].
-func FlatMap[T, U any, E error](r Result[T, E], fn func(T) Result[U, E]) Result[U, E] {
-	if r.isOk {
-		return fn(r.value)
-	}
-	return Err[U, E](r.err)
-}
-
-// MapErr transforms the error type of a failed Result.
-func MapErr[T any, E1, E2 error](r Result[T, E1], fn func(E1) E2) Result[T, E2] {
-	if r.isOk {
-		return Ok[T, E2](r.value)
-	}
-	return Err[T, E2](fn(r.err))
-}
-
 // FromTuple creates a Result from the traditional Go (value, error) pattern.
 func FromTuple[T any, E error](value T, err E) Result[T, E] {
 	if any(err) != nil {

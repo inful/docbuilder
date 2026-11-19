@@ -149,5 +149,4 @@ type RepositoryInfo struct {
 	Tags       map[string]string
 	DocsBase   string
 	DocsPaths  []string // All configured documentation paths
-	Namespace  string   // For namespaced repos
 }
