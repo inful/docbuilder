@@ -29,6 +29,18 @@ import (
 // BinaryRenderer invokes the `hugo` binary present on PATH.
 type BinaryRenderer struct{}
 
+// hugoLogLevelArg returns the log level to ask Hugo for.
+//
+// Hugo writes a lot at debug level - tens of megabytes for a big site
+// - and the daemon drops those lines at the usual log level anyway.
+// So it is only asked for them when the daemon logs at debug level.
+func hugoLogLevelArg(ctx context.Context) string {
+	if slog.Default().Enabled(ctx, slog.LevelDebug) {
+		return "debug"
+	}
+	return "info"
+}
+
 // getEnvValue returns the value of the environment variable identified by key
 // from the provided env slice, which contains entries in "KEY=VALUE" form.
 // It returns the value and true if key is found, or an empty string and false otherwise.
@@ -128,8 +140,11 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	}
 	slog.Debug("Staging directory confirmed before Hugo", "dir", rootDir, "is_dir", stat.IsDir())
 
-	// Increase log verbosity for better diagnostics
-	cmd := exec.CommandContext(ctx, "hugo", "--logLevel", "debug")
+	// Hugo writes a lot at debug level - tens of megabytes for a big
+	// site - and the daemon drops those lines at the usual log level
+	// anyway. Ask for them only when the daemon logs at debug level.
+	//nolint:gosec // the log level is one of two constants this file picks
+	cmd := exec.CommandContext(ctx, "hugo", "--logLevel", hugoLogLevelArg(ctx))
 	cmd.Dir = rootDir
 	// Be explicit about environment inheritance. Also, ensure PATH contains the
 	// resolved go binary directory so Hugo Modules can reliably execute `go`.
@@ -159,8 +174,9 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	// Always log Hugo output when non-empty to diagnose issues
 	outStr := stdout.String()
 	errStr := stderr.String()
-	if outStr != "" {
-		// Log each line separately to avoid escaped newlines
+	if outStr != "" && slog.Default().Enabled(ctx, slog.LevelDebug) {
+		// The stdout lines are only logged at debug level. Splitting
+		// them when nobody reads them is work for nothing.
 		for line := range strings.SplitSeq(strings.TrimSpace(outStr), "\n") {
 			if line != "" {
 				slog.Debug("hugo stdout", "line", line)
