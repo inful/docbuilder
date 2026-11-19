@@ -77,12 +77,6 @@ type Daemon struct {
 	optional  *optionalStack
 }
 
-// NewDaemon creates a new daemon instance. It is a thin wrapper
-// around NewDaemonWithConfigFile with no config file to watch.
-func NewDaemon(cfg *config.Config) (*Daemon, error) {
-	return NewDaemonWithConfigFile(cfg, "")
-}
-
 // NewDaemonWithConfigFile creates a new daemon instance with config file watching.
 //
 // The constructor is intentionally a thin recipe over per-concern init
