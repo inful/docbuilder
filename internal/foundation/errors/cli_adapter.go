@@ -89,8 +89,7 @@ func (a *CLIErrorAdapter) formatClassified(err *ClassifiedError) string {
 	// A mistake in the configuration is the user's to fix, so the
 	// message says what to fix. Everything else stays "internal" until
 	// the CLI has user-facing flags for it.
-	switch err.Category() {
-	case CategoryConfig, CategoryValidation:
+	if category := err.Category(); category == CategoryConfig || category == CategoryValidation {
 		return "Error: " + userFacingMessage(err)
 	}
 
