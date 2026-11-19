@@ -481,8 +481,16 @@ func toLowerCase(b byte) byte {
 }
 
 // ConvertToConfigRepositories converts discovered repositories to config.Repository format.
+//
+// The name of a repository is its identity in a build: the clone folder,
+// the state map and the content path all use it. Two repositories can
+// share a name - the same project name in two GitLab subgroups, the
+// same name on two forges - and then one of them eats the other and
+// vanishes from the site without a word. So every name in the list must
+// be its own; the second one with a name gets a name from its full path.
 func (ds *DiscoveryService) ConvertToConfigRepositories(repos []*Repository, forgeManager *Manager) []config.Repository {
 	configRepos := make([]config.Repository, 0, len(repos))
+	usedNames := make(map[string]struct{}, len(repos))
 
 	for _, repo := range repos {
 		// Find the forge config for this repository
@@ -510,8 +518,42 @@ func (ds *DiscoveryService) ConvertToConfigRepositories(repos []*Repository, for
 		}
 
 		configRepo := repo.ToConfigRepository(auth)
+		if _, taken := usedNames[strings.ToLower(configRepo.Name)]; taken {
+			configRepo.Name = uniqueRepoName(repo, usedNames)
+		}
+		usedNames[strings.ToLower(configRepo.Name)] = struct{}{}
 		configRepos = append(configRepos, configRepo)
 	}
 
 	return configRepos
+}
+
+// uniqueRepoName builds a name that no other repository in the list
+// uses. It starts from the repository's full path
+// ("group/subgroup/project"), which is unique on its forge.
+func uniqueRepoName(repo *Repository, used map[string]struct{}) string {
+	base := pathSegment(repo.FullName)
+	if base == "" {
+		base = pathSegment(repo.ID)
+	}
+	if base == "" {
+		base = "repo"
+	}
+
+	name := base
+	for i := 2; ; i++ {
+		if _, taken := used[strings.ToLower(name)]; !taken {
+			return name
+		}
+		name = fmt.Sprintf("%s-%d", base, i)
+	}
+}
+
+// pathSegment turns a name into one path segment: no slashes, no
+// dot-only names.
+func pathSegment(name string) string {
+	name = strings.TrimSpace(name)
+	name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, `\`, "-")
+	return strings.Trim(name, "-.")
 }
