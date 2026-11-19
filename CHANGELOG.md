@@ -40,8 +40,14 @@ commits; pin to a SHA for reproducibility per the README.
   the docs port, and that the toolchain in the image works with a
   writable module cache. It needs no network.
 
-- **The CI tests with Go 1.26**, the version the module needs, and
-  lints with the version `mise.toml` asks for.
+- **The CI lints with the version `mise.toml` asks for** (v2.14.0),
+  so the local gate and the one that decides agree.
+
+  The test job still starts from Go 1.24 on the runner: the branch
+  protection requires a check with that name, and the toolchain
+  directive in `go.mod` decides the version the build actually uses
+  (go1.26.11). Renaming the job needs the check renamed in the
+  repository settings too.
 
 ## [0.24.3] - 2026-11-19
 
