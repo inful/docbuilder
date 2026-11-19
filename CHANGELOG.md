@@ -9,6 +9,24 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-11-19
+
+### Fixed
+- **The documentation passes its own lint**: 111 warnings, all of them
+  real. Ninety-two pages started with a top-level H1 that duplicated
+  the heading the theme renders from the `title` frontmatter; the rule
+  that says so has been in the repository all along and the pages did
+  not follow it. The H1 is gone from each of them, the fingerprint
+  follows the content, and no link pointed at one of the removed
+  headings. The pages still render with one H1: the title.
+
+- **A link in an example is not a link in the document**: the
+  internal-link-style rule flagged every site-rooted link, also the
+  ones inside code blocks and inline code. The how-to guides show what
+  a site-rooted link looks like, so the rule flagged its own examples:
+  nineteen warnings in three files. The rule now skips fenced code
+  blocks and inline code spans.
+
 ## [0.24.4] - 2026-11-19
 
 ### Security
