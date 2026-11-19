@@ -306,6 +306,7 @@ func (s *Server) findNearestValidParent(root, urlPath string) string {
 		// been collapsed — the read-only os.Stat can't escape the
 		// configured docs root.
 		testPath := filepath.Join(root, urlPath, "index.html")
+		//nolint:gosec // the path is cleaned and stays under the docs root
 		if _, err := os.Stat(testPath); err == nil {
 			// Ensure path ends with / for directory-style URLs
 			if !strings.HasSuffix(urlPath, "/") {
@@ -317,6 +318,7 @@ func (s *Server) findNearestValidParent(root, urlPath string) string {
 		// Also check direct file. Same justification as above.
 		if urlPath != "/" {
 			testPath = filepath.Join(root, urlPath)
+			//nolint:gosec // the path is cleaned and stays under the docs root
 			if stat, err := os.Stat(testPath); err == nil && !stat.IsDir() {
 				return urlPath
 			}
