@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
@@ -14,7 +13,6 @@ import (
 // TestJSONStore demonstrates basic functionality of the new state management system.
 func TestJSONStore(t *testing.T) {
 	t.Run("Repository Operations", testRepositoryOperations)
-	t.Run("Build Operations", testBuildOperations)
 	t.Run("Statistics Operations", testStatisticsOperations)
 	t.Run("Health Check", testHealthCheck)
 	t.Run("Persistence", testPersistence)
@@ -151,60 +149,6 @@ func testRepositoryMetadataValidation(t *testing.T, repoStore RepositoryStore) {
 	}
 }
 
-func testBuildOperations(t *testing.T) {
-	store := createTestStore(t)
-	ctx := t.Context()
-	buildStore := store.Builds()
-
-	// Create a build
-	build := &Build{
-		ID:          "build-123",
-		Status:      BuildStatusRunning,
-		StartTime:   time.Now(),
-		TriggeredBy: "manual",
-	}
-
-	createResult := buildStore.Create(ctx, build)
-	if createResult.IsErr() {
-		t.Fatalf("Failed to create build: %v", createResult.UnwrapErr())
-	}
-
-	// Retrieve the build
-	getResult := buildStore.GetByID(ctx, build.ID)
-	if getResult.IsErr() {
-		t.Fatalf("Failed to get build: %v", getResult.UnwrapErr())
-	}
-
-	if getResult.Unwrap().IsNone() {
-		t.Fatal("Build not found after creation")
-	}
-
-	retrieved := getResult.Unwrap().Unwrap()
-	if retrieved.Status != build.Status {
-		t.Errorf("Expected status %v, got %v", build.Status, retrieved.Status)
-	}
-
-	// Update build status
-	build.Status = BuildStatusCompleted
-	build.EndTime = foundation.Some(time.Now())
-
-	updateResult := buildStore.Update(ctx, build)
-	if updateResult.IsErr() {
-		t.Fatalf("Failed to update build: %v", updateResult.UnwrapErr())
-	}
-
-	// List builds
-	listResult := buildStore.List(ctx, ListOptions{})
-	if listResult.IsErr() {
-		t.Fatalf("Failed to list builds: %v", listResult.UnwrapErr())
-	}
-
-	builds := listResult.Unwrap()
-	if len(builds) != 1 {
-		t.Errorf("Expected 1 build, got %d", len(builds))
-	}
-}
-
 func testStatisticsOperations(t *testing.T) {
 	store := createTestStore(t)
 	ctx := t.Context()
@@ -217,17 +161,12 @@ func testStatisticsOperations(t *testing.T) {
 	}
 
 	stats := getResult.Unwrap()
-	initialBuilds := stats.TotalBuilds
+	initialDiscoveries := stats.TotalDiscoveries
 
-	// Record a build
-	build := &Build{
-		ID:     "stats-test-build",
-		Status: BuildStatusCompleted,
-	}
-
-	recordResult := statsStore.RecordBuild(ctx, build)
+	// Record a discovery
+	recordResult := statsStore.RecordDiscovery(ctx, 3)
 	if recordResult.IsErr() {
-		t.Fatalf("Failed to record build: %v", recordResult.UnwrapErr())
+		t.Fatalf("Failed to record discovery: %v", recordResult.UnwrapErr())
 	}
 
 	// Verify statistics updated
@@ -237,11 +176,11 @@ func testStatisticsOperations(t *testing.T) {
 	}
 
 	updatedStats := getResult.Unwrap()
-	if updatedStats.TotalBuilds != initialBuilds+1 {
-		t.Errorf("Expected total builds %d, got %d", initialBuilds+1, updatedStats.TotalBuilds)
+	if updatedStats.TotalDiscoveries != initialDiscoveries+1 {
+		t.Errorf("Expected total discoveries %d, got %d", initialDiscoveries+1, updatedStats.TotalDiscoveries)
 	}
-	if updatedStats.SuccessfulBuilds == 0 {
-		t.Error("Expected successful builds to be incremented")
+	if updatedStats.DocumentsFound != 3 {
+		t.Errorf("Expected 3 documents found, got %d", updatedStats.DocumentsFound)
 	}
 }
 
@@ -338,14 +277,10 @@ func TestStateService(t *testing.T) {
 	// Test store access through service
 	t.Run("Store Access", func(t *testing.T) {
 		repoStore := service.GetRepositoryStore()
-		buildStore := service.GetBuildStore()
 		statsStore := service.GetStatisticsStore()
 
 		if repoStore == nil {
 			t.Error("Repository store is nil")
-		}
-		if buildStore == nil {
-			t.Error("Build store is nil")
 		}
 		if statsStore == nil {
 			t.Error("Statistics store is nil")

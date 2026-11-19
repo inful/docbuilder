@@ -37,38 +37,6 @@ func (ss *jsonStatisticsStore) Update(_ context.Context, stats *Statistics) foun
 	)
 }
 
-func (ss *jsonStatisticsStore) RecordBuild(_ context.Context, build *Build) foundation.Result[struct{}, error] {
-	if build == nil {
-		return foundation.Err[struct{}, error](
-			errors.ValidationError("build cannot be nil").Build(),
-		)
-	}
-
-	ss.store.mu.Lock()
-	defer ss.store.mu.Unlock()
-
-	ss.store.statistics.TotalBuilds++
-	switch build.Status {
-	case BuildStatusCompleted:
-		ss.store.statistics.SuccessfulBuilds++
-	case BuildStatusFailed:
-		ss.store.statistics.FailedBuilds++
-	case BuildStatusPending, BuildStatusRunning, BuildStatusCanceled:
-		// These statuses don't update success/failure counters
-	}
-	ss.store.statistics.LastUpdated = time.Now()
-
-	if ss.store.autoSaveEnabled {
-		if err := ss.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				errors.InternalError("failed to save build statistics").WithCause(err).Build(),
-			)
-		}
-	}
-
-	return foundation.Ok[struct{}, error](struct{}{})
-}
-
 func (ss *jsonStatisticsStore) RecordDiscovery(_ context.Context, documentCount int) foundation.Result[struct{}, error] {
 	if documentCount < 0 {
 		return foundation.Err[struct{}, error](

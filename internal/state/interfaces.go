@@ -37,27 +37,6 @@ type RepositoryStore interface {
 	SetDocFilePaths(ctx context.Context, url string, paths []string) foundation.Result[struct{}, error]
 }
 
-// BuildStore handles build state persistence and queries.
-type BuildStore interface {
-	// Create creates a new build record.
-	Create(ctx context.Context, build *Build) foundation.Result[*Build, error]
-
-	// GetByID retrieves a build by its ID.
-	GetByID(ctx context.Context, id string) foundation.Result[foundation.Option[*Build], error]
-
-	// Update updates an existing build.
-	Update(ctx context.Context, build *Build) foundation.Result[*Build, error]
-
-	// List returns builds with optional filtering and pagination.
-	List(ctx context.Context, opts ListOptions) foundation.Result[[]Build, error]
-
-	// Delete removes a build by ID.
-	Delete(ctx context.Context, id string) foundation.Result[struct{}, error]
-
-	// Cleanup removes old builds to prevent unbounded storage growth.
-	Cleanup(ctx context.Context, maxBuilds int) foundation.Result[int, error]
-}
-
 // ScheduleStore handles schedule state persistence and queries.
 type ScheduleStore interface {
 	// Create creates a new schedule.
@@ -83,9 +62,6 @@ type StatisticsStore interface {
 
 	// Update updates statistics.
 	Update(ctx context.Context, stats *Statistics) foundation.Result[*Statistics, error]
-
-	// RecordBuild updates statistics when a build completes.
-	RecordBuild(ctx context.Context, build *Build) foundation.Result[struct{}, error]
 
 	// RecordDiscovery updates statistics when a discovery completes.
 	RecordDiscovery(ctx context.Context, documentCount int) foundation.Result[struct{}, error]
@@ -135,9 +111,6 @@ type ListOptions struct {
 type Store interface {
 	// Repository operations
 	Repositories() RepositoryStore
-
-	// Build operations
-	Builds() BuildStore
 
 	// Schedule operations
 	Schedules() ScheduleStore

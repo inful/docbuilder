@@ -9,6 +9,23 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.24.1] - 2026-11-19
+
+### Removed
+- **The build store that only its own test used**: the JSON state store
+  had a store for build records — create, read, update, list, delete,
+  clean up. Nothing in the daemon ever wrote a build to it: the build
+  history comes from the event store, and the admin API reads that. The
+  state file kept a `builds` object that was always empty.
+
+### Fixed
+- **The lint exclude globs have a test**: the excludes are globs, and a
+  wrong glob means the wrong files are skipped.
+- **The cache header of the docs server has a test**: the header
+  decides what a reader's browser does with a page. A wrong one either
+  serves stale content for a year or re-downloads everything on every
+  visit.
+
 ## [0.24.0] - 2026-11-19
 
 ### Security

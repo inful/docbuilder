@@ -34,11 +34,6 @@ func (ss *Service) GetRepositoryStore() RepositoryStore {
 	return ss.store.Repositories()
 }
 
-// GetBuildStore provides typed access to build operations.
-func (ss *Service) GetBuildStore() BuildStore {
-	return ss.store.Builds()
-}
-
 // GetStatisticsStore provides typed access to statistics operations.
 func (ss *Service) GetStatisticsStore() StatisticsStore {
 	return ss.store.Statistics()
