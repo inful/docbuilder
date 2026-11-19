@@ -7,7 +7,6 @@ import "log/slog"
 // These are used for structured logging with slog.
 const (
 	KeyJobID      = "job_id"
-	KeyStage      = "stage"
 	KeyRepo       = "repository"
 	KeySection    = "section"
 	KeyError      = "error"
@@ -28,10 +27,9 @@ const (
 
 // The following helpers return slog.Attr for common log fields, allowing composable structured logging.
 
-func JobID(id string) slog.Attr     { return slog.String(KeyJobID, id) }   // JobID returns a slog.Attr for the job ID field.
-func Stage(name string) slog.Attr   { return slog.String(KeyStage, name) } // Stage returns a slog.Attr for the stage name field.
-func Repository(r string) slog.Attr { return slog.String(KeyRepo, r) }     // Repository returns a slog.Attr for the repository name field.
-func Section(s string) slog.Attr    { return slog.String(KeySection, s) }  // Section returns a slog.Attr for the section name field.
+func JobID(id string) slog.Attr     { return slog.String(KeyJobID, id) }  // JobID returns a slog.Attr for the job ID field.
+func Repository(r string) slog.Attr { return slog.String(KeyRepo, r) }    // Repository returns a slog.Attr for the repository name field.
+func Section(s string) slog.Attr    { return slog.String(KeySection, s) } // Section returns a slog.Attr for the section name field.
 
 // Path returns a slog.Attr for a file path.
 func Path(p string) slog.Attr { return slog.String(KeyPath, p) }

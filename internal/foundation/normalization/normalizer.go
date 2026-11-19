@@ -84,23 +84,3 @@ func defaultNormalization(s string) string {
 
 // Func allows custom normalization behavior.
 type Func func(string) string
-
-// WithCustomNormalizer creates a normalizer with custom string normalization.
-func WithCustomNormalizer[T comparable](values map[string]T, defaultValue T, normalizer Func) *Normalizer[T] {
-	normalized := make(map[string]T, len(values))
-	validKeys := make([]string, 0, len(values))
-
-	for k, v := range values {
-		normalizedKey := normalizer(k)
-		normalized[normalizedKey] = v
-		validKeys = append(validKeys, normalizedKey)
-	}
-
-	sort.Strings(validKeys)
-
-	return &Normalizer[T]{
-		validValues:  normalized,
-		defaultValue: defaultValue,
-		validKeys:    validKeys,
-	}
-}
