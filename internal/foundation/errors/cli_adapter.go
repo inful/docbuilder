@@ -82,13 +82,33 @@ func (a *CLIErrorAdapter) FormatError(err error) string {
 
 // formatClassified formats a ClassifiedError for display.
 func (a *CLIErrorAdapter) formatClassified(err *ClassifiedError) string {
-	// For now, treat all foundation errors as internal since we don't have user-facing flags
 	if a.verbose {
 		return err.Error()
 	}
 
+	// A mistake in the configuration is the user's to fix, so the
+	// message says what to fix. Everything else stays "internal" until
+	// the CLI has user-facing flags for it.
+	if category := err.Category(); category == CategoryConfig || category == CategoryValidation {
+		return "Error: " + userFacingMessage(err)
+	}
+
 	// Non-verbose mode for internal errors
 	return "Internal error occurred (use -v for details)"
+}
+
+// userFacingMessage is the message of an error with the message of its
+// cause, so the user sees what to fix and not just that something
+// went wrong.
+func userFacingMessage(err *ClassifiedError) string {
+	cause := err.Cause()
+	if cause == nil {
+		return err.Message()
+	}
+	if classified, ok := AsClassified(cause); ok {
+		return err.Message() + ": " + classified.Message()
+	}
+	return err.Message() + ": " + cause.Error()
 }
 
 // HandleError processes an error and exits the program with appropriate code.

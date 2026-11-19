@@ -9,6 +9,15 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.24.2] - 2026-11-19
+
+### Fixed
+- **A mistake in the configuration says what to fix**: every classified
+  error was reported as "Internal error occurred (use -v for details)", so
+  a user whose configuration the daemon refused had to guess that `-v`
+  existed to learn why. A configuration or validation error now shows its
+  message: `Error: validation failed: duplicate repository name`.
+
 ## [0.24.1] - 2026-11-19
 
 ### Removed
