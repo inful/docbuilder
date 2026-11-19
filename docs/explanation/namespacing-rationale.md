@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 7b2e8ea3f800ca8c6641396b4db0e0bc20d0c0742fdc9eac39a8f2f5a90ec27c
-lastmod: "2026-09-27"
+fingerprint: f70b0ba96317c33e71506315120e41a9ed82eea4b083665da3c9904020550d05
+lastmod: "2026-11-19"
 tags:
   - architecture
   - namespacing
@@ -13,7 +13,6 @@ tags:
 title: Namespacing Rationale
 uid: 23db9b8b-6c79-4e9d-b8e6-6afe9251dc94
 ---
-# Forge Namespacing Rationale
 
 ## Problem
 

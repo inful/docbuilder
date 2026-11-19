@@ -5,13 +5,12 @@ categories:
   - how-to
 date: 2026-01-01T00:00:00Z
 description: examples for integrating DocBuilder lint results into pull request comments across different platforms
-fingerprint: 1bc3c81947a9527c894d100720d68feecff36eea577e6be94ed94eef93401b1b
-lastmod: "2026-09-27"
+fingerprint: 6e1bb0767c5b945538dea8636fa59544365e9d7914f14fc472835e53a956a3c5
+lastmod: "2026-11-19"
 tags: []
 title: PR Comment Integration Examples
 uid: bf6c5071-2095-472f-89fc-5319bc2e362b
 ---
-# PR Comment Integration Examples
 
 This document provides examples for integrating DocBuilder lint results into pull request comments across different platforms.
 

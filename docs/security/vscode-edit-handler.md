@@ -4,13 +4,12 @@ aliases:
 categories:
   - security
 date: 2026-01-01T00:00:00Z
-fingerprint: f3e4b636a6711c7828e4aeee2a0a1be2396202a69d04dd06f36470096ee34cfb
-lastmod: "2026-09-27"
+fingerprint: bc14125cc26e7fb3e27c6c3d29616d48b3ee770becd25fbe0d65fb1962337d8b
+lastmod: "2026-11-19"
 tags: []
 title: VS Code Edit Handler Security
 uid: 2fc65921-3513-436e-aa99-8cb4202560cb
 ---
-# VS Code Edit Handler Security
 
 ## Overview
 

@@ -4,8 +4,8 @@ aliases:
 categories:
   - templates
 date: 2026-01-01T00:00:00Z
-fingerprint: ef171b5392aea52dc5576a0ac807e20f387f1bd061baa9cc451e31d0d790c037
-lastmod: "2026-09-27"
+fingerprint: 8a85a301cd51e5dc56ebf2858733e5021361c104a13f785cc40fc9eadd8f8c78
+lastmod: "2026-11-19"
 params:
   docbuilder:
     template:
@@ -19,7 +19,6 @@ tags: []
 title: Guide Template
 uid: 6359eb3d-f704-412d-9f55-373f496a1959
 ---
-# Guide Template
 
 Use this template to create new user guides with consistent structure.
 

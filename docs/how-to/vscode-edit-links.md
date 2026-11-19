@@ -4,13 +4,12 @@ aliases:
 categories:
   - how-to
 date: 2026-01-01T00:00:00Z
-fingerprint: 690b0a0f8ca48c8b5be9f73d3d118e9d61356e2c13d35433408656328489af83
-lastmod: "2026-09-27"
+fingerprint: 4ef709250bcf8419fdc4a31a344e9b0924e049ccbebbcc3021c66f1617c572c5
+lastmod: "2026-11-19"
 tags: []
 title: VS Code Edit Link Integration for Preview Mode
 uid: 4b36f3b0-fb0f-4c79-9ef2-1140347fdbf7
 ---
-# VS Code Edit Link Integration for Preview Mode
 
 ## Overview
 

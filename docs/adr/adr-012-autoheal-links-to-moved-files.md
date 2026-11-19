@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-20T00:00:00Z
-fingerprint: f892b98d99ba8f944e6dbf1793cc1e23aa23731ede1acc2bf8968d1095c02102
-lastmod: "2026-09-27"
+fingerprint: 4e9151699baeff2a8e1f24fb5ad2cce7053f3c53c586f7586e6c9c334580fd7e
+lastmod: "2026-11-19"
 tags:
   - linting
   - refactor
@@ -14,7 +14,6 @@ tags:
 title: 'ADR-012: Autoheal links to files moved'
 uid: 93bcd5b0-7d17-48c0-ac61-e41e2ae93baf
 ---
-# ADR-012: Autoheal links to files moved
 
 **Status**: Accepted  
 **Date**: 2026-01-20  

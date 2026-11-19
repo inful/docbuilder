@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 6dd3bbe6c24cad2761a2fb3a44102845de233a3e37c0e7a08836b54e10eb21fe
-lastmod: "2026-09-27"
+fingerprint: 2f251749b332870c28b43f7bf62a40422d0e16edabd71676ffecca138c6d318e
+lastmod: "2026-11-19"
 tags:
   - reports
   - builds
@@ -13,7 +13,6 @@ tags:
 title: Build Reports Reference
 uid: 48b52695-0104-48d5-a91c-4698b031113e
 ---
-# Build Report Reference
 
 DocBuilder writes a machine-readable `build-report.json` and a summary `build-report.txt` after each build.
 

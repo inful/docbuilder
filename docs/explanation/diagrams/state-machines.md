@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: 4ed6b6c168300a236f780dc9070719c3c27b60f720c5d8861aca954b5137635a
-lastmod: "2026-09-27"
+fingerprint: 5e73e8afc6c1ef3df5ba3cadcdd8856ac61fa9d1f549652da99f3543b97cea0b
+lastmod: "2026-11-19"
 tags:
   - state-machines
   - lifecycle
@@ -13,7 +13,6 @@ tags:
 title: State Machine Diagrams
 uid: bd04a400-e6bb-431f-8c5e-032a486559f7
 ---
-# State Machine Diagrams
 
 This document shows the state transitions for builds, repositories, and theme configuration within DocBuilder.
 

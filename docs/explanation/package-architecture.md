@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 37ec62c78888abfcad9133b78a889c1f3d760e47089347c117230459d29008d5
-lastmod: "2026-10-01"
+fingerprint: 2e0f6c0b1f001d202d4b04baf09789193e3a63f7b8ed35245d151ad2bdd11f66
+lastmod: "2026-11-19"
 tags:
   - architecture
   - packages
@@ -13,7 +13,6 @@ tags:
 title: Package Architecture
 uid: 53887282-d86e-4d04-9062-abfe344d81e1
 ---
-# Package Architecture Guide
 
 This document provides detailed information about each internal package in DocBuilder, including responsibilities, key types, interfaces, and usage patterns.
 

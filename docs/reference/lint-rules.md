@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-29T00:00:00Z
-fingerprint: 6c445b0c9fd81a96064e8e005ec33959e745fddc26baf2e08547b022b29e75d4
-lastmod: "2026-09-28"
+fingerprint: 5bf4f6a1ec26a6f04e47eb6c0fe86468282ec1c272ba36d49a498b493fa3e00d
+lastmod: "2026-11-19"
 tags:
   - linting
   - validation
@@ -13,7 +13,6 @@ tags:
 title: Lint Rules Reference
 uid: cb491357-fc40-4fee-bddc-f68fee69c437
 ---
-# Lint Rules Reference
 
 Complete reference for all documentation linting rules enforced by DocBuilder.
 

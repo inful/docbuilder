@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: 4da725d4c34c586160c4512be5135ac5cf63e723833494585b459392faef3ba5
-lastmod: "2026-09-27"
+fingerprint: b1e865bb006096a16ea4d1b305147b27e44c7198e894c6cc088c9b77ccfdf265
+lastmod: "2026-11-19"
 tags:
   - architecture
   - diagrams
@@ -13,7 +13,6 @@ tags:
 title: Architecture Diagrams Index
 uid: b43f4ed6-21cb-4a80-9cdd-3304d03cca05
 ---
-# Architecture Diagrams Index
 
 This directory contains comprehensive visual representations of DocBuilder's architecture. Each diagram set has been verified against the current codebase implementation.
 

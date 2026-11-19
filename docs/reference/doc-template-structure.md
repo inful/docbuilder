@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2026-01-01T00:00:00Z
-fingerprint: 0a07ce3e52cbef23096d0a25a0db006c6f1bcce3da05e6282b0cf343bd9b3eb6
-lastmod: "2026-10-13"
+fingerprint: c92268d3aaf3d2916e20983e1a3b413ee8c7204578437e09c3d551a3c571c194
+lastmod: "2026-11-19"
 tags:
   - templates
   - authoring
@@ -13,7 +13,6 @@ tags:
 title: Documentation Template Structure
 uid: 09e59ad9-520f-4fcf-bdf4-de00f35115f1
 ---
-# Documentation Template Structure
 
 A **template** is a regular documentation page that, when invoked,
 prompts the user for input and writes a new doc under `docs/` based on

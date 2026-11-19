@@ -4,8 +4,8 @@ aliases:
 categories:
   - ci-cd
 date: 2025-12-15T00:00:00Z
-fingerprint: 3c24d6c95142d2abeb20e4d173c5b8b297961fc251239e08363d0b45478366b3
-lastmod: "2026-11-10"
+fingerprint: fefd7538419e04e6b8651414359e65d0f5a671a0945d933a4f5f703ae841c83d
+lastmod: "2026-11-19"
 tags:
   - continuous-integration
   - docker
@@ -13,7 +13,6 @@ title: CI/CD Setup
 uid: d7da54f5-3864-4e53-b004-d8d3ae551f98
 ---
 
-# CI/CD Setup
 
 CI/CD pipeline configuration for DocBuilder using GitHub Actions and Forgejo Actions.
 

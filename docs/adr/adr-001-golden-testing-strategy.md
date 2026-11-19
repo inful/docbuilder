@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2025-12-12T00:00:00Z
-fingerprint: 44b33daffd1eaf41fa0d7ca0bcddb44bae0443d16cb3d3c0ec95afbd7c8bb5ff
-lastmod: "2026-09-27"
+fingerprint: 46c2f769ca0f7f2ec0467172e02ee184cc5aeaba57dc7dee9dcd41ab38f0ca79
+lastmod: "2026-11-19"
 tags:
   - testing
   - golden-tests
@@ -14,7 +14,6 @@ title: 'ADR-001: Golden Testing Strategy for Output Verification'
 uid: 93f56604-829d-4753-a7dc-9e7447a7af4f
 weight: 2
 ---
-# ADR-001: Golden Testing Strategy for Output Verification
 
 Date: 2025-12-12
 

@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-20T00:00:00Z
-fingerprint: 1557269565e0808da88399b2f7aae551918ec4f05cc7288e3484d5f3b3b5da68
-lastmod: "2026-09-27"
+fingerprint: c1f090322dfa49e844840ee5d895ea98de084f091837c895f99e02b846734161
+lastmod: "2026-11-19"
 tags:
   - frontmatter
   - yaml
@@ -16,7 +16,6 @@ tags:
 title: 'ADR-014: Centralize frontmatter parsing and writing'
 uid: 5b920f1e-30f3-40ab-9c34-86eb5f8f8db4
 ---
-# ADR-014: Centralize frontmatter parsing and writing
 
 **Status**: Accepted 
 **Date**: 2026-01-20  
