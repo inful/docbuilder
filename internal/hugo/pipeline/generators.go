@@ -98,11 +98,9 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 
 			// Build the content path via the single source of truth
 			// (docs.HugoContentPath) so this stage agrees with the
-			// doc-copy stage on the case of every path component. The
-			// Namespace is passed as the Group segment so cross-org
-			// collisions are resolved in the URL.
+			// doc-copy stage on the case of every path component.
 			doc := &Document{
-				Path:       docs.HugoContentPath(repoMeta.Forge, repoMeta.Namespace, repo, "", indexFileSuffix, markdownExtension, ctx.IsSingleRepo),
+				Path:       docs.HugoContentPath(repoMeta.Forge, repo, "", indexFileSuffix, markdownExtension, ctx.IsSingleRepo),
 				IsIndex:    true,
 				Generated:  true,
 				Repository: repo,
@@ -189,9 +187,8 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 		// Build section path via the single source of truth
 		// (docs.HugoContentPath) so this stage agrees with the doc-copy
 		// stage on the case of every path component. The helper handles
-		// the single-repo skip, forge namespacing, and group (Namespace)
-		// collision resolution internally.
-		sectionPath := docs.HugoContentPath(repoMeta.Forge, repoMeta.Namespace, repo, sectionName, indexFileSuffix, markdownExtension, ctx.IsSingleRepo)
+		// the single-repo skip and the forge namespacing internally.
+		sectionPath := docs.HugoContentPath(repoMeta.Forge, repo, sectionName, indexFileSuffix, markdownExtension, ctx.IsSingleRepo)
 
 		// Use a deterministic epoch date so reproducible builds don't churn
 		// the fingerprint across runs. Auto-generated section indexes are

@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: 5b7d042357aa9f55a1a88f6cc5165f3ba6e5c080bd2072ebb5a042aaade210fd
-lastmod: "2026-09-27"
+fingerprint: 08d9c3d12bd094115acebc27f2fc33a8c9ca2660e9ff02752660da3b5477ee4d
+lastmod: "2026-11-19"
 tags:
   - forge
   - namespacing
@@ -40,20 +40,23 @@ The `namespace` field takes precedence over automatic detection. This is useful 
 - Automatic detection fails (e.g., self-hosted GitLab without explicit forge metadata)
 - You want to use a custom namespace for grouping
 
-## Group Collision Resolution
+## Repository Names Are Unique
 
-When multiple repositories share the same name across different GitLab/GitHub groups, use the `group` field to disambiguate:
+Every repository needs its own name. Two repositories with one name would
+share a clone folder, a state entry and a content folder, so one of them
+would silently vanish from the site. A configuration with two repositories
+of the same name is refused when it is loaded.
+
+Give each repository a name that says where it comes from:
 
 ```yaml
 repositories:
-  - name: docs
+  - name: acme-docs
     url: https://github.com/acme/docs
     namespace: github
-    group: engineering
-  - name: docs
+  - name: initech-docs
     url: https://github.com/initech/docs
     namespace: github
-    group: product
 ```
 
 This creates paths like:
@@ -61,13 +64,13 @@ This creates paths like:
 ```
 content/
   github/
-    engineering/
-      docs/...
-    product/
-      docs/...
+    acme-docs/...
+    initech-docs/...
 ```
 
-**Note**: Repository names must still be unique when combined with their namespace and group. If you have two repos with the same name in the same group, you should differentiate them (e.g., `group-a/common-name` vs `group-b/common-name`).
+Repositories that are found on a forge do not need this: when two of them
+share a name, the second one gets a name from its full path
+(`acme/docs` becomes `acme-docs`).
 
 ## Example Layouts
 
@@ -79,17 +82,6 @@ content/
     service-a/...
   gitlab/
     service-b/...
-```
-
-With groups:
-
-```
-content/
-  github/
-    engineering/
-      service-a/...
-    product/
-      service-a/...
 ```
 
 Single forge (auto or never):

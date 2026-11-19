@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 84d12b0bbf0a653923d28428a6e1ef0f76d025ad2b8c4140aec05b7993d6b999
+fingerprint: 92b30ccb1bbb9f278d8fe67f1afaf0c7cd0c2a12c666ad4d3f0011be8072b2da
 lastmod: "2026-11-19"
 tags:
   - configuration
@@ -41,7 +41,8 @@ Two repositories with the same name are refused when the configuration is
 loaded. The name is the identity of a repository in a build: the clone
 folder, the state map and the content path all use it, so two repositories
 with one name would eat each other and one of them would vanish from the
-site.
+site. Give each repository a name that says where it comes from, e.g.
+`acme-docs` and `initech-docs`.
 
 Repositories that are found on a forge do not need this: when two of them
 share a name, the second one gets a name from its full path
@@ -49,7 +50,6 @@ share a name, the second one gets a name from its full path
 | branch | string | no | Branch to checkout (default per remote). |
 | paths | []string | no | Documentation root paths (default: ["docs"]). |
 | namespace | string | no | Explicit forge namespace alias (e.g., "github", "gitlab"). Overrides forge_type detection. |
-| group | string | no | GitLab/GitHub group for collision resolution (e.g., "engineering"). Creates paths like `content/<forge>/<group>/<repo>/...`. |
 | auth.type | enum | no | Authentication mode: `token`, `ssh`, or `basic`. |
 | auth.token | string | conditional | Required when `type=token`. |
 | auth.username | string | conditional | Required when `type=basic`. |
