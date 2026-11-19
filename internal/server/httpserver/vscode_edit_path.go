@@ -79,6 +79,7 @@ func (s *Server) validateMarkdownFile(path string) error {
 	// value returned by validateAndResolveEditPath, which has already
 	// confirmed the path is within the configured docs directory via
 	// filepath.Clean + HasPrefix check.
+	//nolint:gosec // the path was checked to be inside the docs directory
 	fileInfo, err := os.Lstat(path)
 	if err != nil {
 		if os.IsNotExist(err) {

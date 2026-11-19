@@ -2,7 +2,7 @@
 delta = "latest"
 "github:aovestdipaperino/tokensave" = "latest"
 "github:zzet/gortex" = "latest"
-golangci-lint = "latest"
+golangci-lint = "2.14.0"
 just = "latest"
 lazygit = "latest"
 lefthook = "latest"

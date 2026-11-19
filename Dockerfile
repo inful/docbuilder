@@ -14,10 +14,14 @@ ARG GO_VERSION="1.24.0"
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install minimal dependencies
+#
+# Pinning apt versions against a rolling base image breaks the build
+# the next time Debian ships a security update.
+# hadolint ignore=DL3008
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl wget
+    ca-certificates wget
 
 # Download Go with caching (needed for Hugo modules)
 RUN --mount=type=cache,target=/tmp/downloads \
@@ -36,8 +40,8 @@ RUN --mount=type=cache,target=/tmp/downloads \
     echo "Downloading Hugo ${HUGO_VERSION} for ${TARGETOS}-${HUGO_ARCH}" && \
     HUGO_FILE="hugo_extended_${HUGO_VERSION}_${TARGETOS}-${HUGO_ARCH}.tar.gz" && \
     if [ ! -f "/tmp/downloads/${HUGO_FILE}" ]; then \
-      curl -fsSL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/${HUGO_FILE}" \
-      -o "/tmp/downloads/${HUGO_FILE}"; \
+      wget -q "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/${HUGO_FILE}" \
+      -O "/tmp/downloads/${HUGO_FILE}"; \
     fi && \
     tar -xz -C /tmp -f "/tmp/downloads/${HUGO_FILE}" hugo && \
     mv /tmp/hugo /usr/local/bin/hugo && \
@@ -55,14 +59,18 @@ WORKDIR /src
 COPY dist/ dist/
 
 # Extract pre-built binary from GoReleaser artifacts
-RUN BINARY_PATH="dist/docbuilder_${TARGETOS}_${TARGETARCH}*/docbuilder" && \
-    if ls $BINARY_PATH 1> /dev/null 2>&1; then \
+#
+# The path holds a * that stands for the GoReleaser build directory.
+# find matches it, so the path can stay quoted.
+RUN BINARY_PATTERN="dist/docbuilder_${TARGETOS}_${TARGETARCH}*/docbuilder" && \
+    BINARY_PATH="$(find dist/ -type f -path "$BINARY_PATTERN" -print -quit 2>/dev/null)" && \
+    if [ -n "$BINARY_PATH" ]; then \
       echo "✅ Found pre-built binary: $BINARY_PATH" && \
       mkdir -p /out && \
-      cp $BINARY_PATH /out/docbuilder && \
+      cp "$BINARY_PATH" /out/docbuilder && \
       chmod +x /out/docbuilder; \
     else \
-      echo "❌ ERROR: No pre-built binary found at $BINARY_PATH" && \
+      echo "❌ ERROR: No pre-built binary found at $BINARY_PATTERN" && \
       echo "Available files:" && \
       find dist/ -type f && \
       exit 1; \
@@ -81,6 +89,10 @@ ARG HUGO_VERSION="0.152.2"
 WORKDIR /data
 
 # Install minimal runtime dependencies (ca-certificates for HTTPS, bash for script execution)
+#
+# Pinning apt versions against a rolling base image breaks the build
+# the next time Debian ships a security update.
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
@@ -89,18 +101,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN useradd -m -u 65532 nonroot
 
 # Copy pre-built binaries
-COPY --from=binary /out/docbuilder /usr/local/bin/docbuilder
-COPY --from=downloader /usr/local/bin/hugo /usr/local/bin/hugo
+#
+# --chown sets the ownership in the same layer as the content. A
+# "chown -R" afterwards would write the ownership of every file into
+# a layer of its own - 25 MB of the image for metadata alone.
+COPY --from=binary --chown=nonroot:nonroot /out/docbuilder /usr/local/bin/docbuilder
+COPY --from=downloader --chown=nonroot:nonroot /usr/local/bin/hugo /usr/local/bin/hugo
 COPY --from=downloader /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
 # Copy Go runtime (required for Hugo modules)
-COPY --from=downloader /usr/local/go /usr/local/go
+COPY --from=downloader --chown=nonroot:nonroot /usr/local/go /usr/local/go
 
-# Set permissions for nonroot user
-RUN chown -R nonroot:nonroot /data /usr/local/bin/docbuilder /usr/local/bin/hugo
+# The work directory belongs to the user that runs the daemon. It is
+# empty, so this layer holds one directory entry.
+RUN chown nonroot:nonroot /data
 
-USER nonroot:nonroot
+# The numeric id, so the image runs on a host that does not know the
+# name, and the home directory the name gave us - the Go module cache
+# for Hugo Modules lives there.
+USER 65532:65532
 
+ENV HOME=/home/nonroot
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV HUGO_ENV=production
 ENV GOROOT=/usr/local/go
