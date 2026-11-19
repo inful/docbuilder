@@ -160,11 +160,11 @@ func isPermanentGitError(err error) bool {
 	if strings.Contains(msg, "unsupported protocol") {
 		return true
 	}
-	var nerr net.Error
-	if stdErrors.As(err, &nerr) {
-		return !nerr.Timeout()
+	nerr, ok := stdErrors.AsType[net.Error](err)
+	if !ok {
+		return false
 	}
-	return false
+	return !nerr.Timeout()
 }
 
 // IsPermanentGitError is exposed for tests within package.

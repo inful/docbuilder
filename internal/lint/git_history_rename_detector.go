@@ -121,8 +121,8 @@ func gitDiffRenamesRange(ctx context.Context, repoRoot string, rangeSpec string)
 	cmd := exec.CommandContext(ctx, "git", args...)
 	out, err := cmd.Output()
 	if err != nil {
-		var ee *exec.ExitError
-		if errors.As(err, &ee) {
+		ee, ok := errors.AsType[*exec.ExitError](err)
+		if ok {
 			return nil, fmt.Errorf("git diff %s failed: %w: %s", rangeSpec, err, string(ee.Stderr))
 		}
 		return nil, fmt.Errorf("git diff %s failed: %w", rangeSpec, err)
