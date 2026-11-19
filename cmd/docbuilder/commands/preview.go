@@ -46,6 +46,22 @@ type PreviewCmd struct {
 	VSCode         bool   `name:"vscode" help:"Enable VS Code edit links (opens files in editor via /_edit/ handler)."`
 }
 
+// previewHTTPConfig returns the ports for the preview server.
+//
+// The admin API has no password and can start builds, so it stays on
+// the loopback interface - the same as the daemon. The docs port
+// stays open so a developer can look at the site from another
+// machine.
+func previewHTTPConfig(port, liveReloadPort int) config.HTTPConfig {
+	return config.HTTPConfig{
+		DocsPort:       port,
+		WebhookPort:    port + 1,
+		AdminPort:      port + 2,
+		LiveReloadPort: liveReloadPort,
+		AdminBind:      "127.0.0.1",
+	}
+}
+
 //nolint:forbidigo // fmt is used for user-facing messages
 func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 	// Setup signal-based context for graceful shutdown
@@ -72,12 +88,7 @@ func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 		liveReloadPort = p.Port + 3
 	}
 	cfg.Daemon = &config.DaemonConfig{
-		HTTP: config.HTTPConfig{
-			DocsPort:       p.Port,
-			WebhookPort:    p.Port + 1,
-			AdminPort:      p.Port + 2,
-			LiveReloadPort: liveReloadPort,
-		},
+		HTTP: previewHTTPConfig(p.Port, liveReloadPort),
 	}
 
 	// If no output provided, create a temporary directory
