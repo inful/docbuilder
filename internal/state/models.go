@@ -1,7 +1,6 @@
 package state
 
 import (
-	"slices"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
@@ -37,22 +36,6 @@ const (
 	BuildStatusFailed    BuildStatus = "failed"
 	BuildStatusCanceled  BuildStatus = "canceled"
 )
-
-// Build represents a build operation and its state.
-type Build struct {
-	ID          string                       `json:"id"`
-	Status      BuildStatus                  `json:"status"`
-	StartTime   time.Time                    `json:"start_time"`
-	EndTime     foundation.Option[time.Time] `json:"end_time"`
-	Duration    foundation.Option[float64]   `json:"duration_seconds"`
-	TriggeredBy string                       `json:"triggered_by"`
-	CommitHash  foundation.Option[string]    `json:"commit_hash"`
-	ErrorMsg    foundation.Option[string]    `json:"error_message"`
-	OutputPath  foundation.Option[string]    `json:"output_path"`
-	LogLevel    string                       `json:"log_level"`
-	CreatedAt   time.Time                    `json:"created_at"`
-	UpdatedAt   time.Time                    `json:"updated_at"`
-}
 
 // ScheduleConfig represents strongly-typed config for a schedule.
 type ScheduleConfig struct {
@@ -130,36 +113,6 @@ func (r *Repository) Validate() foundation.ValidationResult {
 	return foundation.Valid()
 }
 
-// Validate validates a Build using foundation utilities.
-func (b *Build) Validate() foundation.ValidationResult {
-	var errors []foundation.FieldError
-
-	// Validate required fields
-	if b.ID == "" {
-		errors = append(errors, foundation.NewValidationError("id", "required", "ID is required"))
-	}
-	if b.TriggeredBy == "" {
-		errors = append(errors, foundation.NewValidationError("triggered_by", "required", "triggered_by is required"))
-	}
-
-	// Validate status
-	validStatuses := []BuildStatus{BuildStatusPending, BuildStatusRunning, BuildStatusCompleted, BuildStatusFailed, BuildStatusCanceled}
-	statusValid := slices.Contains(validStatuses, b.Status)
-	if !statusValid {
-		errors = append(errors, foundation.NewValidationError("status", "invalid", "invalid build status"))
-	}
-
-	// Validate time relationships
-	if b.EndTime.IsSome() && b.EndTime.Unwrap().Before(b.StartTime) {
-		errors = append(errors, foundation.NewValidationError("end_time", "invalid", "end time must be after start time"))
-	}
-
-	if len(errors) > 0 {
-		return foundation.Invalid(errors...)
-	}
-	return foundation.Valid()
-}
-
 // Validate validates a Schedule using foundation utilities.
 func (s *Schedule) Validate() foundation.ValidationResult {
 	var errors []foundation.FieldError
@@ -187,38 +140,6 @@ func (s *Schedule) Validate() foundation.ValidationResult {
 		return foundation.Invalid(errors...)
 	}
 	return foundation.Valid()
-}
-
-// UpdateBuildStats updates statistics when a build completes.
-func (s *Statistics) UpdateBuildStats(build *Build) {
-	if build == nil {
-		return
-	}
-
-	s.TotalBuilds++
-
-	switch build.Status {
-	case BuildStatusCompleted:
-		s.SuccessfulBuilds++
-	case BuildStatusFailed:
-		s.FailedBuilds++
-	case BuildStatusPending, BuildStatusRunning, BuildStatusCanceled:
-		// These statuses don't update success/failure counters
-	}
-
-	// Update average build time if we have duration
-	if build.Duration.IsSome() {
-		duration := build.Duration.Unwrap()
-		if s.TotalBuilds == 1 {
-			s.AverageBuildTime = duration
-		} else {
-			// Calculate running average
-			totalTime := s.AverageBuildTime * float64(s.TotalBuilds-1)
-			s.AverageBuildTime = (totalTime + duration) / float64(s.TotalBuilds)
-		}
-	}
-
-	s.LastUpdated = time.Now()
 }
 
 // Reset resets statistics counters.

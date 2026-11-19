@@ -24,7 +24,6 @@ type JSONStore struct {
 	dataDir         string
 	mu              sync.RWMutex
 	repositories    map[string]*Repository
-	builds          map[string]*Build
 	schedules       map[string]*Schedule
 	statistics      *Statistics
 	configuration   map[string]any
@@ -44,7 +43,6 @@ type stateSnapshot struct {
 	LastUpdate    time.Time              `json:"last_update"`
 	Status        string                 `json:"status"`
 	Repositories  map[string]*Repository `json:"repositories"`
-	Builds        map[string]*Build      `json:"builds"`
 	Schedules     map[string]*Schedule   `json:"schedules"`
 	Statistics    *Statistics            `json:"statistics"`
 	Configuration map[string]any         `json:"configuration,omitempty"`
@@ -64,7 +62,6 @@ func NewJSONStore(dataDir string) foundation.Result[*JSONStore, error] {
 	store := &JSONStore{
 		dataDir:         dataDir,
 		repositories:    make(map[string]*Repository),
-		builds:          make(map[string]*Build),
 		schedules:       make(map[string]*Schedule),
 		configuration:   make(map[string]any),
 		autoSaveEnabled: true,
@@ -116,11 +113,6 @@ func (js *JSONStore) quarantineStateFile() (string, error) {
 // Repositories returns the repository store interface.
 func (js *JSONStore) Repositories() RepositoryStore {
 	return &jsonRepositoryStore{store: js}
-}
-
-// Builds returns the build store interface.
-func (js *JSONStore) Builds() BuildStore {
-	return &jsonBuildStore{store: js}
 }
 
 // Schedules returns the schedule store interface.
@@ -263,11 +255,6 @@ func (js *JSONStore) applySnapshot(snapshot stateSnapshot) {
 	} else if js.repositories == nil {
 		js.repositories = make(map[string]*Repository)
 	}
-	if snapshot.Builds != nil {
-		js.builds = snapshot.Builds
-	} else if js.builds == nil {
-		js.builds = make(map[string]*Build)
-	}
 	if snapshot.Schedules != nil {
 		js.schedules = snapshot.Schedules
 	} else if js.schedules == nil {
@@ -301,7 +288,6 @@ func (js *JSONStore) snapshot() stateSnapshot {
 		LastUpdate:    js.daemonInfo.LastUpdate,
 		Status:        js.daemonInfo.Status,
 		Repositories:  js.repositories,
-		Builds:        js.builds,
 		Schedules:     js.schedules,
 		Statistics:    js.statistics,
 		Configuration: js.configuration,
