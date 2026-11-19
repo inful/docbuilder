@@ -9,6 +9,54 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-11-19
+
+### Security
+- **The MCP server only fetches templates from the template host**: the
+  template tools took a URL and fetched it. The URL comes from the LLM,
+  and the LLM reads whatever it is told to read - including text in a
+  document. So the server could be made to fetch any address: the cloud
+  metadata service with the credentials in it, the daemon's own admin
+  port, anything else on the network. The answer came back in the tool
+  result. A template URL now has to be on the host of the configured
+  template base URL - the same host that `list_templates` already uses.
+
+### Fixed
+- **The NATS reconnect no longer writes the cache bucket without the
+  lock**: the reconnect handler rebuilt the bucket and stored it in the
+  client without taking the lock, while every reader takes the bucket
+  under that lock. A reconnect that landed while a build was reading
+  the cache was a race on an interface value, and a torn read of that
+  crashes the daemon.
+
+### Changed
+- **The `group:` field is gone**: the content path had a group segment
+  for the case where two repositories share a name. It never got there:
+  the group was only used when two repositories in the build had the
+  same name, and the build keys its repositories by name, so one of the
+  two was already gone before the group could be used. A configuration
+  with two repositories of one name is now refused when it is loaded,
+  and discovered repositories that share a name get one of their own,
+  so the case the group was built for can no longer happen.
+  **Breaking**: the `group:` field does nothing and has been removed.
+  Give each repository a name that says where it comes from, e.g.
+  `acme-docs` and `initech-docs`.
+
+### Removed
+- **The helpers that nobody calls**: eight helpers and one whole file
+  had no callers anywhere in the tree - not in the code, not in the
+  tests, not in the configuration.
+
+## [0.23.1] - 2026-11-19
+
+### Changed
+- **Hugo is only asked for its debug output when it is read**: every
+  build ran Hugo with `--logLevel debug`, and the daemon held the
+  output in a buffer, split it into lines and dropped every line,
+  because they are logged at debug level and the daemon usually logs at
+  info level. Hugo is now asked for info output, and for debug output
+  only when the daemon logs at debug level.
+
 ## [0.23.0] - 2026-11-19
 
 ### Security
