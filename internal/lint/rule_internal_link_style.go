@@ -3,6 +3,7 @@ package lint
 import (
 	"os"
 	"regexp"
+	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 )
@@ -52,8 +53,26 @@ func (r *InternalLinkStyleRule) Check(filePath string) ([]Issue, error) {
 
 	var issues []Issue
 	lineNum := 1
+	inFence := ""
 	for _, line := range splitLines(string(body)) {
-		matches := linkRe.FindAllStringSubmatch(line, -1)
+		// A link inside a code block is an example, not a link in the
+		// document. The how-to guides show what a site-rooted link
+		// looks like, and the rule must not flag their own examples.
+		if marker := codeFenceMarker(strings.TrimSpace(line)); marker != "" {
+			if inFence == "" {
+				inFence = marker
+			} else if strings.HasPrefix(marker, inFence) {
+				inFence = ""
+			}
+			lineNum++
+			continue
+		}
+		if inFence != "" {
+			lineNum++
+			continue
+		}
+
+		matches := linkRe.FindAllStringSubmatch(stripInlineCode(line), -1)
 		for _, m := range matches {
 			target := m[1]
 			if isExternal(target) || isAnchor(target) {
@@ -82,6 +101,34 @@ func splitLines(s string) []string {
 		lines = append(lines, s[start:])
 	}
 	return lines
+}
+
+// stripInlineCode removes the inline code spans from a line. A link
+// inside backticks is an example, not a link in the document.
+func stripInlineCode(line string) string {
+	var b strings.Builder
+	inCode := false
+	for _, r := range line {
+		if r == '`' {
+			inCode = !inCode
+			continue
+		}
+		if !inCode {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// codeFenceMarker returns the fence of a markdown code fence line ("```" or
+// "~~~"), or "" when the line does not open or close a fence.
+func codeFenceMarker(line string) string {
+	for _, marker := range []string{"```", "~~~"} {
+		if strings.HasPrefix(line, marker) {
+			return marker
+		}
+	}
+	return ""
 }
 
 func isExternal(target string) bool {
