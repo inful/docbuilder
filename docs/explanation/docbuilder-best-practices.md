@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-01T00:00:00Z
-fingerprint: ec0ff0945c02247b30994bbd244bf4a9085a8cb7ce031c319cc757b7a68face1
-lastmod: "2026-11-10"
+fingerprint: 6dd8fde9ed7db0b2269680e0207d715f4ba1a231f678d5142e3d9321f4552395
+lastmod: "2026-11-19"
 tags:
   - best-practices
   - documentation
@@ -13,7 +13,6 @@ tags:
 title: DocBuilder Documentation Best Practices
 uid: 88a81f71-5a61-405e-a1ef-908b9ca6cabe
 ---
-# DocBuilder Documentation Best Practices
 
 The rules that produce a clean, navigable, lint-clean docbuilder site.
 Each rule below is tagged with:

@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-22T00:00:00Z
-fingerprint: 3b252af3623bbb7c522ab6e1d00c1fb9a27058e7ce42cb925aac27aa17646143
-lastmod: "2026-09-27"
+fingerprint: ef3d958b2d8b4562b74f379fa17a5c53685807d937015bfc04f023abcc62dc6b
+lastmod: "2026-11-19"
 tags:
   - daemon
   - refactor
@@ -17,7 +17,6 @@ tags:
 title: 'ADR-017 Implementation Plan: Split daemon responsibilities'
 uid: 9a3b1d41-7504-4c45-9a93-f18b4d6ccf1b
 ---
-# ADR-017 Implementation Plan: Split daemon responsibilities
 
 **Status**: In Progress  
 **Date**: 2026-01-22  

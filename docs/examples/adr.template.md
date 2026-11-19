@@ -4,8 +4,8 @@ aliases:
 categories:
   - templates
 date: 2026-01-01T00:00:00Z
-fingerprint: c664334ea09728d48ffad4412881f9e6e18b647028ccd1a659feb2322768d1bc
-lastmod: "2026-09-27"
+fingerprint: 614520b46d822c211cc893012b761defc9fb809158f6bc92952cc09a86786c36
+lastmod: "2026-11-19"
 params:
   docbuilder:
     template:
@@ -26,7 +26,6 @@ tags: []
 title: ADR Template
 uid: 0135c423-8777-4292-99e9-19ab7b82b852
 ---
-# Architecture Decision Record Template
 
 This template helps you create new Architecture Decision Records (ADRs) that follow a consistent format.
 

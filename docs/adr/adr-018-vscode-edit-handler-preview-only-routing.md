@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-23T00:00:00Z
-fingerprint: 9a86cd623a58827fe3820a388be2201928d837f758aadaa984ddbc7689043819
-lastmod: "2026-09-27"
+fingerprint: 6a5fb8599ec0a838adb045238db4be6b7734f933e710397b614191f568b38399
+lastmod: "2026-11-19"
 tags:
   - vscode
   - preview
@@ -15,7 +15,6 @@ tags:
 title: 'ADR-018: Register VS Code edit handler only in local preview'
 uid: 6b9c3b0c-1f76-45fb-8d3b-7bc8d0d8ab2b
 ---
-# ADR-018: Register VS Code edit handler only in local preview
 
 **Status**: Proposed  
 **Date**: 2026-01-23  

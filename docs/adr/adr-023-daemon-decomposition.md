@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-10-04T00:00:00Z
-fingerprint: f7017f1ce5a1636f19271e8daabd09ab23adc4ee5c383f2e0b619e32fd695cff
-lastmod: "2026-10-04"
+fingerprint: 0185065a71739b6f0d5ffa700b84669e726f50fd3e9f74fe561c38787f89342d
+lastmod: "2026-11-19"
 tags:
   - daemon
   - refactor
@@ -15,7 +15,6 @@ title: 'ADR-023: Decompose the Daemon god class'
 uid: ce53277a-bda7-4d1e-8fb7-8db4c3afdf5d
 ---
 
-# ADR-023: Decompose the Daemon god class
 
 ## Status
 

@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2026-01-01T00:00:00Z
-fingerprint: 60315f9b418ea872f5ba4e12f0aa78f88ab0bf762cadd34cb09adae0baef89a1
-lastmod: "2026-09-27"
+fingerprint: 76668e2f119fc2f6a6e62f07108c66bcc078c9680d2de35403c76ba8877e4c46
+lastmod: "2026-11-19"
 tags:
   - frontmatter
   - structure
@@ -13,7 +13,6 @@ tags:
 title: Documentation Page Structure
 uid: c941e505-3989-41d2-85a2-e51318114c80
 ---
-# Documentation Page Structure
 
 This page describes what a valid docbuilder documentation page looks like:
 the required and optional frontmatter fields, body rules, and filename

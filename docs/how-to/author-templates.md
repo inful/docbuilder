@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2026-02-02T00:00:00Z
-fingerprint: 1004186fb8ac38c9d901578830d83550d3fcb07c522aa294d76763f0fa487227
-lastmod: "2026-10-13"
+fingerprint: 28846efed9bda6d0349bf4a1d0b749525caa7764ec8564a034ab5124a384e5b7
+lastmod: "2026-11-19"
 tags:
   - templates
   - authoring
@@ -14,7 +14,6 @@ tags:
 title: Authoring Documentation Templates
 uid: 730751d6-527e-4897-ba8d-305ee7d8f017
 ---
-# Authoring Documentation Templates
 
 This guide explains how to create and publish templates for use with `docbuilder template new`.
 

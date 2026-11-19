@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-26T00:00:00Z
-fingerprint: 316a9e428ffb47075537a7ef67fcd85589050988f3a955bea1dc9e01ef383448
-lastmod: "2026-09-27"
+fingerprint: 58c24f6505e9dd30a6cd15f8123eda6aae7a19449d76ec0da26edcfeac7f2f81
+lastmod: "2026-11-19"
 tags:
   - daemon
   - events
@@ -13,7 +13,6 @@ tags:
 title: 'ADR-021 Implementation Plan: Event-driven daemon updates and debounced builds'
 uid: eaad3c8b-1c8a-4d4d-a3eb-ff4e7bbebf4c
 ---
-# ADR-021 Implementation Plan: Event-driven daemon updates and debounced builds
 
 This plan intentionally evolves the daemon without a big-bang rewrite.
 

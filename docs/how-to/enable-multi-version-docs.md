@@ -4,15 +4,14 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: 514c7da3d037892eca103fd15de6af26ef4cf1ec9365baa15f65727704e22a5f
-lastmod: "2026-09-27"
+fingerprint: 3e2a6b3b9a8fcbf8c861008b8fbc9738694cf823391a0a7530e10381689af403
+lastmod: "2026-11-19"
 tags:
   - versioning
   - documentation
 title: 'How To: Enable Multi-Version Documentation'
 uid: 98165082-c567-4857-bb4e-12757cdae01e
 ---
-# How to Enable Multi-Version Documentation
 
 Build documentation from multiple branches and tags to provide version-specific documentation for your users.
 

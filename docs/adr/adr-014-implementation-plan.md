@@ -4,13 +4,12 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-01T00:00:00Z
-fingerprint: 6d228848370a1cee401f077c94a0d43201969781aa39809db74528c8c9c07a9d
-lastmod: "2026-09-27"
+fingerprint: ea0570b6dbae1fff5125e8003749b7afb9e75c0c059cd5511456ebc593c2bd2a
+lastmod: "2026-11-19"
 tags: []
 title: 'Plan: Implement ADR-014 (Centralize YAML frontmatter parsing/writing)'
 uid: a9e71794-752f-49d3-9d90-a32f76189670
 ---
-# Plan: Implement ADR-014 (Centralize YAML frontmatter parsing/writing)
 
 - Status: Draft / Tracking
 - Date: 2026-01-20

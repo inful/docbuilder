@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2025-12-13T00:00:00Z
-fingerprint: 837761231e2f1187e50974641e8521e487b145ee96abc6f0d74802ca20ea0bec
-lastmod: "2026-11-15"
+fingerprint: 28b98d99c3296e2de75d2f7f78301d91c1c64dbc854cb5056951cf7536042d93
+lastmod: "2026-11-19"
 tags:
   - pipeline
   - content-processing
@@ -15,7 +15,6 @@ title: 'ADR-002: Fix Index Stage Pipeline Bypass'
 uid: 4f6c6944-e4de-4f09-ae84-1d566bb00277
 weight: 3
 ---
-# ADR-002: Fix Index Stage Pipeline Bypass
 
 ## Status
 

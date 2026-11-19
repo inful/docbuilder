@@ -4,15 +4,14 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: 4f4f889487729cca4af5d5ac89a4031af409d8937875686cd466e9e0f8f23c4b
-lastmod: "2026-09-27"
+fingerprint: 86ba2268afdbd94d931d44b334b7641dce12302e880db6b606ac450f34ffff1f
+lastmod: "2026-11-19"
 tags:
   - customization
   - index-pages
 title: 'How To: Customize Index Pages'
 uid: 5cec1e52-55f5-4c51-a64f-a34da2482cea
 ---
-# How To: Customize Index Pages
 
 DocBuilder generates three index page kinds using template resolution with safe defaults. You can override any of them.
 

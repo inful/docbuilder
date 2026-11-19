@@ -4,8 +4,8 @@ aliases:
 categories:
   - tutorials
 date: 2025-12-15T00:00:00Z
-fingerprint: 4fda25da6f4c96800845aadeb52ae6d8fc07f71a6e24006286417ce46c8ad208
-lastmod: "2026-01-22"
+fingerprint: 187df6d5491b3647746b32515728eefd5bf587436d98bc6f6581e62c600366bf
+lastmod: "2026-11-19"
 tags:
   - getting-started
   - quickstart
@@ -14,7 +14,6 @@ title: Getting Started Tutorial
 uid: 4a61e911-03a6-4769-9e15-63d304572860
 ---
 
-# Getting Started with DocBuilder
 
 This tutorial walks you through producing a multi‑repository Hugo documentation site in minutes.
 

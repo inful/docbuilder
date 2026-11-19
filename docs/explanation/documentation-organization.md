@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-01T00:00:00Z
-fingerprint: aeea55ec0f24185dcd344b888a6ec98fcb5d56d0c9e9326bf2ee795634f0d836
-lastmod: "2026-09-27"
+fingerprint: ece0e8b98656953d39dee8259806d9449ae8c8487980ebfaec7198c12bb65526
+lastmod: "2026-11-19"
 tags:
   - documentation
   - diataxis
@@ -13,7 +13,6 @@ tags:
 title: Documentation Organization
 uid: 4734c3fa-f748-4571-a7df-81d7c2097b2b
 ---
-# Documentation Organization
 
 A snapshot of how the docbuilder documentation site is currently
 organized under `docs/`, what's working, what isn't, and a prioritized

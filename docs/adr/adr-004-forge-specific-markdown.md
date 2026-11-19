@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2025-12-18T00:00:00Z
-fingerprint: f65ea3fb90ef6a948204d9fff566171844eb4cf9afe45bcc819f4a80ca6168d9
-lastmod: "2026-09-27"
+fingerprint: a7b595b7159ae620243f5bff13e124829791aad2300e2f6ea35cded7cba5bccf
+lastmod: "2026-11-19"
 status: proposed
 tags:
   - adr
@@ -15,7 +15,6 @@ tags:
 title: 'ADR-004: Forge-Specific Markdown Support'
 uid: 138c1d38-5a96-4820-8a74-dbb45c94a0e3
 ---
-# ADR-004: Forge-Specific Markdown Support
 
 ## Status
 

@@ -4,13 +4,12 @@ aliases:
 categories:
   - reference
 date: 2026-01-01T00:00:00Z
-fingerprint: a15d59f017c06ccecf38e7f55be25b0f1116b78af4e2219e1d8338bbc2b5dcee
-lastmod: "2026-09-27"
+fingerprint: 7892c7b3dc04525cfb3823ebe8e1c79b2b0c012029b0849e0ca30754ff0016b1
+lastmod: "2026-11-19"
 tags: []
 title: Index File Handling
 uid: 7d804d6f-42df-436f-8b7c-cadc4c6b88c4
 ---
-# Index File Handling
 
 DocBuilder automatically generates index pages for repositories and sections, but also respects user-provided index files. This document explains how index files are discovered, processed, and what takes precedence when multiple options exist.
 

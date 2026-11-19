@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-23T00:00:00Z
-fingerprint: 4177c04784c3a552c4a151c404688d134bda85b13beaa82837ff5ead0319e27e
-lastmod: "2026-09-27"
+fingerprint: d235925acd6fb8baf54df199b20ab7b549a8c5116ee19d25fadd085d7609e4c9
+lastmod: "2026-11-19"
 tags:
   - daemon
   - security
@@ -15,7 +15,6 @@ tags:
 title: 'ADR-019: Daemon mode public-only rendering via frontmatter'
 uid: a4b1f7ac-95c0-441b-827a-4c94aa7ed82b
 ---
-# ADR-019: Daemon mode public-only rendering via frontmatter
 
 **Status**: Proposed  
 **Date**: 2026-01-23  

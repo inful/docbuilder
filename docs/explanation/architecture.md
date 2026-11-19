@@ -4,15 +4,14 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: d0896c90cd47db9aee9415f66040f60d0d19eda24dc91b886fa9e8ab57d02b39
-lastmod: "2026-09-27"
+fingerprint: 7bc61d04988b325319996301daf09dde9953d3434373441635a7867cf44448d3
+lastmod: "2026-11-19"
 tags:
   - architecture
   - design
 title: Architecture Overview
 uid: c9a38b75-67d0-498f-ab60-e00dfd70e8ae
 ---
-# Architecture Overview
 
 DocBuilder implements a staged pipeline to turn multiple Git repositories into a unified Hugo documentation site.
 

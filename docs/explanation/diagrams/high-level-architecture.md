@@ -4,15 +4,14 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: 694f2c5626be8fe2287b17be82154c04b563aac5df78d2c23b8c929ca468c070
-lastmod: "2026-10-01"
+fingerprint: d5b6b24dd51cda47bb8011977b39f62df45e488724e23a11798ae011a6620cad
+lastmod: "2026-11-19"
 tags:
   - diagrams
   - layers
 title: High-Level System Architecture
 uid: 663991b1-bfe7-4c55-bd54-8f09e1120e06
 ---
-# High-Level System Architecture
 
 This document shows the layered architecture of DocBuilder, illustrating how different components interact across layers.
 
