@@ -9,6 +9,56 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-11-19
+
+### Security
+- **The preview server keeps its admin API to itself**: `docbuilder
+  preview` builds its configuration by hand, so the admin address was
+  never set and the admin API - which has no password and can start a
+  build - listened on every interface. It now uses the same loopback
+  address as the daemon. The docs port stays open, so the site can
+  still be looked at from another machine.
+- **The GitLab webhook secret is compared in constant time**: GitLab
+  sends the secret in a header instead of a signature, so the client
+  compared it with `==`. That comparison stops at the first byte that
+  differs, so the secret could be learned one byte at a time by
+  timing the answer. The other two forges already compared in
+  constant time.
+
+### Fixed
+- **Two repositories with the same name no longer eat each other**:
+  the name of a repository is its identity in a build - the clone
+  folder, the state map and the content path all use it. The same
+  project name in two GitLab subgroups, or the same name on two
+  forges, meant that the second clone wiped the first one's folder
+  and one repository's documentation vanished from the site while the
+  build said it succeeded. Discovered repositories now get a name
+  nobody else has.
+- **The docs server stops holding every response in memory**: the
+  server read the whole file into memory before writing it out, so a
+  big file and a few readers at once was a lot of memory for nothing.
+  Only a LiveReload request needs its response captured now.
+
+### Changed
+- **A hand-written configuration with two repositories of the same name
+  is refused**: the configuration is checked when it is loaded, and so
+  is a repository name that is empty or that points outside the
+  workspace. **Breaking**: a configuration that used two repositories
+  with one name now fails to load with a clear message.
+- **The lint fixer reads every markdown file once, not once per
+  renamed file**: it looked for the links to a renamed file once per
+  renamed file, and every look walked the whole tree and read and
+  parsed every file in it. A tree with 2,000 pages and 50 files to
+  rename was read 102,500 times; it now reads 2,099.
+
+### Removed
+- **The state layer that nobody used**: the state package had two ways
+  to do the same thing, and the second one was never built. With it
+  went the method that was supposed to keep the state file small (it
+  was never called, so the file grew for as long as the daemon ran),
+  the statistics getter and the service lifecycle interface that only
+  the state service implemented, for nobody to run.
+
 ## [0.22.0] - 2026-11-15
 
 ### Security

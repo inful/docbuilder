@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 50db0028f0c108e18d05ce0884a4aa5f0e3b3d9df5b4c1abb33b5e173d7af106
-lastmod: "2026-11-15"
+fingerprint: 84d12b0bbf0a653923d28428a6e1ef0f76d025ad2b8c4140aec05b7993d6b999
+lastmod: "2026-11-19"
 tags:
   - configuration
   - yaml
@@ -35,7 +35,17 @@ lint: {}            # Linter excludes (optional)
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | url | string | yes | Git clone URL. |
-| name | string | yes | Unique repository name (used in content paths). |
+| name | string | yes | Unique repository name (used in content paths). Two repositories cannot share a name, and a name cannot be empty or contain a slash. |
+
+Two repositories with the same name are refused when the configuration is
+loaded. The name is the identity of a repository in a build: the clone
+folder, the state map and the content path all use it, so two repositories
+with one name would eat each other and one of them would vanish from the
+site.
+
+Repositories that are found on a forge do not need this: when two of them
+share a name, the second one gets a name from its full path
+(`platform/team-b/docs` becomes `platform-team-b-docs`).
 | branch | string | no | Branch to checkout (default per remote). |
 | paths | []string | no | Documentation root paths (default: ["docs"]). |
 | namespace | string | no | Explicit forge namespace alias (e.g., "github", "gitlab"). Overrides forge_type detection. |
