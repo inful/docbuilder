@@ -5,8 +5,8 @@ categories:
   - how-to
 date: 2025-12-15T00:00:00Z
 description: Relearn theme overview
-fingerprint: ddceb45b4011884636ed78061331f5dc9dd641685ba82ce4b4bb64c91f91d56b
-lastmod: "2026-09-27"
+fingerprint: 902bdf2641f93013be5de93176f2507e09435ac7b565bf8ae151db1b4bcfc19a
+lastmod: "2026-11-19"
 tags:
   - themes
   - relearn
@@ -14,7 +14,6 @@ tags:
 title: 'How To: Use Relearn Theme'
 uid: aad82557-a8ca-417e-9da3-e5cec27f80df
 ---
-# Hugo Relearn Theme Support
 
 DocBuilder includes built-in support for the [Hugo Relearn theme](https://github.com/McShelby/hugo-theme-relearn), a documentation-focused theme with extensive features for technical documentation.
 

@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: 1e619ae7b2c013eebefc8653587c16edeff57b07b27f507cfa7efba0a2d2d61d
-lastmod: "2026-09-27"
+fingerprint: 8f3bc1c8155f185c9359cc63cea6dd51eebf5789464d1a319d203b31fa672f84
+lastmod: "2026-11-19"
 tags:
   - components
   - interactions
@@ -13,7 +13,6 @@ tags:
 title: Component Interactions Diagrams
 uid: 36766002-6e10-4a98-9c90-981b15fa6f99
 ---
-# Component Interactions Diagrams
 
 This document shows how specific components interact within DocBuilder, focusing on theme configuration, forge integration, and change detection.
 

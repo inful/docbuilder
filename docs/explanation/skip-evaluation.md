@@ -4,15 +4,14 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: cee03856d982cbe5f5d679308372df5ca75deaebb964bb88919b77e80795460a
-lastmod: "2026-10-01"
+fingerprint: 1a16cf4b1fdad840378696a26bb22c8c3d05126dd4f412fbb4869b3c9cb30c60
+lastmod: "2026-11-19"
 tags:
   - optimization
   - performance
 title: Skip Evaluation Logic
 uid: a8168637-9de1-47a2-9d96-76d1bbf2deb5
 ---
-# Skip Evaluation System
 
 ## Overview
 

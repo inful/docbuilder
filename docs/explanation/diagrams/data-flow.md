@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: 95ad95fba4b7151b66daced801ec38804e2a2da2785ed37e68547fd2765e9f84
-lastmod: "2026-10-01"
+fingerprint: f2ef85f4cf2681c0ec2fba907767959384bcda50a9762b91dbe797d4ee013947
+lastmod: "2026-11-19"
 tags:
   - data-flow
   - sequences
@@ -13,7 +13,6 @@ tags:
 title: Data Flow Diagrams
 uid: 13690187-bce4-4683-a34a-3743ba03d7ac
 ---
-# Data Flow Diagrams
 
 This document shows how data flows through DocBuilder during configuration loading, build execution, and state persistence.
 

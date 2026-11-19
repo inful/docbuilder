@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: a8b6ad5bd202d45abf0b264aadc710a8463cb0be730798792711c07491382477
-lastmod: "2026-09-27"
+fingerprint: 4a2f5d777edfd99665b5b6fd0b97dc6e8d663ba4b402e63ecf3daa6a17c9b887
+lastmod: "2026-11-19"
 tags:
   - optimization
   - workspace
@@ -13,7 +13,6 @@ tags:
 title: 'How To: Prune Workspace Size'
 uid: 56876591-4835-49a5-a63e-494590a557d5
 ---
-# How To: Prune Workspace Size
 
 Reduce disk usage by enabling top-level pruning of non‑documentation directories inside cloned repositories.
 

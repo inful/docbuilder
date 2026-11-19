@@ -4,15 +4,14 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 46467829614d0ac63cf61f6d98a03540e4d3ed154fc9c421ef2c1895ab54769c
-lastmod: "2026-09-27"
+fingerprint: 5e650ad41283149feba039913b77fa9f9abd9d5383f710ade07f7706969ef174
+lastmod: "2026-11-19"
 tags:
   - testing
   - renderer
 title: Renderer Testing
 uid: 1575ffc4-7bf0-46df-a8b2-904e93f95031
 ---
-# Hugo Renderer Testing Strategy
 
 ## Overview
 

@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2026-02-02T00:00:00Z
-fingerprint: 77de3e60a06dfe36b83df6255a0c13f0181416022e49859bca42727b14f6068c
-lastmod: "2026-09-27"
+fingerprint: 653cb6a4e285ee826e56ae250551666f20e9a42e7f3148511d6ba4db65912d43
+lastmod: "2026-11-19"
 tags:
   - templates
   - cli
@@ -14,7 +14,6 @@ tags:
 title: Using Documentation Templates
 uid: afc07ae8-7c29-400d-8124-2120e8a7f421
 ---
-# Using Documentation Templates
 
 DocBuilder's template system allows you to create new documentation pages using pre-defined templates hosted in your documentation site. Templates ensure consistency and reduce boilerplate when creating new pages.
 

@@ -4,13 +4,12 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-01T00:00:00Z
-fingerprint: 1ba1d3f6b665e88c6d330ef38d1f62f5ea9d4637959a09840660120580dabd45
-lastmod: "2026-09-27"
+fingerprint: 947a7b76560b536d1f6c77faa5f94d64774ef9fb2c37ed7eae6fc8f74af9d460
+lastmod: "2026-11-19"
 tags: []
 title: 'ADR-006: Drop "local" Namespace for Single-Project Preview and Build'
 uid: 971ae5a9-db88-47b9-8ca3-62406912b554
 ---
-# ADR-006: Drop "local" Namespace for Single-Project Preview and Build
 
 **Status**: Proposed  
 **Date**: 2026-01-02  

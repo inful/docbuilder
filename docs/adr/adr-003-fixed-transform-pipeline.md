@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2025-12-16T00:00:00Z
-fingerprint: 1e4585e6cdac7914646bd24dfbbdd50857a64ad921bad0409518eb0b96eebdc9
-lastmod: "2026-09-27"
+fingerprint: d52915c9ae0e073171d52cf9fb195b763c30f22a32f1b8a6adb9cc4762d0e180
+lastmod: "2026-11-19"
 tags:
   - pipeline
   - transforms
@@ -15,7 +15,6 @@ title: 'ADR-003: Fixed Transform Pipeline'
 uid: 8bccb937-22a1-4828-a6ef-ab7b74a1a6bc
 weight: 4
 ---
-# ADR-003: Fixed Transform Pipeline
 
 Date: 2025-12-16
 

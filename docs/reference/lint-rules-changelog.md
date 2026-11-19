@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-29T00:00:00Z
-fingerprint: d295fc1d16cc8d8667446fb754e036257e961436bcd98f46c89d19726188fc9c
-lastmod: "2026-09-28"
+fingerprint: 33de64b86399372aecc7c57423ae4c9bbf73554c3a09f54114db31356e2caed2
+lastmod: "2026-11-19"
 tags:
   - linting
   - changelog
@@ -13,7 +13,6 @@ tags:
 title: Lint Rules Changelog
 uid: 139d45f0-c55f-40be-9c29-a3485c009143
 ---
-# Lint Rules Changelog
 
 This document tracks changes to linting rules across DocBuilder versions, helping teams understand when rules were added, changed, or deprecated.
 

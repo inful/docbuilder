@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-22T00:00:00Z
-fingerprint: 69e346b0dbd0878544c4afaa5762fc29f05a1e8b545b14218e3621fccebe7bde
-lastmod: "2026-09-27"
+fingerprint: 8343e7fce9494c5c1174feb2ca4bc3bd56d85a18a5b911a3855fa1f09a6c0b1b
+lastmod: "2026-11-19"
 tags:
   - frontmatter
   - yaml
@@ -18,7 +18,6 @@ tags:
 title: 'ADR-016: Centralize frontmatter mutations (map-based ops)'
 uid: a7382480-b52e-4dcf-a0df-64129dbe4604
 ---
-# ADR-016: Centralize frontmatter mutations (map-based ops)
 
 **Status**: Implemented  
 **Date**: 2026-01-22  

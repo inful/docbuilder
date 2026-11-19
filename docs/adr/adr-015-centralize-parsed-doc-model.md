@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-21T00:00:00Z
-fingerprint: ba8f74cc4a60460007f755e74d96ebd719b20c8bb89ee237a8dcb5e1d031c9c7
-lastmod: "2026-09-27"
+fingerprint: d6f79fad59af48e72ea2d30903a68afba4db004893003aca1d2e9063dadc0a01
+lastmod: "2026-11-19"
 tags:
   - markdown
   - frontmatter
@@ -16,7 +16,6 @@ tags:
 title: 'ADR-015: Centralize parsed document model (frontmatter + Markdown body)'
 uid: 4b11a5c2-8bcb-4fd0-9b0e-1c5e9a7c2d1b
 ---
-# ADR-015: Centralize parsed document model (frontmatter + Markdown body)
 
 **Status**: Proposed  
 **Date**: 2026-01-21  

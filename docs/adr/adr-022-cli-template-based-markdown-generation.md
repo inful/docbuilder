@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-02-01T00:00:00Z
-fingerprint: a8c1e62f84f5f6b111326374cd12fbf78d4104524fb30e8c2533347931d0b1a1
-lastmod: "2026-09-27"
+fingerprint: 26d62fb0a65180a39011bb4f03a3ab6723523ddfd7e90c11cdcddb466cb14b8b
+lastmod: "2026-11-19"
 tags:
   - cli
   - templates
@@ -15,7 +15,6 @@ tags:
 title: 'ADR-022: CLI template-based markdown file creation'
 uid: 7a0d4b9f-6d3c-4a66-a7d0-1b8bfe8f2e1c
 ---
-# ADR-022: CLI template-based markdown file creation
 
 **Status**: Proposed  
 **Date**: 2026-02-01  

@@ -4,13 +4,12 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-01T00:00:00Z
-fingerprint: 6943daa1b0f93e6e0e6bbe2dd7328d9e43d6a14eb59af1ec5010d86709a6f72a
-lastmod: "2026-09-27"
+fingerprint: c3970310802e43a0ec32bf3afdf88bbe47c33a26816a8f333f8d35d1824c91a0
+lastmod: "2026-11-19"
 tags: []
 title: 'ADR-009: Push Documents to an External Ingester During Builds'
 uid: 327c9967-2b83-47fc-8ebc-996964bb7001
 ---
-# ADR-009: Push Documents to an External Ingester During Builds
 
 **Status**: Proposed  
 **Date**: 2026-01-14  

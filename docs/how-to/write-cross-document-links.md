@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: 70f75e5070846169e5980c9bebf54f88b15a6d2af0701e440806b8d12a296944
-lastmod: "2026-09-27"
+fingerprint: e91ebe210ffbaf12fdd3fc6ad1db920c27d1a85844edb05ace4cd3f17b30f7fe
+lastmod: "2026-11-19"
 tags:
   - documentation
   - links
@@ -13,7 +13,6 @@ tags:
 title: 'How To: Write Cross-Document Links'
 uid: 1bc938b7-2e2c-47d1-8192-06e2300d09aa
 ---
-# How to Write Cross-Document Links
 
 When writing markdown documentation that will be processed by DocBuilder, you have three options for linking between documents.
 
