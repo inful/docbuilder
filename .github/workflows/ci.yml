@@ -18,8 +18,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: ['1.24']
-    
+        go-version: ['1.26']
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -72,7 +72,7 @@ jobs:
   golden-tests:
     name: Golden Tests
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -129,7 +129,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -150,7 +150,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -170,7 +170,7 @@ jobs:
   docs-generation:
     name: Generate Documentation
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -234,7 +234,7 @@ jobs:
             --title "DocBuilder Documentation" \
             --base-url "https://${{ github.repository_owner }}.github.io/docbuilder" \
             --render-mode always
-          
+
           # Verify the site was generated (Hugo creates public/ subdirectory)
           test -d public/public || (echo "Public directory not created" && exit 1)
           test -f public/public/index.html || (echo "index.html not created" && exit 1)
@@ -269,7 +269,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'pull_request'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -300,7 +300,12 @@ jobs:
           platforms: linux/amd64
           target: runtime-minimal
           push: false
+          load: true
+          tags: docbuilder:smoke
           cache-from: type=gha,scope=buildkit-test
           cache-to: type=gha,mode=max,scope=buildkit-test
           provenance: false
           sbom: false
+
+      - name: Run the image (smoke test)
+        run: ./scripts/docker-smoke.sh docbuilder:smoke
