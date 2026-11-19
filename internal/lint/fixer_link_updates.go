@@ -115,6 +115,9 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 				f.rollbackLinkUpdates(backupPaths)
 				return nil, fmt.Errorf("failed to write updated %s: %w", sourceFile, err)
 			}
+
+			// The file changed, so its links have to be read again.
+			delete(f.linkCache, sourceFile)
 		}
 	}
 
