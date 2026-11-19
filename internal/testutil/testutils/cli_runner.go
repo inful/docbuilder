@@ -85,8 +85,8 @@ func (r *CLITestRunner) Run(args ...string) *CLIResult {
 	}
 
 	if err != nil {
-		var exitError *exec.ExitError
-		if errors.As(err, &exitError) {
+		exitError, ok := errors.AsType[*exec.ExitError](err)
+		if ok {
 			result.ExitCode = exitError.ExitCode()
 		} else {
 			result.ExitCode = -1

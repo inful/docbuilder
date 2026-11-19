@@ -123,11 +123,11 @@ func IsClassified(err error) bool {
 
 // AsClassified attempts to convert an error to a ClassifiedError.
 func AsClassified(err error) (*ClassifiedError, bool) {
-	var classified *ClassifiedError
-	if stdErrors.As(err, &classified) {
-		return classified, true
+	classified, ok := stdErrors.AsType[*ClassifiedError](err)
+	if !ok {
+		return nil, false
 	}
-	return nil, false
+	return classified, true
 }
 
 // HasCategory checks if any error in the chain belongs to a category.

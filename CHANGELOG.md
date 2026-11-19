@@ -9,6 +9,46 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.24.4] - 2026-11-19
+
+### Security
+- **The dependencies govulncheck flagged are updated**:
+  `golang.org/x/net` v0.56.0 → v0.62.0 (six advisories),
+  `golang.org/x/crypto` v0.53.0 → v0.58.0 (two), and with them
+  `golang.org/x/text` v0.43.0, `golang.org/x/sys` v0.49.0,
+  `golang.org/x/term` v0.47.0 and `github.com/klauspost/compress`
+  v1.20.4. The scan says the daemon calls none of the vulnerable
+  code, but the gate runs on the whole dependency set.
+
+  The standard library advisories (net/http, crypto/tls, crypto/x509,
+  net/textproto, html/template) are fixed in go1.26.11, so the module
+  says so: `go 1.26.0` with `toolchain go1.26.11`. A build with an
+  older toolchain cannot ship a vulnerable binary — the go command
+  switches to the pinned one.
+
+- **The Go toolchain in the Docker image is patched**: the image
+  carried Go 1.24.0, which has those standard library advisories
+  open. The toolchain in the image runs Hugo Modules, and the module
+  proxy is reached over HTTP. Go 1.26.11 has the fixes.
+
+### Changed
+- **The CI runs the image**: it built the image and never started it.
+  A broken image — a work directory the daemon cannot write, a home
+  directory the Go module cache cannot use — passed the build and
+  failed at the first start. The smoke test starts the image and
+  checks that the binary runs, that the daemon starts and answers on
+  the docs port, and that the toolchain in the image works with a
+  writable module cache. It needs no network.
+
+- **The CI lints with the version `mise.toml` asks for** (v2.14.0),
+  so the local gate and the one that decides agree.
+
+  The test job still starts from Go 1.24 on the runner: the branch
+  protection requires a check with that name, and the toolchain
+  directive in `go.mod` decides the version the build actually uses
+  (go1.26.11). Renaming the job needs the check renamed in the
+  repository settings too.
+
 ## [0.24.3] - 2026-11-19
 
 ### Changed

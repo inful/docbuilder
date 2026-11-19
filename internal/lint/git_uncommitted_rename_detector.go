@@ -75,8 +75,8 @@ func gitDiffRenames(ctx context.Context, repoRoot string, cached bool) ([]Rename
 	cmd := exec.CommandContext(ctx, "git", args...)
 	out, err := cmd.Output()
 	if err != nil {
-		var ee *exec.ExitError
-		if errors.As(err, &ee) {
+		ee, ok := errors.AsType[*exec.ExitError](err)
+		if ok {
 			return nil, fmt.Errorf("git diff failed: %w: %s", err, string(ee.Stderr))
 		}
 		return nil, fmt.Errorf("git diff failed: %w", err)
@@ -194,8 +194,8 @@ func gitNameOnly(ctx context.Context, repoRoot string, args []string) ([]string,
 	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", repoRoot}, args...)...)
 	out, err := cmd.Output()
 	if err != nil {
-		var ee *exec.ExitError
-		if errors.As(err, &ee) {
+		ee, ok := errors.AsType[*exec.ExitError](err)
+		if ok {
 			return nil, fmt.Errorf("git %v failed: %w: %s", args, err, string(ee.Stderr))
 		}
 		return nil, fmt.Errorf("git %v failed: %w", args, err)

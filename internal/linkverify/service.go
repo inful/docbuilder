@@ -513,11 +513,11 @@ func isTimeoutError(err error) bool {
 	if errors.Is(err, context.DeadlineExceeded) {
 		return true
 	}
-	var nerr net.Error
-	if errors.As(err, &nerr) {
-		return nerr.Timeout()
+	nerr, ok := errors.AsType[net.Error](err)
+	if !ok {
+		return false
 	}
-	return false
+	return nerr.Timeout()
 }
 
 // handleBrokenLink creates and publishes a broken link event.

@@ -10,7 +10,7 @@ FROM ubuntu:22.04 AS downloader
 ARG TARGETOS=linux
 ARG TARGETARCH
 ARG HUGO_VERSION="0.152.2"
-ARG GO_VERSION="1.24.0"
+ARG GO_VERSION="1.26.11"
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install minimal dependencies
