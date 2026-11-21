@@ -4,6 +4,8 @@ import (
 	"bytes"
 	_ "embed"
 	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // Embedded View Transitions API assets
@@ -28,10 +30,9 @@ type StaticAsset struct {
 // Returns a list of assets to be copied to the Hugo site root.
 type StaticAssetGenerator func(ctx *GenerationContext) ([]*StaticAsset, error)
 
-// generateCustomHeaderAssets builds the project's
-// layouts/partials/custom-header.html partial that the Relearn
-// theme includes in every page head. The partial contains three
-// pieces, in this order:
+// generateCustomHeaderAssets builds the project's layout overrides for
+// the configured theme. The overrides carry three pieces, in this
+// order:
 //
 //  1. A <style> block with the resolved hugo.custom_css (or the
 //     built-in default that tones down Relearn's loud sidebar
@@ -41,18 +42,22 @@ type StaticAssetGenerator func(ctx *GenerationContext) ([]*StaticAsset, error)
 //  3. The template-metadata <meta> tags that template discovery
 //     depends on (always present).
 //
-// Relearn explicitly documents custom-header.html as the override
-// point for adding custom CSS. We do that here so the project's
-// custom CSS ships automatically without the operator having to
-// maintain a Hugo template override.
+// Relearn takes them in layouts/partials/custom-header.html, the
+// override point Relearn documents for adding custom CSS. Docsy takes
+// them in layouts/_partials/hooks/head-end.html, the hook Docsy
+// includes in every page head. Docsy additionally gets a
+// head-css.html override that links the vendored stylesheet, and the
+// vendored stylesheet, Bootstrap JavaScript and web fonts themselves.
 //
 // When hugo.custom_css is unset, the built-in default is written.
 // When set to a non-empty value, that value replaces the default
 // verbatim. A whitespace-only value suppresses the <style> block
-// entirely so operators who want the unmodified Relearn styling
-// can opt out.
+// entirely so operators who want the unmodified theme styling can opt
+// out. Docsy has no built-in default: the Relearn override it would
+// replace does not exist there.
 func generateCustomHeaderAssets(ctx *GenerationContext) ([]*StaticAsset, error) {
 	transitionsEnabled := ctx != nil && ctx.Config != nil && ctx.Config.Hugo.EnablePageTransitions
+	docsy := IsDocsy(configOf(ctx))
 
 	// Resolve the custom CSS: empty -> default, otherwise the
 	// configured value. A whitespace-only value suppresses the
@@ -61,7 +66,7 @@ func generateCustomHeaderAssets(ctx *GenerationContext) ([]*StaticAsset, error) 
 	if ctx != nil && ctx.Config != nil {
 		css = ctx.Config.Hugo.CustomCSS
 	}
-	if css == "" {
+	if css == "" && !docsy {
 		css = defaultCustomCSS
 	}
 	includeCSS := strings.TrimSpace(css) != ""
@@ -86,12 +91,30 @@ func generateCustomHeaderAssets(ctx *GenerationContext) ([]*StaticAsset, error) 
 		})
 	}
 	blocks = append(blocks, templateMetadataHeadPartial)
-	customHeaderContent := bytes.Join(blocks, []byte("\n"))
+	content := bytes.Join(blocks, []byte("\n"))
+
+	if docsy {
+		assets = append(assets,
+			&StaticAsset{Path: "layouts/_partials/hooks/head-end.html", Content: content},
+			&StaticAsset{Path: "layouts/_partials/head-css.html", Content: []byte(docsyHeadCSS)},
+		)
+		assets = append(assets, docsyVendoredAssets()...)
+		return assets, nil
+	}
 
 	assets = append(assets, &StaticAsset{
 		Path:    "layouts/partials/custom-header.html",
-		Content: customHeaderContent,
+		Content: content,
 	})
 
 	return assets, nil
+}
+
+// configOf returns the build configuration of the generation context,
+// or nil when there is none.
+func configOf(ctx *GenerationContext) *config.Config {
+	if ctx == nil {
+		return nil
+	}
+	return ctx.Config
 }

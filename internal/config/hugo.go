@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// HugoConfig represents Hugo-specific configuration for Relearn theme.
+// HugoConfig represents Hugo-specific configuration for the site's theme.
 type HugoConfig struct {
 	BaseURL               string            `yaml:"base_url,omitempty"`
 	Title                 string            `yaml:"title"`
@@ -17,6 +17,11 @@ type HugoConfig struct {
 	Transforms            *HugoTransforms   `yaml:"transforms,omitempty"` // optional transform filtering
 	Sidebar               *SidebarConfig    `yaml:"sidebar,omitempty"`    // sidebar configuration; nil falls back to the Relearn default page menu
 
+	// Theme selects the Hugo theme the site is built with: "relearn"
+	// (the default) or "docsy". The themes differ in how the
+	// navigation is wired, so the build adapts to the choice.
+	Theme string `yaml:"theme,omitempty"`
+
 	// CustomCSS is extra CSS appended to assets/css/extensions.css
 	// in the Hugo site source. When unset, the build emits a
 	// built-in default that tones down Relearn's loud sidebar
@@ -27,6 +32,22 @@ type HugoConfig struct {
 	// trimming, so load order and auto-discovery by Relearn are
 	// preserved in every case.
 	CustomCSS string `yaml:"custom_css,omitempty"`
+}
+
+// The themes DocBuilder can build a site with.
+const (
+	// ThemeRelearn is the Relearn theme, the default.
+	ThemeRelearn = "relearn"
+	// ThemeDocsy is the Docsy theme.
+	ThemeDocsy = "docsy"
+)
+
+// ThemeName returns the configured theme. An unset theme means Relearn.
+func (h *HugoConfig) ThemeName() string {
+	if h == nil || h.Theme == "" {
+		return ThemeRelearn
+	}
+	return h.Theme
 }
 
 // SidebarConfig controls how DocBuilder wires the Relearn sidebar menus.

@@ -135,6 +135,14 @@ func (rc *RootConfig) SetHomeOutputsHTMLRSSJSON() {
 	outs["home"] = []string{"HTML", "RSS", "JSON"}
 }
 
+// SetHomeOutputsHTMLRSS sets the home outputs to HTML and RSS, for
+// themes that have no JSON output format (Docsy's offline search
+// reads the theme's own index).
+func (rc *RootConfig) SetHomeOutputsHTMLRSS() {
+	outs := rc.EnsureOutputs()
+	outs["home"] = []string{"HTML", "RSS"}
+}
+
 // SetTaxonomyOutputsHTMLJSON ensures taxonomy and term outputs include JSON.
 func (rc *RootConfig) SetTaxonomyOutputsHTMLJSON() {
 	outs := rc.EnsureOutputs()
