@@ -6,7 +6,6 @@ daemon:
     admin_port: 9081
     webhook_port: 9082
   sync:
-    interval_minutes: 30
     queue_size: 100
     concurrent_builds: 2
   storage:
@@ -34,7 +33,6 @@ hugo:
 
 monitoring:
   health:
-    enabled: true
     path: "/health"
   metrics:
     enabled: true

@@ -67,7 +67,6 @@ func TestLoadConfig(t *testing.T) {
 		"  title: Test Documentation\n" +
 		"  description: Test description\n" +
 		"  base_url: https://test.example.com\n" +
-		"  theme: relearn\n" +
 		"monitoring:\n" +
 		"  metrics:\n" +
 		"    enabled: true\n" +

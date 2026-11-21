@@ -14,6 +14,7 @@ metadata:
   namespace: docbuilder
 data:
   config.yaml: |
+    version: "2.0"
     repositories:
       - url: https://github.com/example/docs.git
         name: example-docs
@@ -22,28 +23,24 @@ data:
         auth:
           type: token
           token: "${GITHUB_TOKEN}"
-    
+
     hugo:
       title: "Documentation Site"
       description: "Aggregated documentation from multiple repositories"
       base_url: "https://docs.example.com"
-      theme: "relearn"
       params:
-        navbar:
-          displayTitle: true
-        footer:
-          displayPoweredBy: true
-    
+        version_menu: true
+
     output:
       # Use base_directory for Kubernetes volume mount
       # All build artifacts go under /data:
       #   - Output: /data/site
-      #   - Staging: /data/staging  
+      #   - Staging: /data/staging
       #   - Workspace: /data/workspace (git clones)
       base_directory: "/data"
       directory: "site"
       clean: true
-    
+
     build:
       incremental: false
       render_mode: "always"

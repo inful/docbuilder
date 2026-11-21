@@ -15,7 +15,6 @@ hugo:
   title: 'Relearn Test Documentation'
   description: 'Testing DocBuilder with Relearn theme using a local repo'
   base_url: 'http://localhost:1316'
-  theme: 'relearn'
 output:
   directory: '/tmp/relearn-site'
   clean: true

@@ -13,7 +13,6 @@ build:
 
 hugo:
   title: "Test Documentation"
-  theme: relearn
 
 output:
   directory: "/tmp/test-daemon-defaults"

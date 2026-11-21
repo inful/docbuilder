@@ -287,8 +287,8 @@ func LoadWithResult(configPath string) (*LoadResult, *Config, error) {
 	// Expand environment variables in the YAML content
 	expandedData := expandEnv(string(data))
 
-	var config Config
-	if err := yaml.Unmarshal([]byte(expandedData), &config); err != nil {
+	config, err := unmarshalStrict([]byte(expandedData))
+	if err != nil {
 		return nil, nil, errors.WrapError(err, errors.CategoryConfig, "failed to unmarshal v2 config").Build()
 	}
 
@@ -303,7 +303,7 @@ func LoadWithResult(configPath string) (*LoadResult, *Config, error) {
 	result := &LoadResult{Warnings: []string{}}
 
 	// Normalization pass (case-fold enumerations, bounds, early coercions)
-	if nres, nerr := NormalizeConfig(&config); nerr != nil {
+	if nres, nerr := NormalizeConfig(config); nerr != nil {
 		return nil, nil, errors.WrapError(nerr, errors.CategoryConfig, "config normalization failed").Build()
 	} else if nres != nil && len(nres.Warnings) > 0 {
 		for _, w := range nres.Warnings {
@@ -311,16 +311,16 @@ func LoadWithResult(configPath string) (*LoadResult, *Config, error) {
 		}
 	}
 	// Apply defaults (after normalization so canonical values drive defaults)
-	if err := applyDefaults(&config); err != nil {
+	if err := applyDefaults(config); err != nil {
 		return nil, nil, errors.WrapError(err, errors.CategoryConfig, "failed to apply defaults").Build()
 	}
 
 	// Validate configuration
-	if err := validateConfig(&config); err != nil {
+	if err := validateConfig(config); err != nil {
 		return nil, nil, errors.WrapError(err, errors.CategoryConfig, "configuration validation failed").Build()
 	}
 
-	return result, &config, nil
+	return result, config, nil
 }
 
 // applyDefaults applies default values to a Config after normalization.

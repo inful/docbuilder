@@ -12,15 +12,12 @@ repositories:
 versioning:
   enabled: true
   strategy: "branches_and_tags"
-  default_version: "main"
-  tag_filter:
-    pattern: "^\\d+\\.\\d+\\.\\d+$"
+  tag_patterns: ["v*.*.*"]
 
 hugo:
   title: "CI Tools Documentation"
   description: "Testing tag cloning with versioning"
   base_url: "http://localhost:1313"
-  language_code: "en"
 
 output:
   directory: "./test-site"
