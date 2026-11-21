@@ -4,8 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"path/filepath"
-
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // DocsyVersion is the Docsy release the Docsy theme path builds
@@ -56,11 +54,6 @@ const docsyHeadCSS = `{{- $css := resources.Get "css/docsy.css" | minify | finge
 // the Hugo project. It shadows the theme's partial of the same name.
 const docsyPageMetaLinksPath = "layouts/_partials/page-meta-links.html"
 
-// IsDocsy reports whether the build targets the Docsy theme.
-func IsDocsy(cfg *config.Config) bool {
-	return cfg != nil && cfg.Hugo.Theme == config.ThemeDocsy
-}
-
 // docsyVendoredAssets returns the vendored Docsy files as static
 // assets, keyed by their path relative to the Hugo project root.
 //
@@ -81,13 +74,8 @@ func docsyVendoredAssets() []*StaticAsset {
 
 // indexContent renders the body of a generated index page.
 //
-// Relearn lists the child pages through its "children" shortcode.
-// Docsy has no such shortcode: its section layout renders the child
-// list itself, so the body is only the title and the description.
-func indexContent(title, description string, docsy bool) string {
-	body := fmt.Sprintf("# %s\n\n%s\n\n", title, description)
-	if !docsy {
-		body += "{{% children description=\"true\" %}}\n"
-	}
-	return body
+// The theme renders the list of child pages itself, so the body is
+// only the title and the description.
+func indexContent(title, description string) string {
+	return fmt.Sprintf("# %s\n\n%s\n\n", title, description)
 }

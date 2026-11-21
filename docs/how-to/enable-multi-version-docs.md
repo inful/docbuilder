@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: 3e2a6b3b9a8fcbf8c861008b8fbc9738694cf823391a0a7530e10381689af403
-lastmod: "2026-11-19"
+fingerprint: 4fe5fef1d8401f66cb647ce26f2ff5dd183cbef227ac2cc63154ffa167dc16af
+lastmod: "2026-11-21"
 tags:
   - versioning
   - documentation
@@ -174,7 +174,7 @@ versioning:
   
 hugo:
   title: "API Documentation"
-  theme: relearn
+  theme: docsy
   params:
     version_menu: true
 
@@ -270,13 +270,13 @@ versioning:
 
 ## Theme Integration
 
-### Relearn Theme
+### Docsy Theme
 
-The Relearn theme automatically detects version metadata and displays it in the navigation:
+The Docsy theme automatically detects version metadata and displays it in the navigation:
 
 ```yaml
 hugo:
-  theme: relearn
+  theme: docsy
   params:
     version_menu: true
 ```

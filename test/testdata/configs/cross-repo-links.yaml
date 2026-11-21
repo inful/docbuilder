@@ -14,7 +14,6 @@ hugo:
   title: "Cross-Repository Links"
   description: "Testing link transformation between repositories"
   base_url: "http://localhost"
-  theme: "relearn"
 
 output:
   directory: "./test-output"

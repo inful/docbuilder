@@ -5,14 +5,14 @@
         "title": "Multi-Repo Documentation",
         "type": "docs"
       },
-      "contentHash": "sha256:417df0f9ffdc16ac"
+      "contentHash": "sha256:599b95a4afb319a1"
     },
     "content/repository-one/_index.md": {
       "frontmatter": {
         "title": "Repository One",
         "type": "docs"
       },
-      "contentHash": "sha256:e42c357ffcdeb0d8"
+      "contentHash": "sha256:8c0a3dc0fc3f70e1"
     },
     "content/repository-one/api.md": {
       "frontmatter": {
@@ -35,7 +35,7 @@
         "title": "Repository Two",
         "type": "docs"
       },
-      "contentHash": "sha256:2d733e146bf5752b"
+      "contentHash": "sha256:4f54de1e02ba355e"
     },
     "content/repository-two/deployment.md": {
       "frontmatter": {

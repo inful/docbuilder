@@ -10,7 +10,6 @@ hugo:
   title: "Special Characters Test"
   description: "Testing paths with spaces and special characters"
   base_url: "http://localhost:1313"
-  theme: "relearn"
 
 output:
   directory: "./test-output"

@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: c779eb3d0ceabd5a782c1d8f00deb2883a6ae76d729dbcc14a8a4cb22efab2b3
-lastmod: "2026-11-19"
+fingerprint: 3ef1b949f760b920a9fa54dbe5beea90b99420fa337ce3a4862b572c4b3d1d96
+lastmod: "2026-11-21"
 tags:
   - pipeline
   - stages
@@ -156,12 +156,11 @@ GenerateConfig Stage
     │   ├─ Language settings
     │   └─ Markup configuration
     │
-    ├─ 3. Apply Relearn Defaults
-    │   ├─ themeVariant: ["auto", "zen-light", "zen-dark"]
-    │   ├─ collapsibleMenu: true
-    │   ├─ showVisitedLinks: true
-    │   ├─ mermaid.enable: true
-    │   └─ math.enable: true
+    ├─ 3. Apply Docsy Defaults
+    │   ├─ offlineSearch: true
+    │   ├─ ui.showLightDarkModeMenu: true
+    │   ├─ ui.sidebar_menu_foldable: true
+    │   └─ enable_transitions: (if configured)
     │
     ├─ 4. Merge User Parameters
     │   └─ Deep merge user-provided hugo.params
@@ -172,7 +171,7 @@ GenerateConfig Stage
     │
     ├─ 6. Configure Hugo Modules
     │   ├─ Create/update go.mod
-    │   └─ Import github.com/McShelby/hugo-theme-relearn
+    │   └─ Import github.com/docsy/docsy/theme
     │
     └─ 7. Write hugo.yaml
         └─ Serialize to output directory

@@ -51,7 +51,7 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 		Path:        contentIndexPath,
 		IsIndex:     true,
 		Generated:   true,
-		Content:     indexContent(title, description, IsDocsy(ctx.Config)),
+		Content:     indexContent(title, description),
 		FrontMatter: frontMatter,
 		Repository:  "",
 		Section:     "",
@@ -106,7 +106,7 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 				Repository: repo,
 				Forge:      repoMeta.Forge,
 				Section:    "",
-				Content:    indexContent(title, description, IsDocsy(ctx.Config)),
+				Content:    indexContent(title, description),
 				FrontMatter: map[string]any{
 					"title":                   title,
 					frontMatterKeyDescription: description,
@@ -202,7 +202,7 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 			Repository: repo,
 			Forge:      repoMeta.Forge,
 			Section:    sectionName,
-			Content:    indexContent(title, description, IsDocsy(ctx.Config)),
+			Content:    indexContent(title, description),
 			FrontMatter: map[string]any{
 				"title":       title,
 				"description": description,

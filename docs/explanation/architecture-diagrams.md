@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: b1e865bb006096a16ea4d1b305147b27e44c7198e894c6cc088c9b77ccfdf265
-lastmod: "2026-11-19"
+fingerprint: 173409d9c61b251ee18252741485c8f24a67b47946378e01cd532a2503e63945
+lastmod: "2026-11-21"
 tags:
   - architecture
   - diagrams
@@ -55,7 +55,7 @@ The architecture diagrams are organized into separate documents by category:
 
 **Hugo Generator**:
 - [Pipeline Flow: CopyContent Stage](diagrams/pipeline-flow.md#stage-detail-copycontent)
-- [Component Interactions: Relearn Theme](diagrams/component-interactions.md#relearn-theme-configuration)
+- [Component Interactions: Docsy Theme](diagrams/component-interactions.md#docsy-theme-configuration)
 - [High-Level: Processing Layer](diagrams/high-level-architecture.md#layer-view)
 
 **Git Operations**:
@@ -82,7 +82,7 @@ All diagrams have been verified against the current codebase (January 4, 2026):
 | Pipeline Flow | ✅ Verified | Corrected stage names and execution order |
 | Package Dependencies | ✅ Verified | Confirmed import rules and layer boundaries |
 | Data Flow | ✅ Verified | Validated against current implementation |
-| Component Interactions | ✅ Verified | Updated for Relearn-only configuration |
+| Component Interactions | ✅ Verified | Updated for Docsy-only configuration |
 | State Machines | ✅ Verified | Confirmed state transitions and triggers |
 
 ## Key Architecture Changes Reflected
@@ -90,7 +90,7 @@ All diagrams have been verified against the current codebase (January 4, 2026):
 These diagrams reflect the following architectural decisions:
 
 1. **ADR-003**: Fixed 12-step transform pipeline (not 11)
-2. **Relearn Theme Only**: No multi-theme system, hardcoded Relearn defaults
+2. **Docsy Theme Only**: No multi-theme system, hardcoded Docsy defaults
 3. **Unified Error Handling**: All errors use `internal/foundation/errors`
 4. **Layer Architecture**: Strict dependency flow (command → service → domain → infrastructure → foundation)
 5. **State Decomposition**: BuildState split into GitState, DocsState, PipelineState

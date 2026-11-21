@@ -8,7 +8,7 @@ import (
 
 // injectPermalink appends a copyable permalink badge to documents with a UID.
 // It requires a non-empty "uid" field and a matching "/_uid/<uid>/" value in "aliases".
-func injectPermalink(baseURL string, docsy bool) FileTransform {
+func injectPermalink(baseURL string) FileTransform {
 	return func(doc *Document) ([]*Document, error) {
 		if doc.Extension != markdownExtension || doc.Generated {
 			return nil, nil
@@ -37,13 +37,13 @@ func injectPermalink(baseURL string, docsy bool) FileTransform {
 		}
 
 		// Construct the permalink block.
-		permalink := permalinkBlock(linkName, fullURL, docsy)
+		permalink := permalinkBlock(linkName, fullURL)
 
 		// Idempotence: don't add again if already present.
 		if strings.Contains(doc.Content, `{{% badge style="note" title="permalink" %}}`) {
 			return nil, nil
 		}
-		if docsy && strings.Contains(doc.Content, permalinkLabel) {
+		if strings.Contains(doc.Content, permalinkLabel) {
 			return nil, nil
 		}
 
@@ -71,15 +71,10 @@ func injectPermalink(baseURL string, docsy bool) FileTransform {
 // that have no badge shortcode.
 const permalinkLabel = "**Permalink:**"
 
-// permalinkBlock returns the permalink of a document.
-//
-// Relearn renders it as a badge; Docsy has no badge shortcode, so the
-// same link is written as plain markdown.
-func permalinkBlock(linkName, fullURL string, docsy bool) string {
-	if docsy {
-		return fmt.Sprintf("%s [%s](%s)", permalinkLabel, linkName, fullURL)
-	}
-	return fmt.Sprintf(`{{%% badge style="note" title="permalink" %%}}`+"`[%s](%s)`"+`{{%% /badge %%}}`, linkName, fullURL)
+// permalinkBlock returns the permalink of a document: the link to
+// the page's stable uid alias.
+func permalinkBlock(linkName, fullURL string) string {
+	return fmt.Sprintf("%s [%s](%s)", permalinkLabel, linkName, fullURL)
 }
 
 // hasAlias reports whether the front matter "aliases" field contains the given value.

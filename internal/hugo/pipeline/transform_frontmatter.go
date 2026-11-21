@@ -108,7 +108,7 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 		}
 	}
 
-	// Set type=docs for Relearn theme (ensures proper layout)
+	// Set type=docs so the theme picks its documentation layout
 	if _, hasType := doc.FrontMatter["type"]; !hasType {
 		doc.FrontMatter["type"] = "docs"
 	}

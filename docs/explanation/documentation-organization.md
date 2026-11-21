@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-01T00:00:00Z
-fingerprint: ece0e8b98656953d39dee8259806d9449ae8c8487980ebfaec7198c12bb65526
-lastmod: "2026-11-19"
+fingerprint: e4dcd33956916ab50a4a129f09b233934a5fe6a138b6867a098598313f922b05
+lastmod: "2026-11-21"
 tags:
   - documentation
   - diataxis
@@ -22,7 +22,7 @@ list of improvements to consider. This is an "explanation" doc (the
 
 ## What docbuilder does with the docs tree
 
-Docbuilder renders `docs/` into a Hugo site using the Relearn theme.
+Docbuilder renders `docs/` into a Hugo site using the Docsy theme.
 The shape of the rendered site is determined by:
 
 - One `_index.md` per directory — becomes the directory's landing page
@@ -190,7 +190,7 @@ effort.
 - **Splitting `reference/` further**. The 14 docs there are all
   information-oriented and they cross-reference each other. Sub-
   dividing would make them harder to find, not easier.
-- **Re-doing the categories sidebar config**. Hugo + Relearn already
+- **Re-doing the categories sidebar config**. Hugo + Docsy already
   render categories sensibly. The fixes above are all in
   frontmatter; no theme changes needed.
 

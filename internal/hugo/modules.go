@@ -141,10 +141,10 @@ func (g *Generator) createNewGoMod(goModPath string) error {
 	return g.ensureThemeVersionRequires(goModPath)
 }
 
-// ensureThemeVersionRequires is no longer needed since we hardcode Relearn module
+// ensureThemeVersionRequires is no longer needed since we hardcode the theme module
 // Hugo will fetch the latest compatible version automatically.
 func (g *Generator) ensureThemeVersionRequires(goModPath string) error {
-	// No-op: Hugo Modules will automatically resolve and download Relearn
+	// No-op: Hugo Modules will automatically resolve and download the theme
 	// The module path in hugo.yaml is sufficient
 	return nil
 }

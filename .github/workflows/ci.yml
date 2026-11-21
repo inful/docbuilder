@@ -242,6 +242,13 @@ jobs:
           test -d public/public || (echo "Public directory not created" && exit 1)
           test -f public/public/index.html || (echo "index.html not created" && exit 1)
 
+          # Verify the theme is the one the build ships: the stylesheet
+          # is vendored, so its presence proves the theme was applied.
+          ls public/public/css/docsy.min.*.css >/dev/null 2>&1 || \
+            (echo "The Docsy stylesheet is missing from the build" && exit 1)
+          grep -q "td-sidebar" public/public/index.html || \
+            (echo "The theme's navigation is missing from the built page" && exit 1)
+
       - name: Upload generated site as artifact
         if: steps.docs_changed.outputs.changed == 'true'
         uses: actions/upload-artifact@v4

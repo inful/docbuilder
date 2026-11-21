@@ -2,21 +2,31 @@ package config
 
 import "fmt"
 
+// The chrome modes of the theme.
+const (
+	// ChromeFull renders the navigation chrome on every page. It is
+	// the default: the navigation is there without JavaScript.
+	ChromeFull = "full"
+	// ChromeShared renders the chrome on the donor page only and
+	// restores it in the browser. The published site is much
+	// smaller, and the navigation needs JavaScript.
+	ChromeShared = "shared"
+)
+
 // normalizeHugoConfig canonicalizes Hugo-related enum fields (today:
-// the theme and the sidebar mode) and reports any coercions via res.
+// the chrome mode) and reports any coercions via res.
 func normalizeHugoConfig(h *HugoConfig, res *NormalizationResult) {
 	if h == nil {
 		return
 	}
-	h.Sidebar.Normalize(res)
-	switch h.Theme {
-	case "", ThemeRelearn, ThemeDocsy:
+	switch h.Chrome {
+	case "", ChromeFull, ChromeShared:
 		// Known values; nothing to normalize.
 	default:
 		res.Warnings = append(res.Warnings, fmt.Sprintf(
-			"hugo.theme %q is unknown; falling back to %q",
-			h.Theme, ThemeRelearn,
+			"hugo.chrome %q is unknown; falling back to %q",
+			h.Chrome, ChromeFull,
 		))
-		h.Theme = ThemeRelearn
+		h.Chrome = ChromeFull
 	}
 }

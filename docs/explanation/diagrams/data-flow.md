@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: f2ef85f4cf2681c0ec2fba907767959384bcda50a9762b91dbe797d4ee013947
-lastmod: "2026-11-19"
+fingerprint: 88adf86d71bdc99ab12e929ccb8dd896f23bb18e7706f83931960e8b95a30f4d
+lastmod: "2026-11-21"
 tags:
   - data-flow
   - sequences
@@ -89,7 +89,7 @@ sequenceDiagram
     Docs-->>Pipeline: DocFile list
     Pipeline->>EventStore: Emit DocumentationDiscovered
     Pipeline->>Hugo: GenerateConfig()
-    Hugo->>Hugo: Apply Relearn params
+    Hugo->>Hugo: Apply Docsy params
     Hugo->>Hugo: Write hugo.yaml
     Hugo-->>Pipeline: Config ready
     Pipeline->>Hugo: CopyContent()
@@ -125,7 +125,7 @@ sequenceDiagram
 - Compute documentation set hash
 
 **Phase 4: Hugo Configuration**
-- Load theme defaults (Relearn)
+- Load theme defaults (Docsy)
 - Merge user-provided parameters
 - Add dynamic fields (build_date, version)
 - Configure Hugo modules

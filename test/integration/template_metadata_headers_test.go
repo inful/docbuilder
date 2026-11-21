@@ -29,13 +29,13 @@ func TestIntegration_TemplateMetadataHeadersWithoutTransitions(t *testing.T) {
 	require.NoError(t, err, "build pipeline failed")
 	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
 
-	customHeaderPath := filepath.Join(outputDir, "layouts", "partials", "custom-header.html")
-	_, statErr := os.Stat(customHeaderPath)
-	require.NoError(t, statErr, "custom header partial should be generated")
+	hookPath := filepath.Join(outputDir, "layouts", "_partials", "hooks", "head-end.html")
+	_, statErr := os.Stat(hookPath)
+	require.NoError(t, statErr, "the head hook should be generated")
 
 	// #nosec G304 -- test reads a deterministic file path under t.TempDir output.
-	headerData, readErr := os.ReadFile(customHeaderPath)
-	require.NoError(t, readErr, "failed to read generated custom header partial")
+	headerData, readErr := os.ReadFile(hookPath)
+	require.NoError(t, readErr, "failed to read the generated head hook")
 	headerContent := string(headerData)
 	require.Contains(t, headerContent, `<meta property="docbuilder:template.type" content="{{ $tmpl.type }}">`)
 	require.Contains(t, headerContent, `<meta property="docbuilder:template.name" content="{{ $tmpl.name }}">`)

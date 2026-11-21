@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 4cd9ce1106d64bb8b50bee5726aca0b3f3fe68d2274c440f0ef24650ca268861
-lastmod: "2026-11-19"
+fingerprint: ba62203a1772b142493a828187972e8ed62b73cba569bd2cc1c5fd68c26e6b37
+lastmod: "2026-11-21"
 tags:
   - documentation
 title: Explanation Documentation
@@ -32,7 +32,7 @@ This directory contains comprehensive architecture documentation for DocBuilder.
 - Core principles (clean architecture, event sourcing, typed state)
 - Detailed package structure and responsibilities
 - Data flow diagrams and sequences
-- Key subsystems deep dive (Relearn configuration, forges, change detection)
+- Key subsystems deep dive (Docsy configuration, forges, change detection)
 - Extension points and operational considerations
 - Migration status summary
 - **Audience:** Senior engineers, architects, contributors
@@ -86,7 +86,7 @@ This directory contains comprehensive architecture documentation for DocBuilder.
 **Adding New Theme Support:**
 1. Read [Comprehensive Architecture](comprehensive-architecture.md) - Theme System
 2. Review [Package Architecture Guide](package-architecture.md) - internal/hugo section
-3. Follow [How-To: Use Relearn Theme](../how-to/use-relearn-theme.md)
+3. Follow [How-To: Use Docsy Theme](../how-to/use-docsy-theme.md)
 
 **Implementing Forge Integration:**
 1. Read [Comprehensive Architecture](comprehensive-architecture.md) - Forge Integration
@@ -119,10 +119,10 @@ This directory contains comprehensive architecture documentation for DocBuilder.
 - [Package Architecture Guide](package-architecture.md#internalfoundationerrors)
 - [ADR-000: Uniform Error Handling](../adr/ADR-000-uniform-error-handling.md)
 
-**Relearn Configuration:**
-- [Comprehensive Architecture](comprehensive-architecture.md#1-relearn-theme-configuration)
-- [Architecture Diagrams](architecture-diagrams.md#relearn-theme-configuration)
-- [How-To: Use Relearn Theme](../how-to/use-relearn-theme.md)
+**Docsy Configuration:**
+- [Comprehensive Architecture](comprehensive-architecture.md#1-docsy-theme-configuration)
+- [Architecture Diagrams](architecture-diagrams.md#docsy-theme-configuration)
+- [How-To: Use Docsy Theme](../how-to/use-docsy-theme.md)
 
 **Change Detection:**
 - [Comprehensive Architecture](comprehensive-architecture.md#3-change-detection)

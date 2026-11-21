@@ -37,7 +37,7 @@ Task-oriented guides:
 - [Setup Linting](how-to/setup-linting.md)
 - [Use Templates](how-to/use-templates.md)
 - [Author Templates](how-to/author-templates.md)
-- [Use Relearn Theme](how-to/use-relearn-theme.md)
+- [Use Docsy Theme](how-to/use-docsy-theme.md)
 - [Write Cross-Document Links](how-to/write-cross-document-links.md)
 - [Write Image Links](how-to/write-image-links.md)
 

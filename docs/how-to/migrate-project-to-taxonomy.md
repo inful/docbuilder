@@ -5,8 +5,8 @@ aliases:
 categories:
   - how-to
 date: 2026-06-05T00:00:00Z
-fingerprint: 5b0fd6a6907ee7f6a0c04c347b37967c3decad6f56c9109534e5a0e4ede6cb43
-lastmod: "2026-09-25"
+fingerprint: ab8bab2194bb68b1ae38419196649a619997afe798e61538774a312a7864c300
+lastmod: "2026-11-21"
 tags:
   - migration
   - sidebar
@@ -103,41 +103,9 @@ find . -name '*.md' -print0 | xargs -0 sed -i -E 's/^project: ([^[].*)$/projects
 
 The first expression handles scalar → list (the `[^[]` guard skips lines that already start a list, so it doesn't double-wrap). The second expression renames the field on lines that are already lists.
 
-## Step 3: Update your `group_by` config
+## Step 3: Verify
 
-The config axis must match the new field name:
-
-```diff
- hugo:
-   sidebar:
-     group_by:
--      minutes: [project]
-+      minutes: [projects]
-```
-
-If you have multiple categories or a deep chain, the rename applies to every occurrence of the old axis name:
-
-```diff
- hugo:
-   sidebar:
-     group_by:
--      minutes: [project, year]
--      team: [project]
-+      minutes: [projects, year]
-+      team: [projects]
-```
-
-The match is case-insensitive — `Minutes: [Projects]`, `MINUTES: [PROJECTS]`, and `minutes: [projects]` all resolve to the same chain. Pair them with the same casing in your docs (`Projects: [team_alpha]` or `projects: [team_alpha]`) and DocBuilder's case-insensitive lookup handles the rest.
-
-## Step 4: Verify
-
-Run a build with `-v` and check the categories menu debug log:
-
-```
-DEBUG Categories menu: configured group_by categories=1 group_by=map[minutes:[projects]]
-```
-
-And visit the new listing pages in the rendered site:
+Run a build and visit the new listing pages in the rendered site:
 
 - `/project/team_alpha/` — listing of all docs whose `projects:` includes `team_alpha`.
 - `/project/team_beta/` — same for `team_beta`.
@@ -146,13 +114,11 @@ If a listing page is empty for a value you expected, re-check the doc's front ma
 
 ## What does NOT change
 
-- The Repository fallback (A1) for docs without `projects:` is unchanged.
-- The synthetic `_uncategorized` bucket is unaffected.
 - The `categories:` taxonomy is unaffected (you don't need to rename that to `categorie` or anything — `categories` is already plural).
 
 ## What is new
 
-- A doc with `projects: [a, b]` appears in the sidebar under both `Minutes > a` and `Minutes > b`. The doc link is duplicated, mirroring the natural taxonomy meaning.
+- A doc with `projects: [a, b]` appears in the listing page of each of its values. The doc link is duplicated, mirroring the natural taxonomy meaning.
 - Hugo auto-generates `/project/<value>/` listing pages for every value that appears in any doc's `projects:` field.
 - The `taxonomies:` block in the generated `hugo.yaml` includes `project: projects` by default. Authors who want a different taxonomy setup can override via `hugo.taxonomies` in their config.
 
@@ -168,10 +134,9 @@ hugo:
     # project intentionally omitted
 ```
 
-The sidebar grouping still works — DocBuilder reads `projects:` from front matter regardless of whether `project` is declared as a taxonomy. The override only suppresses the listing pages.
+The override only suppresses the listing pages.
 
 ## See also
 
-- [Configuration reference — `group_by`](../reference/configuration.md#per-category-sub-grouping-group_by)
-- [Configuration reference — multi-value axes](../reference/configuration.md#multi-value-axes-fan-out)
-- [Configuration reference — the `project` taxonomy](../reference/configuration.md#the-project-taxonomy)
+- [Configuration reference — taxonomies](../reference/configuration.md#taxonomies)
+- [The Docsy theme](../how-to/use-docsy-theme.md)

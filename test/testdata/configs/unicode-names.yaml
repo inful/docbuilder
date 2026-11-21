@@ -10,7 +10,6 @@ hugo:
   title: "Unicode Names Test"
   description: "Testing files with non-ASCII characters in names"
   base_url: "http://localhost:1313"
-  theme: "relearn"
 
 output:
   directory: "./test-output"

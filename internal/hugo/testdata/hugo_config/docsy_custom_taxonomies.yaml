@@ -34,53 +34,20 @@ markup:
         tabWidth: 4
 module:
     imports:
-        - path: github.com/McShelby/hugo-theme-relearn
-          version: 9.0.3
-outputFormats:
-    sidebar:
-        baseName: sidebar
-        isHTML: true
-        mediaType: text/html
-        name: sidebar
-        noUgly: true
-        permalinkable: false
+        - path: github.com/docsy/docsy/theme
+          version: v0.18.1
 outputs:
     home:
         - HTML
         - RSS
-        - JSON
-        - sidebar
-    taxonomy:
-        - HTML
-        - JSON
-    term:
-        - HTML
-        - JSON
 params:
-    alwaysopen: false
     build_date: IGNORE
-    collapsibleMenu: true
-    disableBreadcrumb: false
-    disableGeneratorVersion: false
-    disableLandingPageButton: true
-    disableLanguageSwitchingButton: true
-    disableShortcutsTitle: false
-    disableTagHiddenPages: false
-    editURL: {}
-    math:
-        enable: true
-    mermaid:
-        enable: true
-    showVisitedLinks: true
-    themeVariant:
-        - auto
-        - zen-light
-        - zen-dark
-    themeVariantAuto:
-        - zen-light
-        - zen-dark
+    offlineSearch: true
+    ui:
+        showLightDarkModeMenu: true
+        sidebar_menu_foldable: true
 taxonomies:
     category: categories
-    project: projects
+    mycustomtag: mycustomtags
     tag: tags
-title: Relearn Site
+title: Docsy Site with Custom Taxonomies

@@ -29,7 +29,7 @@ type GeneratorProvider interface {
 	// Resolver access
 	GetEditLinkResolver() EditLinkResolver
 
-	// Forge information (theme capabilities removed - Relearn always wants per-page edit links)
+	// Forge information (the theme always wants per-page edit links)
 	GetForgeCapabilities(forgeType string) ForgeCapabilities
 }
 

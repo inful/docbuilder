@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 7bc61d04988b325319996301daf09dde9953d3434373441635a7867cf44448d3
-lastmod: "2026-11-19"
+fingerprint: 5c81e5d71a22d30c6ed010b78c25bdbf75ac2ffec20915755be2cb79e10826ea
+lastmod: "2026-11-21"
 tags:
   - architecture
   - design
@@ -38,7 +38,7 @@ Each stage records duration, outcome, and issues for observability.
 | Discovery | Walk configured doc paths, filter markdown, build `DocFile` list. | `internal/docs/` |
 | Hugo Generator | Emit `hugo.yaml`, content tree, index pages, theme params. | `internal/hugo/` |
 | Transform Pipeline | Fixed-order content processing pipeline with direct mutation. | `internal/hugo/pipeline/` |
-| Relearn Theme | Single hardcoded theme with specific parameter defaults (not extensible). | `internal/hugo/` (config_writer.go) |
+| Docsy Theme | Single hardcoded theme with specific parameter defaults (not extensible). | `internal/hugo/` (config_writer.go) |
 | Daemon Service | Long-running HTTP service for incremental builds and monitoring. | `internal/daemon/` |
 | Forge Integration | GitHub/GitLab/Forgejo API clients. | `internal/forge/` |
 | Error Foundation | Classified error system with retry strategies. | `internal/foundation/errors/` |
@@ -108,7 +108,7 @@ Each markdown file passes through a fixed-order transform pipeline:
 
 **Theme Integration:**
 - Supported themes use Hugo Modules (no local theme directory needed)
-- Theme-specific configuration for Relearn
+- Theme-specific configuration for Docsy
 - Index template override search order ensures safe customization
 - Front matter includes forge, repository, section, editURL for theme logic
 
@@ -158,7 +158,7 @@ DocBuilder can run as a long-running HTTP service for incremental builds and con
 
 - **Add new transform**: Create function in `internal/hugo/pipeline/transforms.go` and add to `defaultTransforms()` list
 - **Add new generator**: Create function in `internal/hugo/pipeline/generators.go` and add to `defaultGenerators()` list  
-- **Theme customization**: Relearn is hardcoded; customize via `params` in config or override templates in `layouts/` (see [use-relearn-theme.md](../how-to/use-relearn-theme.md))
+- **Theme customization**: Docsy is hardcoded; customize via `params` in config or override templates in `layouts/` (see [use-docsy-theme.md](../how-to/use-docsy-theme.md))
 - **Additional issue codes**: Augment taxonomy without breaking consumers
 - **Future caching**: Leverage `doc_files_hash` for selective downstream regeneration
 - **Daemon endpoints**: Add new HTTP handlers in `internal/daemon/` for custom workflows

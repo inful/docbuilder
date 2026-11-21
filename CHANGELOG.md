@@ -9,6 +9,43 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-11-21
+
+### Changed
+- **The theme is Docsy.** The site was built with the Relearn theme; it
+  is built with [Docsy](https://github.com/docsy/docsy) now, and there
+  is no theme to choose from: `hugo.theme` is gone.
+
+  The navigation is the content tree - the sections and pages of the
+  repositories - instead of a sidebar with one block per category. The
+  categories are a taxonomy, so their landing pages
+  (`/categories/<name>/`) list their documents with their descriptions,
+  across every repository the build aggregates. The order of the
+  sidebar comes from the `weight` front matter of the section index
+  pages.
+
+  What the build does for the theme: it imports it as a Hugo Module,
+  writes the layout overrides (the custom CSS, the view transitions and
+  the template metadata in the theme's head hook, the stylesheet link,
+  and the edit link from the page's own forge), enables the theme's
+  offline search, and ships the stylesheet prebuilt - Hugo 0.170 has no
+  Sass support of its own, so the compiled stylesheet, the Bootstrap
+  JavaScript and the two web fonts it references are vendored in the
+  repository.
+
+  What it costs: the per-page edit link works for every forge, but the
+  "categories sidebar" - the `hugo.sidebar.*` settings, the
+  `group_by` axes and the `_uncategorized` bucket - is gone with the
+  theme it belonged to. The `hugo.chrome` setting replaces the shared
+  navigation: `full` (the default) renders the navigation on every
+  page, `shared` renders it once and restores it in the browser.
+
+### Removed
+- **The Relearn theme integration**: the theme parameters, the
+  categories sidebar (3,600 lines and its tests), the shared navigation
+  fragment with its vendored copy of the theme's menu template (1,000
+  lines), and the `hugo.sidebar.*` configuration.
+
 ## [0.26.1] - 2026-11-21
 
 ### Fixed

@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: 8f3bc1c8155f185c9359cc63cea6dd51eebf5789464d1a319d203b31fa672f84
-lastmod: "2026-11-19"
+fingerprint: 369e14296c8d5a07eef44367f941378fcbde72c1dddd910d5c1d8291f26edf68
+lastmod: "2026-11-21"
 tags:
   - components
   - interactions
@@ -16,42 +16,33 @@ uid: 36766002-6e10-4a98-9c90-981b15fa6f99
 
 This document shows how specific components interact within DocBuilder, focusing on theme configuration, forge integration, and change detection.
 
-**Last Updated:** January 4, 2026 - Reflects Relearn-only configuration.
+**Last Updated:** November 21, 2026 - Reflects the Docsy theme.
 
-## Relearn Theme Configuration
+## Docsy Theme Configuration
 
-DocBuilder uses the Relearn theme exclusively with hardcoded default configuration.
+DocBuilder uses the Docsy theme exclusively with hardcoded default configuration.
 
 ```
 ┌────────────────────────────────────────────────────┐
-│          Relearn Theme Configuration               │
+│          Docsy Theme Configuration               │
 │          (internal/hugo/config_writer.go)          │
 │                                                    │
-│  applyRelearnThemeDefaults(params)                 │
+│  applyDocsyThemeDefaults(params)                 │
 │                                                    │
 │  Default Parameters:                               │
-│  - themeVariant: ["auto", "zen-light", "zen-dark"]│
-│  - themeVariantAuto: ["zen-light", "zen-dark"]    │
-│  - showVisitedLinks: true                          │
-│  - collapsibleMenu: true                           │
-│  - alwaysopen: false                               │
-│  - disableBreadcrumb: false                        │
-│  - disableLandingPageButton: true                  │
-│  - disableShortcutsTitle: false                    │
-│  - disableLanguageSwitchingButton: true            │
-│  - disableTagHiddenPages: false                    │
-│  - disableGeneratorVersion: false                  │
-│  - mermaid.enable: true                            │
-│  - math.enable: true                               │
+│  - offlineSearch: true                             │
+│  - ui.showLightDarkModeMenu: true                  │
+│  - ui.sidebar_menu_foldable: true                  │
 │  - enable_transitions: (if configured)             │
+│  - td.chrome: shared (only when asked for)         │
 └────────────────────────────────────────────────────┘
 
 Generation Flow:
 1. Load config → title, baseURL, etc.
-2. Apply Relearn defaults (via applyRelearnThemeDefaults)
+2. Apply Docsy defaults (via applyDocsyThemeDefaults)
 3. User params deep merge (user values override defaults)
 4. Add dynamic fields (build_date, doc_builder_version)
-5. Add Hugo module: github.com/McShelby/hugo-theme-relearn
+5. Add Hugo module: github.com/docsy/docsy/theme
 6. Configure i18n settings (defaultContentLanguage: "en")
 7. Write hugo.yaml to staging directory
 ```
@@ -73,7 +64,7 @@ Example:
 ```
 
 **Non-Overridable Settings**:
-- Hugo module path: Always `github.com/McShelby/hugo-theme-relearn`
+- Hugo module path: Always `github.com/docsy/docsy/theme`
 - Language configuration: Always English (`en`)
 - Markup configuration: Goldmark with specific extensions
 

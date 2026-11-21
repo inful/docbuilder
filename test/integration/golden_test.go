@@ -376,7 +376,7 @@ func TestGolden_Error_InvalidRepository(t *testing.T) {
 	}
 
 	// Load test configuration
-	cfg := loadGoldenConfig(t, "../../test/testdata/configs/relearn-basic.yaml")
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/docsy-basic.yaml")
 
 	// Point to non-existent repository
 	cfg.Repositories[0].URL = "/tmp/this-repo-does-not-exist-" + t.Name()
@@ -487,7 +487,7 @@ func TestGolden_Warning_NoGitCommit(t *testing.T) {
 	_ = exec.CommandContext(t.Context(), "git", "-C", tmpDir, "add", ".").Run()
 
 	// Load configuration
-	cfg := loadGoldenConfig(t, "../../test/testdata/configs/relearn-basic.yaml")
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/docsy-basic.yaml")
 	cfg.Repositories[0].URL = tmpDir
 
 	// Create temporary output directory

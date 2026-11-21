@@ -123,7 +123,7 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	if _, err := exec.LookPath("hugo"); err != nil {
 		return fmt.Errorf("%w: %w", herrors.ErrHugoBinaryNotFound, err)
 	}
-	// Relearn is pulled via Hugo Modules, which shells out to `go mod ...`.
+	// The theme is pulled via Hugo Modules, which shells out to `go mod ...`.
 	// If Go isn't available, fail fast with a clear message instead of Hugo's
 	// often-opaque module download error.
 	goPath, err := exec.LookPath("go")

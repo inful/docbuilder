@@ -71,7 +71,7 @@ func TestGenerateSite_Smoke(t *testing.T) {
 		t.Fatalf("repository not in front matter: %s", content)
 	}
 	if !strings.Contains(content, "editURL:") {
-		t.Fatalf("expected editURL in front matter for relearn theme")
+		t.Fatalf("expected editURL in front matter")
 	}
 	if strings.Contains(content, "guide.md") {
 		t.Fatalf("link rewriting failed to strip .md: %s", content)

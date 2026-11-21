@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-01T00:00:00Z
-fingerprint: 6dd8fde9ed7db0b2269680e0207d715f4ba1a231f678d5142e3d9321f4552395
-lastmod: "2026-11-19"
+fingerprint: 10f3d1a3301bd8861c2c4257f353a30ec2fd4ffac06e17e734ece8cb263d2232
+lastmod: "2026-11-21"
 tags:
   - best-practices
   - documentation
@@ -54,10 +54,10 @@ represents:
 | Security | `security/` | Threat model, security controls, audit notes |
 | Examples | `examples/` | Source-of-truth template files (`.template.md`) |
 
-**Why:** The `hugo.sidebar.mode` default (`auto`) renders one sidebar
-section per category. Mixing modes in one directory means a how-to
-recipe sits next to an architectural explanation with no visual cue
-that they answer different questions.
+**Why:** The sidebar is the content tree, so a directory is a sidebar
+section. Mixing modes in one directory means a how-to recipe sits next
+to an architectural explanation with no visual cue that they answer
+different questions.
 
 **Enforced:** None — but a future linter rule could check that
 `docs/<dir>/<file>.md` has a `categories:` value matching the
@@ -69,7 +69,7 @@ directory's expected mode (e.g. `how-to/<file>.md` must have
 **SHOULD.** Two levels under `docs/` is the practical maximum. Avoid
 `docs/how-to/foo/bar/baz.md`.
 
-**Why:** Hugo section depth, breadcrumb length, and the Relearn
+**Why:** Hugo section depth, breadcrumb length, and the Docsy
 sidebar's available vertical space all degrade with depth. Two levels
 maps to one sidebar section + one indented subgroup, which the theme
 renders cleanly.
@@ -622,7 +622,7 @@ without manual intervention for everything except true content bugs
   the per-template schema.
 - [Documentation Organization](documentation-organization.md) — a
   point-in-time audit of the docs/ tree this project.
-- [Hugo sidebar configuration](../reference/configuration.md#hugo-sidebar)
-  — the `hugo.sidebar.mode` / `group_by` knobs.
+- [The navigation](../reference/configuration.md#the-navigation) — how
+  the sidebar and the category landing pages are built.
 - [Index files reference](../reference/index-files.md) — how
   `_index.md` / `index.md` / `README.md` interact.

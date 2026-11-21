@@ -5,14 +5,14 @@
         "title": "Deep Nesting Test",
         "type": "docs"
       },
-      "contentHash": "sha256:f76434933e257b48"
+      "contentHash": "sha256:eb97b5ac9b815f7e"
     },
     "content/level1/_index.md": {
       "frontmatter": {
         "title": "level1",
         "type": "docs"
       },
-      "contentHash": "sha256:9f392fb873c08dd8"
+      "contentHash": "sha256:26946ece95263781"
     },
     "content/level1/doc.md": {
       "frontmatter": {
@@ -27,7 +27,7 @@
         "title": "level2",
         "type": "docs"
       },
-      "contentHash": "sha256:2fb42da26d67cb34"
+      "contentHash": "sha256:f604b1dcaf43864a"
     },
     "content/level1/level2/doc.md": {
       "frontmatter": {
@@ -42,7 +42,7 @@
         "title": "level3",
         "type": "docs"
       },
-      "contentHash": "sha256:12be99216e427852"
+      "contentHash": "sha256:c1de2e2f227602f2"
     },
     "content/level1/level2/level3/doc.md": {
       "frontmatter": {
@@ -57,7 +57,7 @@
         "title": "level4",
         "type": "docs"
       },
-      "contentHash": "sha256:2aa801c81b181ace"
+      "contentHash": "sha256:628b0e7cde8a6b5d"
     },
     "content/level1/level2/level3/level4/deep-doc.md": {
       "frontmatter": {
