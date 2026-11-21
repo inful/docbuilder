@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 565a827491c65f477bfdf6e12d88d46d177ce8316d9c13f22400a3590d2fd85d
+fingerprint: 9eb74c211d15bd3afa8cd5a767c6573428b12d73248e44d9efb14158e951f4f8
 lastmod: "2026-11-21"
 tags:
   - configuration
@@ -427,6 +427,10 @@ hugo:
 | `docsy` | The content tree: the sections and pages of the repositories. The categories stay a taxonomy, so their landing pages (`/categories/<name>/`) exist either way. The `hugo.sidebar.*` settings do not apply. |
 
 An unknown theme name falls back to `relearn` and the build logs a warning.
+
+`docsy` is experimental for now: Relearn is still the default, and the
+switch exists so the migration can be verified before the default
+flips.
 
 Docsy ships its stylesheet prebuilt. Hugo 0.170 has no Sass support of its own, so DocBuilder vendors the compiled stylesheet, the Bootstrap JavaScript and the two web fonts the stylesheet references; `scripts/vendor-docsy-assets.sh` rebuilds them.
 
