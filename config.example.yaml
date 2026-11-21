@@ -1,4 +1,5 @@
 # Example configuration for docbuilder
+version: "2.0"
 forges:
   - name: "company-github"
     type: github

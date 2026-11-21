@@ -57,4 +57,10 @@ daemon:
   storage:
     state_file: "./daemon-data/daemon-state.json"
     repo_cache_dir: "./daemon-data/repos"
-    output_dir: "./daemon-data/site"
+
+# The output directory is the canonical source; daemon.storage.output_dir
+# must match it when both are set.
+output:
+  directory: "./daemon-data/site"
+  clean: true
+

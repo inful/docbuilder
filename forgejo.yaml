@@ -17,6 +17,7 @@ forges:
     type: "forgejo"
     api_url: "https://git.home.luguber.info/api/v1"
     base_url: "https://git.home.luguber.info"
+    auto_discover: true
     auth:
       type: "token"
       token: "${LUGUBER_TOKEN}"
