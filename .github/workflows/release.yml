@@ -16,7 +16,7 @@ on:
       hugo_version:
         description: 'Hugo version to use'
         required: false
-        default: '0.152.2'
+        default: '0.170.1'
         type: string
       push_images:
         description: 'Push images to registry'
@@ -27,7 +27,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  HUGO_VERSION: ${{ github.event.inputs.hugo_version || '0.152.2' }}
+  HUGO_VERSION: ${{ github.event.inputs.hugo_version || '0.170.1' }}
 
 permissions:
   contents: write

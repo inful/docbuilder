@@ -9,6 +9,27 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.25.1] - 2026-11-21
+
+### Security
+- **The image carries a Hugo with twelve unpatched advisories**: the
+  build pinned Hugo 0.152.2, seventeen releases old. Hugo 0.170.1 is
+  the version now. It is built with Go 1.27.4, which carries twelve
+  security fixes.
+
+  Hugo 0.170.0 ended the extended edition — one binary with every
+  feature but LibSass — so the build takes the standard archive now
+  instead of the alias the extended name resolves to.
+
+### Changed
+- **The taxonomy pages show a double space in each child's path**.
+  Hugo 0.169.0 rewrote `plainify`: text that a tag separated now gets
+  a space between the parts. Relearn 9.0.3 prints each child's path
+  with `plainify`, so `Documentation > adr` became `Documentation >  adr`
+  on the 131 listing pages. The fix belongs in the theme and comes with
+  the Relearn 9.5 bump; the rest of the site is unchanged, page for
+  page.
+
 ## [0.25.0] - 2026-11-19
 
 ### Fixed
