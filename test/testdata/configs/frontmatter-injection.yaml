@@ -11,7 +11,6 @@ hugo:
   title: Frontmatter Injection Test
   description: Test automatic front matter injection (editURL, repository metadata)
   base_url: http://localhost:1313/
-  theme: relearn
   params:
     editURL:
       enable: true

@@ -190,7 +190,6 @@ hugo:
 	}
 
 	// Verify defaults were applied
-	// Theme is always Relearn (removed from config)
 
 	if config.Output.Directory != defaultOutputDir {
 		t.Errorf("Default output directory = %v, want %s", config.Output.Directory, defaultOutputDir)
@@ -530,7 +529,7 @@ forges:
         - repository
 hugo:
   title: Test Documentation
-  theme: relearn`,
+`,
 			githubForge.Name,
 			githubForge.Type,
 			githubForge.APIURL,
@@ -602,7 +601,7 @@ forges:
         - repository
 hugo:
   title: Test Documentation
-  theme: relearn`,
+`,
 			gitlabForge.Name,
 			gitlabForge.Type,
 			gitlabForge.APIURL,

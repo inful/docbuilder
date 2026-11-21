@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 9eb74c211d15bd3afa8cd5a767c6573428b12d73248e44d9efb14158e951f4f8
+fingerprint: 627b008add1e15b6221c34aabcced7ff9ba76c4328e7d38439015013e0de21e7
 lastmod: "2026-11-21"
 tags:
   - configuration
@@ -407,47 +407,43 @@ With versioning enabled, DocBuilder:
 | title | string | Site title. |
 | description | string | Site description. |
 | base_url | string | Hugo BaseURL. |
-| theme | string | The Hugo theme: `relearn` (the default) or `docsy`. See [Themes](#themes). |
-| params | map[string]any | Relearn theme parameters (optional). |
+| chrome | string | How the navigation is rendered: `full` (the default) or `shared`. See [Chrome](#chrome). |
+| params | map[string]any | Theme parameters (optional). |
 | taxonomies | map[string]string | Custom taxonomy definitions (optional). |
-| custom_css | string | Site-wide CSS inlined in the Relearn `custom-header.html` partial. See [Custom CSS](#custom-css) for default, override, and opt-out behavior. |
+| custom_css | string | Site-wide CSS inlined in the theme's head hook. See [Custom CSS](#custom-css). |
+| enable_page_transitions | bool | Animate the move between pages with the View Transitions API. |
 
-### Themes
+### The theme
 
-DocBuilder builds with the Relearn theme unless `hugo.theme` says otherwise:
+The site is built with the [Docsy theme](https://github.com/docsy/docsy),
+imported as a Hugo Module (`github.com/docsy/docsy/theme`, version
+`v0.18.1`). There is nothing to install and nothing to choose: the
+theme ships with the build.
 
-```yaml
-hugo:
-  theme: docsy
-```
+Docsy ships its stylesheet prebuilt. Hugo 0.170 has no Sass support of
+its own, so DocBuilder vendors the compiled stylesheet, the Bootstrap
+JavaScript and the two web fonts the stylesheet references;
+`scripts/vendor-docsy-assets.sh` rebuilds them.
 
-| Theme | How the navigation is built |
-|-------|------------------------------|
-| `relearn` (the default) | A sidebar with one block per `categories:` value and one entry per project inside it. The `hugo.sidebar.*` settings apply. |
-| `docsy` | The content tree: the sections and pages of the repositories. The categories stay a taxonomy, so their landing pages (`/categories/<name>/`) exist either way. The `hugo.sidebar.*` settings do not apply. |
+See [Use the Docsy Theme](../how-to/use-docsy-theme.md) for the
+complete guide.
 
-An unknown theme name falls back to `relearn` and the build logs a warning.
+### Chrome
 
-`docsy` is experimental for now: Relearn is still the default, and the
-switch exists so the migration can be verified before the default
-flips.
-
-Docsy ships its stylesheet prebuilt. Hugo 0.170 has no Sass support of its own, so DocBuilder vendors the compiled stylesheet, the Bootstrap JavaScript and the two web fonts the stylesheet references; `scripts/vendor-docsy-assets.sh` rebuilds them.
-
-### Relearn Theme Parameters
-
-Customize Relearn theme behavior via `hugo.params`:
+| Mode | What it does |
+|------|--------------|
+| `full` (the default) | The navigation is rendered on every page. It is there without JavaScript. |
+| `shared` | The navigation is rendered on one page and restored in the browser. The published site is much smaller, and the navigation needs JavaScript. |
 
 ```yaml
 hugo:
-  params:
-    themeVariant: "relearn-dark"
-    disableSearch: false
-    collapsibleMenu: true
-    showVisitedLinks: true
+  chrome: shared
 ```
 
-See [Use Relearn Theme](../how-to/use-relearn-theme.md) for complete parameter reference.
+The theme calls its shared mode experimental and recommends `full` for
+production, so that is the default. The saving is real on a large
+site: the navigation is carried by every page, so a site with a
+thousand pages carries it a thousand times.
 
 ### Taxonomies
 
@@ -493,246 +489,41 @@ DocBuilder's FrontMatter model supports `tags`, `categories`, and `keywords` fie
 
 ### Custom CSS
 
-Use `hugo.custom_css` to ship site-wide CSS. DocBuilder inlines the value as a `<style>` block inside the Relearn `layouts/partials/custom-header.html` partial, which Relearn auto-loads in every page head — so the rule applies site-wide without further wiring.
+Use `hugo.custom_css` to ship site-wide CSS. DocBuilder inlines the value as a `<style>` block in the theme's head hook, which the theme includes in every page head — so the rule applies site-wide without further wiring.
 
 | `custom_css` value | Effect |
 |--------------------|--------|
-| unset (default) | A built-in override ships: `#R-sidebar .nav-title { font-size: 1.25rem; font-weight: bold; padding-inline-start: 0.5rem; padding-bottom: 0.25rem; text-transform: none; }`. This tones down Relearn's loud sidebar section titles (which render at 2rem, bold, uppercase, with 1rem left padding) to a section-divider weight, and tightens the title's bottom padding so it sits visually close to its submenu list. |
-| set to a non-empty string | The value replaces the default verbatim. Use this to ship your own override. |
-| set to a whitespace-only string | The `<style>` block is suppressed entirely. The rest of the partial (template metadata, view-transitions link if enabled) is still written. |
+| unset (default) | No `<style>` block is written. The theme's own styling applies. |
+| set to a non-empty string | The value is inlined verbatim. Use this to ship your own rules. |
+| set to a whitespace-only string | The `<style>` block is suppressed entirely. The rest of the hook (template metadata, view-transitions link if enabled) is still written. |
 
-**Example — replace the default with your own rules:**
+**Example — your own rules:**
 
 ```yaml
 hugo:
   custom_css: |
     /* My site-wide override */
-    #R-sidebar .nav-title {
-      font-size: 1.5rem;
-      color: var(--MAIN-TEXT-color);
-    }
+    .td-sidebar { font-size: 0.95rem; }
 ```
 
-**Example — opt out of the `<style>` block (keep all other partial contents):**
+**Example — opt out of the `<style>` block (keep all other hook contents):**
 
 ```yaml
 hugo:
   custom_css: "   \n   "   # any whitespace-only value
 ```
 
-### Categories Sidebar
+### The navigation
 
-DocBuilder is a documentation aggregator: it pulls docs from many external repositories, each with its own conventions for file names, titles, and front-matter categories. When two repositories both ship an `intro.md` titled "Introduction" under `categories: [Documentation]`, the default Hugo taxonomy listing renders two indistinguishable links.
+The sidebar is the content tree: the sections and pages of the
+repositories, in the order the documents declare. A document's
+`categories:` front matter is a **taxonomy**, not a sidebar block, so
+every category gets a landing page under `/categories/<name>/` that
+lists its documents with their descriptions — across every repository
+the build aggregates.
 
-The categories sidebar wiring solves this by emitting one Relearn sidebar block per category, with each repository represented as an expandable header under which its documents are listed. The rendered sidebar tree is `Category > Project > Document`, so collisions in file names and titles are resolved structurally by the parent project entry rather than by uglified link text.
-
-**Default behavior:** `hugo.sidebar.mode` defaults to `auto`, which renders the categories navigation **once** into a shared fragment and injects it in the browser (the *shared sidebar*, below). The navigation content is the same as the categories sidebar — including the synthetic `_uncategorized` bucket for any doc that has no `categories:` front matter — only the delivery differs. Set `hugo.sidebar.mode: categories` to embed the navigation in every page instead (server-rendered, no JavaScript needed), or `default` to revert to the legacy Relearn single-page sidebar.
-
-**Shared sidebar (`mode: shared`, the default):** the navigation is rendered **once**, into its own output format published as `/sidebar.html`, and injected into each page by a small script; the script also marks the current entry in the browser, so the result is the same sidebar the server-side render produces. That removes the per-page duplication behind the build cost described below: on a 1517-page site the render step drops from **3m42s to 4.0s** and the published site from **868 MB to 31 MB**, with the navigation fragment (560 KB) served once and cached by the browser.
-
-The browser keeps the fragment in its local storage, keyed by the build id, so only the **first** page of a visit downloads it — every page after that restores the navigation from the browser (measured: 14 ms to restore 3057 entries, against a 560 KB download). A rebuild changes the build id and invalidates the copy.
-
-The browser also remembers where the reader scrolled the navigation and puts it back on the next page, so clicking a link in the navigation does not move it. The position is anchored on the entry that was in view: the tree opens the path to the current page, so a pixel offset would show a different part of the tree on the next page. When the reader jumps to a different part of the tree, the navigation follows the current page instead (the theme's behaviour).
-
-The trade-off is that the navigation is rendered client-side: without JavaScript the pages show no sidebar. Use `mode: categories` for sites that need the navigation without JavaScript.
-
-```yaml
-hugo:
-  sidebar:
-    mode: categories   # embed the navigation in every page instead of the shared fragment
-```
-
-**Example rendered sidebar:**
-
-```
-Documentation
-  Project A
-    Introduction
-    Setup
-  Project B
-    Configuration
-    Introduction
-_uncategorized
-  Project A
-    Orphan           # a doc with no categories: front matter
-```
-
-**Configuration:**
-
-```yaml
-hugo:
-  sidebar:
-    mode: auto                 # the default; "shared" and unset are equivalent
-    keep_default_menu: true     # keep the full main page menu below the category menus
-    project_segment: repo      # today only "repo" is supported
-    group_by:                  # optional: per-category sub-grouping by front-matter fields
-      minutes: [projects]      # group "Minutes" docs by their `projects:` value (one level)
-```
-
-| Field | Description |
-|-------|-------------|
-| `mode` | `"auto"` (the default, including unset) renders the navigation once into a shared fragment and injects it in the browser. `"shared"` is an explicit alias. `"categories"` embeds the navigation in every page (server-rendered, no JavaScript needed). `"default"` opts out of the categories navigation and emits Relearn's legacy single-page menu. |
-| `keep_default_menu` | When `true` (the default), the main page menu is appended after the category menus so users can navigate by category or by repository. Set to `false` to show only the category menus. |
-| `project_segment` | The unit used to group documents inside a category. Today only `"repo"` is supported; reserved for future segmentations (e.g., forge, group). |
-| `group_by` | Optional map keyed by the **canonical lowercase category name** that opts a category into a sub-grouping under its wrapper. Each value is the ordered list of axis names that form the level-by-level grouping path (the first axis is level 1, the second is level 2, and so on — there is no fixed depth cap). An axis is either a front-matter field name or — by the self-describing rule — a sibling category name: any axis value that is also a key in the same `group_by` map is treated as a sibling category reference, resolved from the doc's `categories:` list. Categories not present in the map use the default Repository-based grouping. At every level, a missing or empty axis value falls back to the doc's source Repository so the path is always fully populated. |
-
-**Build cost:** in `categories` mode Relearn renders the navigation tree into *every* page, so render time and output size both grow with the square of the page count. Measured on a 1517-page site: the Hugo render step takes ~3m15s using ~2.7 CPU cores, and the site comes out at ~870 MB because every page carries a ~570 KB sidebar. The categories sidebar adds a second pass over the same documents, so `keep_default_menu: false` removes one of the two. Below a few hundred pages this is invisible; past a thousand, size the container for it — the render is CPU-bound, and a 1-core limit stretches the same work to roughly nine minutes. The default shared mode does not pay any of it.
-
-**Repository labels:** By default, the project entry in the sidebar uses the repository's `name`. To override the displayed label, set `display_name` on the repository:
-
-```yaml
-repositories:
-  - name: platform-services
-    display_name: Platform Services
-    url: https://github.com/org/platform-services.git
-```
-
-**The `_uncategorized` bucket:** DocBuilder emits a synthetic category for any document that has no `categories:` front matter (or an empty list). It appears as both a sidebar block and a Hugo taxonomy term at `/categories/_uncategorized/`, with a `weight: 999` so it renders last in the sidebar. Use it as a triage list when adding categories to existing docs. The taxonomy listing includes a per-page link so a single click takes you from the listing to the doc, where you can add the missing `categories:` field.
-
-**Requirements:** Each document that should appear under a user-declared category must declare at least one `categories` entry in its front matter. Docs without `categories` are still surfaced (under the synthetic bucket) but not in any user-declared category:
-
-```yaml
----
-title: Introduction
-categories: [Documentation]
----
-```
-
-**Reverting to the legacy sidebar:** Set `hugo.sidebar.mode: default` to opt out of the categories navigation. The on-disk content tree does not change in any mode, so existing URLs and bookmarks remain valid across the migration.
-
-**Per-category sub-grouping (`group_by`):** For categories where the default Repository-based grouping isn't useful (e.g. meeting notes that should be split by team rather than by source repo), point the category at one or more front-matter fields and DocBuilder will use their values as the level-by-level keys inside the sidebar block. The first field is level 1 (project), the second is level 2, and so on — there is no fixed depth cap. A single-element list (`[projects]`) gives the original 2-level shape; a longer list (`[projects, year]`, `[team, year, quarter]`, …) nests deeper.
-
-**Two-level example** — `Minutes` grouped first by `projects`, then by `year`:
-
-```yaml
-hugo:
-  sidebar:
-    group_by:
-      minutes: [projects, year]    # level 1 = projects, level 2 = year
-```
-
-```markdown
----
-title: 2024 Q1 Sync
-categories: [Minutes]
-projects: [team_alpha]
-year: 2024
----
-```
-
-```markdown
----
-title: 2023 Q4 Sync
-categories: [Minutes]
-projects: [team_alpha]
-year: 2023
----
-```
-
-```markdown
----
-title: Beta Sync
-categories: [Minutes]
-projects: [team_beta]
-year: 2024
----
-```
-
-With the config and docs above, the rendered sidebar shows:
-
-```
-Minutes
-  team_alpha
-    2023
-      2023 Q4 Sync
-    2024
-      2024 Q1 Sync
-  team_beta
-    2024
-      Beta Sync
-```
-
-Add a third field to nest one level deeper. With `group_by: [projects, year, quarter]` and a `quarter:` field on each of the docs above, the same minutes block would render as:
-
-```
-Minutes
-  team_alpha
-    2023
-      Q4
-        2023 Q4 Sync
-    2024
-      Q1
-        2024 Q1 Sync
-  team_beta
-    2024
-      Q1
-        Beta Sync
-```
-
-A doc that belongs to a configured category but has no value for a configured field at any level falls back to its source Repository at that level, so unannotated docs still surface somewhere sensible — the absence is visually flagged by the Repository name appearing where the configured field would have placed it. The label at each level preserves the original spelling of the first-seen front-matter value (mirroring the case-preservation rule the category wrapper itself follows); `team_alpha` and `Team_Alpha` collapse into the same bucket and the first-seen spelling wins. Categories not listed in `group_by` keep the default Repository-based grouping, so introducing a new grouping only affects the categories you opt in.
-
-**Grouping by a sibling category (self-describing rule):** A value in the chain can also be a **sibling category** — another category the doc belongs to. The signal is purely positional: any axis value that is ALSO a key in the same `group_by` map is treated as a sibling category reference, and the renderer resolves its value from the doc's `categories:` list rather than from front matter. This lets a doc's category membership drive sub-grouping without requiring parallel front-matter fields.
-
-```yaml
-hugo:
-  sidebar:
-    group_by:
-      minutes: [projects, team]   # level 2 = the doc's sibling category `team`
-      team: [projects]            # `team` must be a key for the rule to fire
-```
-
-```markdown
----
-title: 2024 Q1 Sync
-categories: [Minutes, Team]
-projects: [team_alpha]
----
-```
-
-The doc above renders as `Minutes > team_alpha > Team` (the `Team` label preserves the original spelling the doc author used). A doc that is in `Minutes` but **not** in `Team` falls back to its source Repository at level 2 (A1), so unannotated docs still surface somewhere sensible. The lookup is case-insensitive (`Team`, `team`, `TEAM` all match the `team` axis) and order-independent in the doc's `categories:` list.
-
-**Disambiguation:** If a value in the chain is a key in the same `group_by` map, the sibling-category resolution wins even if the doc also has a front-matter field of the same name. Authors who want to group by a front-matter field that shares a name with a category should rename one of the two — or add a new category and use it as the axis.
-
-**Multi-value axes (fan-out):** A front-matter axis can resolve to a list. A doc with `projects: [team_alpha, team_beta]` and `group_by: minutes: [projects]` appears in the sidebar once per value: `Minutes > team_alpha` and `Minutes > team_beta`. The doc link is duplicated under each value, mirroring the natural taxonomy meaning (the doc belongs to both projects). The fan-out composes with `categories:` — a doc in `categories: [A, B]` with `projects: [x, y]` lands in four sidebar paths. The fan-out is scoped per category: a list value on a field for a category NOT in `group_by` is ignored, and that doc still uses the default Repository-based grouping (single sidebar entry).
-
-```yaml
-hugo:
-  sidebar:
-    group_by:
-      minutes: [projects]
-```
-
-```markdown
----
-title: Cross-Team Doc
-categories: [Minutes]
-projects: [team_alpha, team_beta]
----
-```
-
-The doc above renders as:
-
-```
-Minutes
-  team_alpha
-    Cross-Team Doc
-  team_beta
-    Cross-Team Doc
-```
-
-Sibling-category axes are always single-valued (a doc is in or out of a category, not in multiple instances of it), so the fan-out does not apply to them.
-
-**The `project` taxonomy:** DocBuilder declares `project` as a Hugo taxonomy in the generated `hugo.yaml` `taxonomies:` block by default (`project: projects`, following the Hugo singular-key / plural-value convention used by `tag: tags` and `category: categories`). Combined with the multi-value front-matter format, a doc's `projects: [a, b]` makes Hugo auto-generate listing pages at `/project/a/`, `/project/b/`, plus term feeds and cross-page navigation. Authors who want a different taxonomy setup can override via `hugo.taxonomies` in their config (the user-set map wins). The `projects:` front-matter field must be a list (`projects: [team_alpha]`); the build does not auto-rewrite scalar values. See the [migration note](../how-to/migrate-project-to-taxonomy.md) for the format change.
-
-**Case-insensitive matching:** The map keys (category names) and the field names inside the list are matched case-insensitively against the canonical lowercase category name and against your docs' front matter. You can therefore write `Minutes: [Projects]`, `MINUTES: [PROJECTS]`, or `minutes: [projects]` in your config and pair it with `Projects: [team_alpha]` or `projects: [team_alpha]` in your docs — all four combinations are equivalent. Both halves of the lookup are normalised at config-load time so a typo in case never silently falls back to Repository grouping.
-
-**Verifying the wiring:** Run a build with `-v` (verbose). When the categories-menu stage runs, the debug log will show the effective lowercased map and the flattened field list, e.g.:
-
-```
-DEBUG Categories menu: configured group_by categories=1 group_by=map[minutes:[projects]] grouping_fields=[projects]
-```
-
-If the field list is empty when you expected a match, the build is reading an empty `group_by` (typo in the config path, wrong indentation, or the field name is genuinely different from what's in your front matter).
+To order the sidebar, use the `weight` front matter of the section
+index pages.
 
 ## Output Section
 

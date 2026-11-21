@@ -17,7 +17,6 @@ forges:
 output:
   directory: ./site
 hugo:
-  theme: relearn
 `
 
 func TestDetectDeletionsDefaultEnabled(t *testing.T) {
@@ -48,7 +47,6 @@ forges:
 output:
   directory: ./site
 hugo:
-  theme: relearn
 `
 	var cfg Config
 	if err := yaml.Unmarshal([]byte(raw), &cfg); err != nil {
@@ -89,7 +87,6 @@ forges:
 output:
   directory: ./site
 hugo:
-  theme: relearn
 `
 	var cfg Config
 	if err := yaml.Unmarshal([]byte(raw), &cfg); err != nil {
@@ -131,7 +128,6 @@ forges:
 output:
   directory: ./site
 hugo:
-  theme: relearn
 `
 	var cfg Config
 	if err := yaml.Unmarshal([]byte(raw), &cfg); err != nil {

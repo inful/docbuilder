@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/pipeline"
 
 	"gopkg.in/yaml.v3"
 
@@ -16,9 +16,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
-const autoVariant = "auto"
-
-// GenerateHugoConfig creates the Hugo configuration file with Relearn theme.
+// GenerateHugoConfig creates the Hugo configuration file for the theme.
 func (g *Generator) GenerateHugoConfig() error {
 	configPath := filepath.Join(g.BuildRoot(), "hugo.yaml")
 
@@ -40,7 +38,7 @@ func (g *Generator) GenerateHugoConfig() error {
 	root.EnsureHighlightDefaults()
 
 	// Phase 2: Apply theme defaults
-	g.applyThemeDefaults(params)
+	g.applyDocsyThemeDefaults(params)
 
 	// Phase 3: User overrides (deep merge)
 	if g.config.Hugo.Params != nil {
@@ -61,10 +59,10 @@ func (g *Generator) GenerateHugoConfig() error {
 
 	// Phase 5: Configure the theme via Hugo Modules
 	root.Module = &models.ModuleConfig{
-		Imports: []models.ModuleImport{themeModuleImport(g.config.Hugo.ThemeName())},
+		Imports: []models.ModuleImport{{Path: pipeline.DocsyModulePath, Version: pipeline.DocsyVersion}},
 	}
 
-	// Enable math passthrough for Relearn
+	// Enable math passthrough for the theme
 	root.EnableMathPassthrough()
 
 	// In preview/live-reload mode, disable GitInfo
@@ -72,33 +70,11 @@ func (g *Generator) GenerateHugoConfig() error {
 		root.EnableGitInfo = false
 	}
 
-	// Enable search JSON (Relearn uses Lunr search) and taxonomy JSON outputs
+	// The theme's search reads its own index, so no JSON output format
+	// is needed; asking for one would leave Hugo warning about a
+	// missing layout.
 	if !g.config.Build.LiveReload {
-		if g.config.Hugo.ThemeName() == config.ThemeDocsy {
-			// Docsy's offline search reads the theme's own index; it
-			// needs no JSON output format, and asking for one would
-			// leave Hugo warning about a missing layout.
-			root.SetHomeOutputsHTMLRSS()
-		} else {
-			root.SetHomeOutputsHTMLRSSJSON()
-			root.SetTaxonomyOutputsHTMLJSON()
-		}
-	}
-
-	// Shared sidebar: the navigation is rendered once into its own output
-	// format and injected in the browser, so it is not embedded in every
-	// page. The home page carries the fragment. Docsy renders its own
-	// navigation per page, so the fragment is a Relearn concern.
-	if g.config.Hugo.Sidebar.IsShared() && g.config.Hugo.ThemeName() != config.ThemeDocsy {
-		root.OutputFormats = SharedNavOutputFormats()
-		root.EnsureOutputs()
-		home := root.Outputs["home"]
-		if len(home) == 0 {
-			// Live-reload builds leave the home outputs unset, so Hugo's
-			// defaults apply; spell them out before adding the fragment.
-			home = []string{"HTML", "RSS", "JSON"}
-		}
-		root.Outputs["home"] = append(home, SharedNavOutputFormat)
+		root.SetHomeOutputsHTMLRSS()
 	}
 
 	// Phase 5.5: Taxonomies configuration
@@ -123,7 +99,7 @@ func (g *Generator) GenerateHugoConfig() error {
 		}
 	}
 
-	// Phase 6: Language configuration (required by Relearn)
+	// Phase 6: Language configuration (required by the theme)
 	root.DefaultContentLanguage = "en"
 	root.Languages = map[string]any{
 		"en": map[string]any{
@@ -149,17 +125,6 @@ func (g *Generator) GenerateHugoConfig() error {
 		root.Menu = converted
 	}
 
-	// Phase 7.5: Categories-menu wiring (only when the sidebar mode
-	// is "categories"). This must run after Phase 7 so it can merge
-	// the user-supplied menu on top, and before yaml.Marshal so the
-	// final hugo.yaml includes the categories menus and sidebarmenus
-	// blocks. The build is a no-op when the mode is "default" or
-	// unset. Docsy has no sidebarmenus: its navigation is the content
-	// tree, so the categories stay a taxonomy there.
-	if g.config.Hugo.ThemeName() != config.ThemeDocsy {
-		g.ApplyCategoriesMenuToConfig(root)
-	}
-
 	data, err := yaml.Marshal(root)
 	if err != nil {
 		return fmt.Errorf("%w: %w", herrors.ErrConfigMarshalFailed, err)
@@ -170,116 +135,15 @@ func (g *Generator) GenerateHugoConfig() error {
 		return fmt.Errorf("failed to write hugo config: %w", err)
 	}
 
-	// Ensure go.mod for Hugo Modules (Relearn requires this)
+	// Ensure go.mod for Hugo Modules (the theme is imported as one)
 	if err := g.ensureGoModForModules(); err != nil {
 		slog.Warn("Failed to ensure go.mod for Hugo Modules", "error", err)
 	}
 
-	slog.Info("Generated Hugo configuration with Relearn theme", logfields.Path(configPath))
+	slog.Info("Generated Hugo configuration with the Docsy theme", logfields.Path(configPath))
 	slog.Debug("Hugo configuration content:\n" + string(data))
 
 	return nil
-}
-
-// applyThemeDefaults applies the parameter defaults of the theme the
-// build targets.
-func (g *Generator) applyThemeDefaults(params map[string]any) {
-	if g.config.Hugo.ThemeName() == config.ThemeDocsy {
-		g.applyDocsyThemeDefaults(params)
-		return
-	}
-	g.applyRelearnThemeDefaults(params)
-}
-
-// applyRelearnThemeDefaults applies Relearn-specific parameter defaults.
-func (g *Generator) applyRelearnThemeDefaults(params map[string]any) {
-	// Theme variant/color scheme - auto mode with zen-light/zen-dark
-	if params["themeVariant"] == nil {
-		params["themeVariant"] = []any{"auto", "zen-light", "zen-dark"}
-	}
-
-	// Configure auto mode fallbacks
-	if params["themeVariantAuto"] == nil {
-		if hasAutoVariant(params["themeVariant"]) {
-			params["themeVariantAuto"] = []string{"zen-light", "zen-dark"}
-		}
-	}
-
-	// Disable generator notice in footer
-	if params["disableGeneratorVersion"] == nil {
-		params["disableGeneratorVersion"] = false
-	}
-
-	// Breadcrumb navigation
-	if params["disableBreadcrumb"] == nil {
-		params["disableBreadcrumb"] = false
-	}
-
-	// Show visited checkmarks
-	if params["showVisitedLinks"] == nil {
-		params["showVisitedLinks"] = true
-	}
-
-	// Collapse menu sections
-	if params["collapsibleMenu"] == nil {
-		params["collapsibleMenu"] = true
-	}
-
-	// Always open menu on start
-	if params["alwaysopen"] == nil {
-		params["alwaysopen"] = false
-	}
-
-	// Disable landing page button
-	if params["disableLandingPageButton"] == nil {
-		params["disableLandingPageButton"] = true
-	}
-
-	// Disable shortcuts menu in sidebar
-	if params["disableShortcutsTitle"] == nil {
-		params["disableShortcutsTitle"] = false
-	}
-
-	// Disable language switching button
-	if params["disableLanguageSwitchingButton"] == nil {
-		params["disableLanguageSwitchingButton"] = true
-	}
-
-	// Disable tag hidden pages
-	if params["disableTagHiddenPages"] == nil {
-		params["disableTagHiddenPages"] = false
-	}
-
-	// Mermaid diagrams support
-	if _, ok := params["mermaid"]; !ok {
-		params["mermaid"] = map[string]any{
-			"enable": true,
-		}
-	}
-
-	// Edit link configuration - per-page editURLs in frontmatter are enabled by default
-	// Only set this if not already configured by user (to avoid suppressing per-page links).
-	// In daemon public-only mode, we explicitly disable edit link UI.
-	if g.config != nil && g.config.IsDaemonPublicOnlyEnabled() {
-		delete(params, "editURL")
-	} else {
-		if _, ok := params["editURL"]; !ok {
-			// Empty object enables edit link UI without suppressing per-page URLs
-			params["editURL"] = map[string]any{}
-		}
-	}
-
-	// Math support (using MathJax by default in Relearn)
-	if _, ok := params["math"]; !ok {
-		params["math"] = map[string]any{
-			"enable": true,
-		}
-	}
-
-	// View Transitions API support
-	if g.config.Hugo.EnablePageTransitions {
-		params["enable_transitions"] = true
-	}
 }
 
 // collectVersionMetadata collects version information from versioned repositories
@@ -326,23 +190,3 @@ func (g *Generator) collectVersionMetadata() map[string]any {
 
 	return result
 }
-
-// hasAutoVariant checks if themeVariant contains "auto" value.
-func hasAutoVariant(themeVariant any) bool {
-	if variants, ok := themeVariant.([]any); ok {
-		for _, v := range variants {
-			if str, ok := v.(string); ok && str == autoVariant {
-				return true
-			}
-		}
-		return false
-	}
-
-	if str, ok := themeVariant.(string); ok {
-		return str == autoVariant
-	}
-
-	return false
-}
-
-// (legacy param helpers removed)

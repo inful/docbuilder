@@ -16,7 +16,6 @@ hugo:
   title: "Test Documentation"
   description: "Test daemon documentation site"
   base_url: "http://localhost:8080/"
-  theme: relearn
 
 output:
   directory: "/tmp/test-daemon-site"

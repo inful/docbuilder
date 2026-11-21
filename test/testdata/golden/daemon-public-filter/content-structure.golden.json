@@ -6,7 +6,7 @@
         "title": "Public Filter Demo",
         "type": "docs"
       },
-      "contentHash": "sha256:4dcc102ebcca0d7b"
+      "contentHash": "sha256:7fd86f72d63aa0a0"
     },
     "content/other/_index.md": {
       "frontmatter": {
@@ -14,7 +14,7 @@
         "title": "other",
         "type": "docs"
       },
-      "contentHash": "sha256:3c6de64cfc078135"
+      "contentHash": "sha256:fce8379bdc8b02fa"
     },
     "content/other/nested-public.md": {
       "frontmatter": {

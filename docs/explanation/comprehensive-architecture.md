@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 4e8ce10d20928c68dd74f133ea082ad93dc05101805ccb599f90690f9797eb7c
-lastmod: "2026-11-19"
+fingerprint: a958afc7380e32cfc157c1818a94eab924e6c64d0b2bf0fe9aef88a227b8ec08
+lastmod: "2026-11-21"
 tags:
   - architecture
   - design
@@ -38,7 +38,7 @@ DocBuilder is a Go CLI tool and daemon that aggregates documentation from multip
 - **Observable**: Unified error system, structured logging, metrics, and tracing
 - **Incremental**: Change detection and partial rebuilds for performance
 - **Multi-Tenant**: Supports forge namespacing and per-repository configuration
-- **Theme-Aware**: Hugo theme integration via modules (Relearn only)
+- **Theme-Aware**: Hugo theme integration via modules (Docsy only)
 
 ---
 
@@ -616,34 +616,33 @@ Event Handlers (async)
 
 ## Key Subsystems
 
-### 1. Relearn Theme Configuration
+### 1. Docsy Theme Configuration
 
-DocBuilder is now hardcoded to use the Relearn theme exclusively. Theme configuration is applied directly in the Hugo generator without a plugin system or theme registry.
+DocBuilder is now hardcoded to use the Docsy theme exclusively. Theme configuration is applied directly in the Hugo generator without a plugin system or theme registry.
 
 **Configuration Location:** `internal/hugo/config_writer.go`
 
 ```go
-func (g *Generator) applyRelearnThemeDefaults(params map[string]any) {
-    // Set Relearn-specific defaults
-    // - themeVariant
-    // - disableSearch
-    // - disableLandingPageButton
-    // etc.
+func (g *Generator) applyDocsyThemeDefaults(params map[string]any) {
+    // The theme defaults
+    // - offlineSearch
+    // - ui.showLightDarkModeMenu
+    // - ui.sidebar_menu_foldable
+    // - enable_transitions
 }
 ```
 
 **Hugo Config Generation:**
 1. Core defaults (title, baseURL, markup)
-2. Relearn-specific defaults (via `applyRelearnThemeDefaults`)
+2. Docsy-specific defaults (via `applyDocsyThemeDefaults`)
 3. User param deep-merge (user values override)
 4. Dynamic fields (build_date)
-5. Hardcoded module import: `github.com/McShelby/hugo-theme-relearn`
+5. Hardcoded module import: `github.com/docsy/docsy/theme`
 6. Language configuration for i18n
 
 **No Theme Abstraction:**
-- Previous multi-theme system removed
-- No theme registry or plugin system
-- Relearn configuration is hardcoded
+- The theme is Docsy; there is no registry or plugin system
+- The configuration is hardcoded
 - Simplifies codebase and maintenance
 
 ### 2. Forge Integration

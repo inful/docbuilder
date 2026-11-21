@@ -1,0 +1,53 @@
+baseURL: ""
+defaultContentLanguage: en
+description: ""
+enableGitInfo: false
+languages:
+    en:
+        languageName: English
+        weight: 1
+markup:
+    goldmark:
+        extensions:
+            passthrough:
+                delimiters:
+                    block:
+                        - - \[
+                          - \]
+                        - - $$
+                          - $$
+                    inline:
+                        - - \(
+                          - \)
+                        - - $
+                          - $
+                enable: true
+        parser:
+            attribute:
+                block: true
+        renderer:
+            unsafe: true
+    highlight:
+        lineNos: true
+        noClasses: false
+        style: github
+        tabWidth: 4
+module:
+    imports:
+        - path: github.com/docsy/docsy/theme
+          version: v0.18.1
+outputs:
+    home:
+        - HTML
+        - RSS
+params:
+    build_date: IGNORE
+    offlineSearch: true
+    ui:
+        showLightDarkModeMenu: true
+        sidebar_menu_foldable: true
+taxonomies:
+    category: categories
+    project: projects
+    tag: tags
+title: Docsy Site

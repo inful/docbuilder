@@ -10,7 +10,28 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-func TestGenerateCustomHeaderAssets_Disabled(t *testing.T) {
+// assetPaths returns the paths of the generated assets.
+func assetPaths(assets []*StaticAsset) []string {
+	paths := make([]string, 0, len(assets))
+	for _, a := range assets {
+		paths = append(paths, a.Path)
+	}
+	return paths
+}
+
+// assetContent returns the content of the asset at the given path.
+func assetContent(t *testing.T, assets []*StaticAsset, path string) string {
+	t.Helper()
+	for _, a := range assets {
+		if a.Path == path {
+			return string(a.Content)
+		}
+	}
+	t.Fatalf("asset %s not found in %v", path, assetPaths(assets))
+	return ""
+}
+
+func TestGenerateThemeAssets_Disabled(t *testing.T) {
 	ctx := &GenerationContext{
 		Config: &config.Config{
 			Hugo: config.HugoConfig{
@@ -20,18 +41,24 @@ func TestGenerateCustomHeaderAssets_Disabled(t *testing.T) {
 		},
 	}
 
-	assets, err := generateCustomHeaderAssets(ctx)
+	assets, err := generateThemeAssets(ctx)
 	require.NoError(t, err)
-	require.Len(t, assets, 1, "should emit only custom-header.html when transitions disabled")
-	assert.Equal(t, "layouts/partials/custom-header.html", assets[0].Path)
-	content := string(assets[0].Content)
-	assert.Contains(t, content, "<style>", "default custom CSS should be inlined as <style>")
-	assert.Contains(t, content, "#R-sidebar .nav-title", "default override should reference the nav-title rule")
-	assert.Contains(t, content, "docbuilder:template", "header should contain template metadata")
+
+	paths := assetPaths(assets)
+	assert.Contains(t, paths, "layouts/_partials/hooks/head-end.html")
+	assert.Contains(t, paths, "layouts/_partials/head-css.html")
+	assert.Contains(t, paths, docsyPageMetaLinksPath)
+	assert.Contains(t, paths, "assets/css/docsy.css")
+	assert.Contains(t, paths, "assets/vendor/bootstrap/dist/js/bootstrap.bundle.js")
+	assert.NotContains(t, paths, "assets/css/view-transitions.css",
+		"view-transitions stylesheet should be absent when transitions are disabled")
+
+	content := assetContent(t, assets, "layouts/_partials/hooks/head-end.html")
+	assert.Contains(t, content, "docbuilder:template", "hook should contain template metadata")
 	assert.NotContains(t, content, "view-transitions.css", "view-transitions <link> should be absent when transitions disabled")
 }
 
-func TestGenerateCustomHeaderAssets_Enabled(t *testing.T) {
+func TestGenerateThemeAssets_Enabled(t *testing.T) {
 	ctx := &GenerationContext{
 		Config: &config.Config{
 			Hugo: config.HugoConfig{
@@ -41,38 +68,23 @@ func TestGenerateCustomHeaderAssets_Enabled(t *testing.T) {
 		},
 	}
 
-	assets, err := generateCustomHeaderAssets(ctx)
+	assets, err := generateThemeAssets(ctx)
 	require.NoError(t, err)
-	require.Len(t, assets, 2, "should emit custom-header.html and view-transitions.css when transitions enabled")
 
-	var htmlFound, cssFound bool
-	for _, a := range assets {
-		switch a.Path {
-		case "layouts/partials/custom-header.html":
-			htmlFound = true
-			content := string(a.Content)
-			assert.Contains(t, content, "<style>", "default custom CSS should be inlined as <style>")
-			assert.Contains(t, content, "view-transitions.css", "view-transitions <link> should be present when transitions enabled")
-			assert.Contains(t, content, "docbuilder:template", "header should contain template metadata")
-		case "assets/css/view-transitions.css":
-			cssFound = true
-			assert.Contains(t, string(a.Content), "@view-transition", "CSS should contain View Transitions directive")
-		}
-	}
-	assert.True(t, htmlFound)
-	assert.True(t, cssFound)
+	content := assetContent(t, assets, "layouts/_partials/hooks/head-end.html")
+	assert.Contains(t, content, "view-transitions.css", "view-transitions <link> should be present when transitions enabled")
+	assert.Contains(t, content, "docbuilder:template", "hook should contain template metadata")
+	assert.Contains(t, assetContent(t, assets, "assets/css/view-transitions.css"), "@view-transition")
 }
 
-func TestGenerateCustomHeaderAssets_NilConfig(t *testing.T) {
+func TestGenerateThemeAssets_NilConfig(t *testing.T) {
 	ctx := &GenerationContext{Config: nil}
-	assets, err := generateCustomHeaderAssets(ctx)
+	assets, err := generateThemeAssets(ctx)
 	require.NoError(t, err)
-	require.Len(t, assets, 1, "nil config still produces the custom-header.html partial")
-	assert.Equal(t, "layouts/partials/custom-header.html", assets[0].Path)
-	assert.Contains(t, string(assets[0].Content), "<style>", "default custom CSS should be inlined even with nil config")
+	assert.Contains(t, assetPaths(assets), "layouts/_partials/hooks/head-end.html")
 }
 
-func TestGenerateCustomHeaderAssets_UserOverride(t *testing.T) {
+func TestGenerateThemeAssets_UserOverride(t *testing.T) {
 	override := "/* my override */\n.x { color: red; }"
 	ctx := &GenerationContext{
 		Config: &config.Config{
@@ -82,16 +94,15 @@ func TestGenerateCustomHeaderAssets_UserOverride(t *testing.T) {
 			},
 		},
 	}
-	assets, err := generateCustomHeaderAssets(ctx)
+	assets, err := generateThemeAssets(ctx)
 	require.NoError(t, err)
-	require.Len(t, assets, 1)
-	content := string(assets[0].Content)
-	assert.Contains(t, content, "/* my override */", "user override should appear in the partial")
-	assert.Contains(t, content, ".x { color: red; }", "user CSS body should appear in the partial")
-	assert.NotContains(t, content, defaultCustomCSS, "default should not be present when user overrides")
+
+	content := assetContent(t, assets, "layouts/_partials/hooks/head-end.html")
+	assert.Contains(t, content, "/* my override */", "user override should appear in the hook")
+	assert.Contains(t, content, ".x { color: red; }", "user CSS body should appear in the hook")
 }
 
-func TestGenerateCustomHeaderAssets_WhitespaceOnlySuppressesStyle(t *testing.T) {
+func TestGenerateThemeAssets_WhitespaceOnlySuppressesStyle(t *testing.T) {
 	ctx := &GenerationContext{
 		Config: &config.Config{
 			Hugo: config.HugoConfig{
@@ -100,16 +111,17 @@ func TestGenerateCustomHeaderAssets_WhitespaceOnlySuppressesStyle(t *testing.T) 
 			},
 		},
 	}
-	assets, err := generateCustomHeaderAssets(ctx)
+	assets, err := generateThemeAssets(ctx)
 	require.NoError(t, err)
-	require.Len(t, assets, 1)
-	assert.NotContains(t, string(assets[0].Content), "<style>",
+
+	content := assetContent(t, assets, "layouts/_partials/hooks/head-end.html")
+	assert.NotContains(t, content, "<style>",
 		"whitespace-only custom_css should suppress the <style> block entirely")
 	// Template-metadata should still be present.
-	assert.Contains(t, string(assets[0].Content), "docbuilder:template")
+	assert.Contains(t, content, "docbuilder:template")
 }
 
-func TestGenerateCustomHeaderAssets_PartialLoadOrder(t *testing.T) {
+func TestGenerateThemeAssets_PartialLoadOrder(t *testing.T) {
 	// Lock the order: <style> first, view-transitions <link> middle, template metadata last.
 	// This keeps the override CSS winning on any specificity ties and
 	// keeps the partial readable top-to-bottom.
@@ -117,21 +129,15 @@ func TestGenerateCustomHeaderAssets_PartialLoadOrder(t *testing.T) {
 		Config: &config.Config{
 			Hugo: config.HugoConfig{
 				Title:                 "Test",
+				CustomCSS:             "/* override */",
 				EnablePageTransitions: true,
 			},
 		},
 	}
-	assets, err := generateCustomHeaderAssets(ctx)
+	assets, err := generateThemeAssets(ctx)
 	require.NoError(t, err)
-	require.Len(t, assets, 2)
-	var content string
-	for _, a := range assets {
-		if a.Path == "layouts/partials/custom-header.html" {
-			content = string(a.Content)
-		}
-	}
-	require.NotEmpty(t, content)
 
+	content := assetContent(t, assets, "layouts/_partials/hooks/head-end.html")
 	styleIdx := strings.Index(content, "<style>")
 	vtIdx := strings.Index(content, "view-transitions.css")
 	assert.True(t, styleIdx >= 0 && (vtIdx < 0 || styleIdx < vtIdx),
@@ -163,26 +169,14 @@ func TestGenerateStaticAssets_WithTransitions(t *testing.T) {
 
 	assets, err := processor.GenerateStaticAssets()
 	require.NoError(t, err)
-	require.Len(t, assets, 2, "should generate 2 assets: view-transitions CSS and custom-header.html partial")
 
-	var htmlFound, cssFound bool
-	for _, asset := range assets {
-		switch asset.Path {
-		case "assets/css/view-transitions.css":
-			cssFound = true
-			assert.NotEmpty(t, asset.Content)
-		case "layouts/partials/custom-header.html":
-			htmlFound = true
-			assert.NotEmpty(t, asset.Content)
-			content := string(asset.Content)
-			assert.Contains(t, content, "view-transitions", "should contain view transitions link")
-			assert.Contains(t, content, "docbuilder:template", "should contain template metadata")
-			assert.Contains(t, content, "<style>", "should contain inlined custom CSS")
-		}
-	}
+	paths := assetPaths(assets)
+	assert.Contains(t, paths, "assets/css/view-transitions.css")
+	assert.Contains(t, paths, "layouts/_partials/hooks/head-end.html")
 
-	assert.True(t, cssFound, "view-transitions CSS asset should be generated")
-	assert.True(t, htmlFound, "HTML partial asset should be generated with merged content")
+	content := assetContent(t, assets, "layouts/_partials/hooks/head-end.html")
+	assert.Contains(t, content, "view-transitions", "should contain view transitions link")
+	assert.Contains(t, content, "docbuilder:template", "should contain template metadata")
 }
 
 func TestGenerateStaticAssets_WithoutTransitions(t *testing.T) {
@@ -197,32 +191,21 @@ func TestGenerateStaticAssets_WithoutTransitions(t *testing.T) {
 
 	assets, err := processor.GenerateStaticAssets()
 	require.NoError(t, err)
-	require.Len(t, assets, 1, "should generate 1 asset: custom-header.html partial")
+	assert.NotContains(t, assetPaths(assets), "assets/css/view-transitions.css")
 
-	asset := assets[0]
-	assert.Equal(t, "layouts/partials/custom-header.html", asset.Path)
-	content := string(asset.Content)
-	assert.Contains(t, content, "docbuilder:template", "header should contain template metadata")
-	assert.Contains(t, content, "<style>", "header should contain inlined custom CSS")
+	content := assetContent(t, assets, "layouts/_partials/hooks/head-end.html")
+	assert.Contains(t, content, "docbuilder:template", "hook should contain template metadata")
 	assert.NotContains(t, content, "view-transitions", "view-transitions link should not be present when disabled")
 }
 
 func TestDefaultStaticAssetGenerators(t *testing.T) {
 	generators := defaultStaticAssetGenerators()
-	require.Len(t, generators, 1, "should have one default generator: custom-header builder")
+	require.Len(t, generators, 1, "should have one default generator: the theme asset builder")
 
 	ctx := &GenerationContext{Config: &config.Config{Hugo: config.HugoConfig{EnablePageTransitions: false}}}
 	assets, err := generators[0](ctx)
 	require.NoError(t, err)
-	require.Len(t, assets, 1, "should generate custom-header.html when transitions disabled")
-	assert.Equal(t, "layouts/partials/custom-header.html", assets[0].Path)
-	assert.Contains(t, string(assets[0].Content), "docbuilder:template", "header should contain template metadata")
-
-	ctx.Config.Hugo.EnablePageTransitions = true
-	assets, err = generators[0](ctx)
-	require.NoError(t, err)
-	require.NotNil(t, assets)
-	assert.Len(t, assets, 2, "should generate 2 assets when transitions enabled")
+	assert.Contains(t, assetPaths(assets), "layouts/_partials/hooks/head-end.html")
 }
 
 func TestStaticAssetContent(t *testing.T) {

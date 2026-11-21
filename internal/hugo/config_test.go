@@ -24,7 +24,7 @@ func readYaml(t *testing.T, path string) map[string]any {
 	return m
 }
 
-func TestGenerateHugoConfig_RelearnModuleImport(t *testing.T) {
+func TestGenerateHugoConfig_DocsyModuleImport(t *testing.T) {
 	out := t.TempDir()
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out)
 	if err := gen.GenerateHugoConfig(); err != nil {
@@ -33,21 +33,21 @@ func TestGenerateHugoConfig_RelearnModuleImport(t *testing.T) {
 	conf := readYaml(t, filepath.Join(out, "hugo.yaml"))
 	mod, ok := conf["module"].(map[string]any)
 	if !ok {
-		t.Fatalf("expected module imports for relearn")
+		t.Fatalf("expected module imports for the theme")
 	}
 	imports := mod["imports"].([]any)
 	found := false
 	for _, im := range imports {
-		if m, ok := im.(map[string]any); ok && m["path"] == "github.com/McShelby/hugo-theme-relearn" {
+		if m, ok := im.(map[string]any); ok && m["path"] == "github.com/docsy/docsy/theme" {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatalf("relearn module import missing: %v", imports)
+		t.Fatalf("docsy module import missing: %v", imports)
 	}
 }
 
-func TestGenerateHugoConfig_RelearnParams(t *testing.T) {
+func TestGenerateHugoConfig_ThemeParams(t *testing.T) {
 	out := t.TempDir()
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out)
 	if err := gen.GenerateHugoConfig(); err != nil {
@@ -56,32 +56,33 @@ func TestGenerateHugoConfig_RelearnParams(t *testing.T) {
 	conf := readYaml(t, filepath.Join(out, "hugo.yaml"))
 	params, ok := conf["params"].(map[string]any)
 	if !ok {
-		t.Fatalf("expected params for relearn")
+		t.Fatalf("expected params for the theme")
 	}
-	// Verify Relearn-specific params are set
-	if _, ok := params["themeVariant"]; !ok {
-		t.Errorf("expected themeVariant param")
+	if _, has := params["offlineSearch"]; !has {
+		t.Errorf("expected the offline search to be enabled")
 	}
-	if _, ok := params["collapsibleMenu"]; !ok {
-		t.Errorf("expected collapsibleMenu param")
+	ui, ok := params["ui"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected the ui params; got %v", params["ui"])
 	}
-	if _, ok := params["showVisitedLinks"]; !ok {
-		t.Errorf("expected showVisitedLinks param")
+	if _, ok := ui["showLightDarkModeMenu"]; !ok {
+		t.Errorf("expected the light/dark menu to be enabled")
+	}
+	if _, ok := ui["sidebar_menu_foldable"]; !ok {
+		t.Errorf("expected the sidebar to fold")
 	}
 }
 
-// TestGenerateHugoConfig_SharedSidebarRegistersFragment pins that the
-// shared sidebar mode registers the output format that carries the
-// navigation fragment — including the default mode, which is shared —
-// and that the per-page categories mode does not.
-func TestGenerateHugoConfig_SharedSidebarRegistersFragment(t *testing.T) {
-	generate := func(t *testing.T, mode config.SidebarMode) map[string]any {
+// TestGenerateHugoConfig_ChromeMode checks that the shared chrome is
+// opt-in: the theme's own default renders the navigation on every
+// page.
+func TestGenerateHugoConfig_ChromeMode(t *testing.T) {
+	generate := func(t *testing.T, chrome string) map[string]any {
 		t.Helper()
 		out := t.TempDir()
 		gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{
-			Title:   "Test",
-			BaseURL: "/",
-			Sidebar: &config.SidebarConfig{Mode: mode},
+			Title:  "Test",
+			Chrome: chrome,
 		}}, out)
 		if err := gen.GenerateHugoConfig(); err != nil {
 			t.Fatalf("generate config: %v", err)
@@ -89,61 +90,23 @@ func TestGenerateHugoConfig_SharedSidebarRegistersFragment(t *testing.T) {
 		return readYaml(t, filepath.Join(out, "hugo.yaml"))
 	}
 
-	t.Run("shared", func(t *testing.T) {
-		conf := generate(t, config.SidebarModeShared)
-
-		formats, ok := conf["outputFormats"].(map[string]any)
-		if !ok {
-			t.Fatalf("expected outputFormats in the shared sidebar config; got %v", conf)
-		}
-		if _, hasFormat := formats[SharedNavOutputFormat]; !hasFormat {
-			t.Errorf("missing %q output format: %v", SharedNavOutputFormat, formats)
-		}
-
-		outputs, ok := conf["outputs"].(map[string]any)
-		if !ok {
-			t.Fatalf("expected outputs in the shared sidebar config; got %v", conf)
-		}
-		home, ok := outputs["home"].([]any)
-		if !ok {
-			t.Fatalf("expected home outputs; got %v", outputs)
-		}
-		found := false
-		for _, o := range home {
-			if o == SharedNavOutputFormat {
-				found = true
-			}
-		}
-		if !found {
-			t.Errorf("home outputs do not include %q: %v", SharedNavOutputFormat, home)
+	t.Run("full by default", func(t *testing.T) {
+		conf := generate(t, "")
+		params := conf["params"].(map[string]any)
+		if _, ok := params["td"]; ok {
+			t.Errorf("the default must not share the chrome: %v", params["td"])
 		}
 	})
 
-	t.Run("default", func(t *testing.T) {
-		// The default mode is shared, so the fragment must be registered.
-		conf := generate(t, config.SidebarModeAuto)
-
-		formats, ok := conf["outputFormats"].(map[string]any)
+	t.Run("shared on request", func(t *testing.T) {
+		conf := generate(t, config.ChromeShared)
+		params := conf["params"].(map[string]any)
+		td, ok := params["td"].(map[string]any)
 		if !ok {
-			t.Fatalf("expected outputFormats in the default sidebar config; got %v", conf)
+			t.Fatalf("expected the td params; got %v", params["td"])
 		}
-		if _, hasFormat := formats[SharedNavOutputFormat]; !hasFormat {
-			t.Errorf("missing %q output format: %v", SharedNavOutputFormat, formats)
-		}
-	})
-
-	t.Run("categories", func(t *testing.T) {
-		conf := generate(t, config.SidebarModeCategories)
-
-		if _, ok := conf["outputFormats"]; ok {
-			t.Errorf("categories mode must not define output formats: %v", conf["outputFormats"])
-		}
-		outputs, _ := conf["outputs"].(map[string]any)
-		home, _ := outputs["home"].([]any)
-		for _, o := range home {
-			if o == SharedNavOutputFormat {
-				t.Errorf("categories mode must not publish the %q output: %v", SharedNavOutputFormat, home)
-			}
+		if td["chrome"] != config.ChromeShared {
+			t.Errorf("chrome = %v, want %v", td["chrome"], config.ChromeShared)
 		}
 	})
 }

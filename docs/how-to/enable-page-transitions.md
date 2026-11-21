@@ -4,12 +4,12 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: e9bc90e18cbddcad496e6d33fe62c5f3e4c31f6fe9c2127aaba82ff7f1826058
-lastmod: "2026-11-19"
+fingerprint: d87e97396a2c86ae117d51f9d164a7d382ecd76021692e83594620ade7273d35
+lastmod: "2026-11-21"
 tags:
   - ui
   - transitions
-  - relearn
+  - docsy
 title: 'How To: Enable Page Transitions'
 uid: 771a70f5-88cb-4508-9b69-baebfdf90b48
 ---
@@ -18,13 +18,13 @@ This guide explains how to enable smooth page transitions using the View Transit
 
 ## Overview
 
-Page transitions provide a smooth, animated navigation experience between pages in your documentation site. DocBuilder supports the View Transitions API with the Relearn theme, creating fluid animations when users navigate between documentation pages.
+Page transitions provide a smooth, animated navigation experience between pages in your documentation site. DocBuilder supports the View Transitions API with the Docsy theme, creating fluid animations when users navigate between documentation pages.
 
 The implementation uses browser-native CSS-only transitions with the `@view-transition { navigation: auto; }` rule, which means no JavaScript is required and all interactive elements (like search) continue to work correctly during and after transitions.
 
 ## Prerequisites
 
-- Hugo theme: `relearn` (DocBuilder's default theme)
+- Hugo theme: `docsy` (DocBuilder's default theme)
 - Modern browser with View Transitions API support:
   - Chrome 126+
   - Edge 126+
@@ -39,7 +39,7 @@ Add the following to your `config.yaml` under the `hugo` section:
 ```yaml
 hugo:
   title: "My Documentation Site"
-  theme: "relearn"
+  theme: "docsy"
   
   # Enable page transitions
   enable_page_transitions: true
@@ -57,7 +57,7 @@ hugo:
 
 ```yaml
 hugo:
-  theme: "relearn"
+  theme: "docsy"
   enable_page_transitions: true
 ```
 
@@ -69,7 +69,7 @@ When enabled, DocBuilder:
 2. Adds the `@view-transition { navigation: auto; }` rule to enable browser-native transitions
 3. Automatically applies transitions to all page navigations
 4. Preserves all interactive elements (search, menus, etc.) without any DOM manipulation
-5. Integrates with Relearn theme via `layouts/partials/custom-header.html`
+5. Integrates with Docsy theme via `layouts/partials/custom-header.html`
 
 ## Browser Compatibility
 
@@ -111,7 +111,7 @@ After enabling transitions and rebuilding your site:
 
 ## Theme Features
 
-The Relearn theme works seamlessly with:
+The Docsy theme works seamlessly with:
 - Lunr search
 - Mermaid diagrams
 - Math rendering via KaTeX/MathJax
@@ -124,7 +124,7 @@ View Transitions work well with other theme features:
 
 ```yaml
 hugo:
-  theme: "relearn"
+  theme: "docsy"
   enable_page_transitions: true
   params:
     # Theme-specific parameters work alongside transitions
@@ -140,7 +140,7 @@ To disable transitions, set `enable_page_transitions: false` or remove the optio
 
 ```yaml
 hugo:
-  theme: "relearn"
+  theme: "docsy"
   # enable_page_transitions: false  # Explicitly disabled
 ```
 

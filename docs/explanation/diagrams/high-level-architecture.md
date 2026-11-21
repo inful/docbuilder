@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: d5b6b24dd51cda47bb8011977b39f62df45e488724e23a11798ae011a6620cad
-lastmod: "2026-11-19"
+fingerprint: b9111a80d3b885bc8f4d74d1cd9b246013885dbd3ba1bb3f694d0859c29bb1de
+lastmod: "2026-11-21"
 tags:
   - diagrams
   - layers
@@ -56,7 +56,7 @@ This document shows the layered architecture of DocBuilder, illustrating how dif
 │  │                   Hugo Generator                             │   │
 │  │                                                              │   │
 │  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐     │   │
-│  │  │  Pipeline   │ │   Relearn   │ │   Report Builder    │     │   │
+│  │  │  Pipeline   │ │   Docsy   │ │   Report Builder    │     │   │
 │  │  │  Processor  │ │   Config    │ │                     │     │   │
 │  │  └──────┬──────┘ └──────┬──────┘ └──────────┬──────────┘     │   │
 │  └─────────┼───────────────┼───────────────────┼────────────────┘   │
@@ -137,7 +137,7 @@ This document shows the layered architecture of DocBuilder, illustrating how dif
 
 ### Processing Layer
 - **Purpose**: Content transformation and Hugo site generation
-- **Components**: Hugo Generator, Pipeline Processor, Relearn Configuration
+- **Components**: Hugo Generator, Pipeline Processor, Docsy Configuration
 - **Dependencies**: Domain and infrastructure layers
 - **Key Feature**: Fixed 12-step transform pipeline (ADR-003)
 

@@ -4,8 +4,8 @@ aliases:
 categories:
   - tutorials
 date: 2025-12-15T00:00:00Z
-fingerprint: 187df6d5491b3647746b32515728eefd5bf587436d98bc6f6581e62c600366bf
-lastmod: "2026-11-19"
+fingerprint: 321e1ba7b4bbfaeccda042ee0e80610155b73f804304a6afac9677be42ce7b59
+lastmod: "2026-11-21"
 tags:
   - getting-started
   - quickstart
@@ -64,7 +64,7 @@ hugo:
   title: "My Documentation Site"
   description: "Aggregated documentation from multiple repositories"
   base_url: "https://docs.example.com"
-  theme: "relearn"
+  theme: "docsy"
   params:
     search:
       enable: true
@@ -138,7 +138,7 @@ Or for local development without git polling:
 ## 8. Next Steps
 
 - Customize landing pages with `templates/index/*.tmpl`.
-- DocBuilder uses the Relearn theme exclusively for consistent documentation.
+- DocBuilder uses the Docsy theme exclusively for consistent documentation.
 - Integrate with CI: compare `doc_files_hash` between runs to skip downstream jobs.
 
 ## Additional Commands

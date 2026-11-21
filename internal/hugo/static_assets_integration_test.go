@@ -50,7 +50,7 @@ func TestViewTransitionsIntegration(t *testing.T) {
 	assert.Contains(t, string(cssContent), "::view-transition-old(root)", "CSS should style transition states")
 
 	// Verify HTML partial was created
-	partialPath := filepath.Join(outputDir, "layouts", "partials", "custom-header.html")
+	partialPath := filepath.Join(outputDir, "layouts", "_partials", "hooks", "head-end.html")
 	assert.FileExists(t, partialPath, "HTML partial should be written to layouts directory")
 
 	// #nosec G304 -- test utility reading from test output directory
@@ -95,7 +95,7 @@ func TestViewTransitionsDisabled(t *testing.T) {
 	cssPath := filepath.Join(outputDir, "assets", "css", "view-transitions.css")
 	assert.NoFileExists(t, cssPath, "CSS asset should not be created when transitions disabled")
 
-	partialPath := filepath.Join(outputDir, "layouts", "partials", "custom-header.html")
+	partialPath := filepath.Join(outputDir, "layouts", "_partials", "hooks", "head-end.html")
 	assert.FileExists(t, partialPath, "HTML partial should still be created for template metadata")
 
 	// #nosec G304 -- test utility reading from test output directory
@@ -148,6 +148,6 @@ func TestViewTransitionsWithContent(t *testing.T) {
 	cssPath := filepath.Join(outputDir, "assets", "css", "view-transitions.css")
 	assert.FileExists(t, cssPath, "CSS asset should be created with content")
 
-	partialPath := filepath.Join(outputDir, "layouts", "partials", "custom-header.html")
+	partialPath := filepath.Join(outputDir, "layouts", "_partials", "hooks", "head-end.html")
 	assert.FileExists(t, partialPath, "HTML partial should be created with content")
 }

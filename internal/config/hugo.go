@@ -1,10 +1,5 @@
 package config
 
-import (
-	"fmt"
-	"strings"
-)
-
 // HugoConfig represents Hugo-specific configuration for the site's theme.
 type HugoConfig struct {
 	BaseURL               string            `yaml:"base_url,omitempty"`
@@ -15,249 +10,23 @@ type HugoConfig struct {
 	Menu                  map[string][]Menu `yaml:"menu,omitempty"`
 	Taxonomies            map[string]string `yaml:"taxonomies,omitempty"` // custom taxonomies (e.g., "category": "categories", "tag": "tags")
 	Transforms            *HugoTransforms   `yaml:"transforms,omitempty"` // optional transform filtering
-	Sidebar               *SidebarConfig    `yaml:"sidebar,omitempty"`    // sidebar configuration; nil falls back to the Relearn default page menu
 
-	// Theme selects the Hugo theme the site is built with: "relearn"
-	// (the default) or "docsy". The themes differ in how the
-	// navigation is wired, so the build adapts to the choice.
-	Theme string `yaml:"theme,omitempty"`
+	// Chrome selects how the navigation chrome is rendered: "full"
+	// (the default) renders it on every page, "shared" renders it on
+	// the donor page only and restores it in the browser. The shared
+	// mode makes the published site much smaller, and needs
+	// JavaScript: the navigation appears once the page has loaded.
+	Chrome string `yaml:"chrome,omitempty"`
 
-	// CustomCSS is extra CSS appended to assets/css/extensions.css
-	// in the Hugo site source. When unset, the build emits a
-	// built-in default that tones down Relearn's loud sidebar
-	// section titles. When set, the value replaces the default
-	// verbatim. To opt out of the override entirely, set this to
-	// a no-op value (e.g., "/* no override */"). The file is
-	// always written unless the resolved value is empty after
-	// trimming, so load order and auto-discovery by Relearn are
-	// preserved in every case.
+	// CustomCSS is extra CSS inlined in the theme's head hook. When
+	// set, the value is written verbatim; a whitespace-only value
+	// suppresses the block entirely, so operators who want the
+	// unmodified theme styling can opt out.
 	CustomCSS string `yaml:"custom_css,omitempty"`
 }
 
-// The themes DocBuilder can build a site with.
-const (
-	// ThemeRelearn is the Relearn theme, the default.
-	ThemeRelearn = "relearn"
-	// ThemeDocsy is the Docsy theme.
-	ThemeDocsy = "docsy"
-)
-
-// ThemeName returns the configured theme. An unset theme means Relearn.
-func (h *HugoConfig) ThemeName() string {
-	if h == nil || h.Theme == "" {
-		return ThemeRelearn
-	}
-	return h.Theme
-}
-
-// SidebarConfig controls how DocBuilder wires the Relearn sidebar menus.
-//
-// The default mode (when Mode is unset or empty) is "auto": the
-// categories navigation is rendered once into a shared fragment and
-// injected in the browser. The navigation content is the same as the
-// categories sidebar; only the delivery differs. The categories sidebar
-// also includes a synthetic "_uncategorized" bucket for any doc that has
-// no `categories:` front matter, so un-categorized docs never disappear
-// from navigation.
-//
-// Set Mode to "categories" to embed the navigation in every page
-// (server-rendered, no JavaScript needed), or to "default" to revert to
-// the legacy Relearn single page menu.
-type SidebarConfig struct {
-	// Mode selects the sidebar wiring strategy.
-	//   "" or "auto"     - render the navigation once, inject it in the
-	//                      browser (the default).
-	//   "shared"         - same as "" or "auto"; explicit opt-in.
-	//   "categories"     - embed the categories sidebar in every page.
-	//   "default"        - emit Relearn's default single page menu.
-	Mode SidebarMode `yaml:"mode,omitempty"`
-
-	// KeepDefaultMenu, when true (the default), emits the original
-	// main page menu in addition to the category menus. When false,
-	// only the category menus are emitted.
-	KeepDefaultMenu *bool `yaml:"keep_default_menu,omitempty"`
-
-	// ProjectSegment names the segment used to group documents under
-	// each category. Today only "repo" is supported; this field exists
-	// so future segmentations (e.g., forge, group) can be added without
-	// a schema change.
-	ProjectSegment string `yaml:"project_segment,omitempty"`
-
-	// GroupBy opts a category into a sub-grouping under its wrapper.
-	// The map is keyed by the canonical (lowercased) category name;
-	// each value is the ordered list of axis names that define the
-	// level-by-level grouping path. An axis is either a front-matter
-	// field name or — by the self-describing rule — a sibling
-	// category name: any axis value that is ALSO a key in this same
-	// map is treated as a sibling category, and the renderer
-	// resolves its value from the doc's categories: list rather
-	// than from front matter. This lets a doc's category membership
-	// drive sub-grouping without requiring parallel front-matter
-	// fields.
-	//
-	// Front-matter axes accept both scalar and list values. A scalar
-	// front-matter field (e.g. `projects: team_alpha`) is normalised
-	// to a one-element list at read time; a list field (e.g.
-	// `projects: [team_alpha, team_beta]`) drives a fan-out — the
-	// doc appears in the sidebar once per value, under each of its
-	// `projects` values. The fan-out is scoped per category: a list
-	// value for a category NOT in this map is ignored (the default
-	// Repository-based grouping applies).
-	//
-	// For a doc in a configured category, the level-1 key becomes
-	// the value of the first non-empty axis. When none of the
-	// configured axes are set at a level, the doc falls back to its
-	// source Repository (A1) so the path stays fully populated.
-	// Categories without an entry in this map use the default
-	// Repository-based grouping.
-	//
-	// Example (front-matter field, scalar):
-	//   sidebar:
-	//     group_by:
-	//       minutes: [projects]   # group "Minutes" docs by their `projects:` field
-	//
-	// Example (sibling category):
-	//   sidebar:
-	//     group_by:
-	//       minutes: [projects, team]   # level 2 = doc's sibling category `team`
-	//       team: [projects]            # `team` must be a key for the self-describing rule
-	//
-	// Example (list-valued front-matter, fan-out):
-	//   # a doc with `projects: [a, b]` appears in the sidebar
-	//   # under both `Minutes > a` and `Minutes > b`.
-	GroupBy map[string][]string `yaml:"group_by,omitempty"`
-}
-
-// SidebarMode is a typed identifier for the sidebar wiring mode.
-type SidebarMode string
-
-const (
-	// SidebarModeAuto is the default mode. It renders the categories
-	// navigation once into a shared fragment and injects it in the
-	// browser, instead of embedding it in every page. An empty or unset
-	// Mode is treated as SidebarModeAuto.
-	SidebarModeAuto SidebarMode = "auto"
-	// SidebarModeDefault keeps the Relearn default single page menu
-	// and suppresses the categories sidebar. Use this to opt out of the
-	// categories navigation.
-	SidebarModeDefault SidebarMode = "default"
-	// SidebarModeCategories embeds the categories navigation in every
-	// page. Use it when the navigation must be present without
-	// JavaScript.
-	SidebarModeCategories SidebarMode = "categories"
-	// SidebarModeShared renders the navigation once into a shared fragment
-	// and injects it in the browser, instead of embedding it in every page.
-	// Explicit alias for SidebarModeAuto (the default). The navigation
-	// content is the same as the categories sidebar; only the way it
-	// reaches the page differs. Use it for sites with many pages, where
-	// embedding the whole tree in every page makes both the render time
-	// and the published site grow with the square of the page count.
-	SidebarModeShared SidebarMode = "shared"
-)
-
-// SidebarUncategorizedCategory is the synthetic category name emitted
-// for docs that have no `categories:` front matter. It appears as
-// both a sidebar block and a Hugo taxonomy term page so users can
-// audit and clean up their categorization. The leading underscore
-// keeps it deterministic in sort order, and the weight:999 emission
-// in the sidebar wiring pushes it to render last regardless.
-const SidebarUncategorizedCategory = "_uncategorized"
-
-// IsCategories reports whether the sidebar should be wired by categories.
-// Treats the zero value (Mode unset, including the nil-config case)
-// and "auto" as categories, so the categories navigation is the default
-// content. The only way to opt out is to set Mode to "default" explicitly.
-func (s *SidebarConfig) IsCategories() bool {
-	if s == nil {
-		return true
-	}
-	switch s.Mode {
-	case "", SidebarModeAuto, SidebarModeCategories, SidebarModeShared:
-		return true
-	case SidebarModeDefault:
-		return false
-	default:
-		// Unknown mode: safe default is to NOT emit the categories
-		// sidebar, so a typo in user config falls back to the
-		// legacy single-page layout rather than emitting a broken
-		// categories sidebar. The Normalize() call warns about
-		// unknown values before this fallback is reached.
-		return false
-	}
-}
-
-// IsShared reports whether the navigation is rendered once and injected in
-// the browser rather than embedded in every page. The navigation content is
-// the same as the categories sidebar either way.
-//
-// An unset mode (or "auto") means shared: it is the default. Only
-// "categories" and "default" opt out.
-func (s *SidebarConfig) IsShared() bool {
-	if s == nil {
-		return true
-	}
-	switch s.Mode {
-	case "", SidebarModeAuto, SidebarModeShared:
-		return true
-	case SidebarModeCategories, SidebarModeDefault:
-		return false
-	default:
-		// Unknown mode: opt out rather than guess.
-		return false
-	}
-}
-
-// ShouldKeepDefaultMenu reports whether the default main page menu
-// should be emitted alongside the category menus. Defaults to true
-// when the field is nil so existing layouts are preserved.
-func (s *SidebarConfig) ShouldKeepDefaultMenu() bool {
-	if s == nil || s.KeepDefaultMenu == nil {
-		return true
-	}
-	return *s.KeepDefaultMenu
-}
-
-// Normalize validates and normalizes the SidebarConfig. Unknown mode
-// values are replaced with the default ("auto") and reported via the
-// supplied NormalizationResult. The function is additive: it never
-// fails the build for a sidebar misconfiguration, since a
-// misconfigured sidebar is recoverable (a legacy single-page layout)
-// and the user will see the warning in the build log.
-//
-// GroupBy map keys (canonical category names) and field names are
-// lowercased in place so users can write them in any case. Without
-// this normalisation, "Minutes" or "Project" would silently not
-// match the canonical lowercase keys / front-matter field names.
-func (s *SidebarConfig) Normalize(res *NormalizationResult) {
-	if s == nil {
-		return
-	}
-	switch s.Mode {
-	case "", SidebarModeAuto, SidebarModeDefault, SidebarModeCategories, SidebarModeShared:
-		// Known values; nothing to normalize.
-	default:
-		res.Warnings = append(res.Warnings, fmt.Sprintf(
-			"hugo.sidebar.mode %q is unknown; falling back to %q (the default)",
-			s.Mode, SidebarModeAuto,
-		))
-		s.Mode = SidebarModeAuto
-	}
-	if len(s.GroupBy) > 0 {
-		normalized := make(map[string][]string, len(s.GroupBy))
-		for cat, fields := range s.GroupBy {
-			lcCat := strings.ToLower(cat)
-			lcFields := make([]string, 0, len(fields))
-			for _, f := range fields {
-				if f == "" {
-					continue
-				}
-				lcFields = append(lcFields, strings.ToLower(f))
-			}
-			normalized[lcCat] = lcFields
-		}
-		s.GroupBy = normalized
-	}
-}
+// ThemeDocsy is the theme DocBuilder builds with.
+const ThemeDocsy = "docsy"
 
 // HugoTransforms allows users to enable/disable specific named content transforms.
 // If both slices are set, Disable takes precedence over Enable.

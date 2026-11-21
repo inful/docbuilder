@@ -68,9 +68,9 @@ func TestMultiPlatformHugoGeneration(t *testing.T) {
 		forgeType config.ForgeType
 		theme     string
 	}{
-		{"github", config.ForgeGitHub, "relearn"},
-		{"gitlab", config.ForgeGitLab, "relearn"},
-		{"forgejo", config.ForgeForgejo, "relearn"},
+		{"github", config.ForgeGitHub, "docsy"},
+		{"gitlab", config.ForgeGitLab, "docsy"},
+		{"forgejo", config.ForgeForgejo, "docsy"},
 	}
 
 	for _, platform := range platforms {

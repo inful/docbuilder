@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 5e650ad41283149feba039913b77fa9f9abd9d5383f710ade07f7706969ef174
-lastmod: "2026-11-19"
+fingerprint: 9d280474cf769450f7121215dd77def7c128202a76738a0ed4d25cfc1f5c6d76
+lastmod: "2026-11-21"
 tags:
   - testing
   - renderer
@@ -220,7 +220,7 @@ Verify render_mode is not "never"
 func TestExampleFeature(t *testing.T) {
     // Setup
     cfg := &config.Config{}
-    cfg.Hugo.Theme = "relearn"
+    cfg.Hugo.Theme = "docsy"
     cfg.Build.RenderMode = "always"
     
     dir := t.TempDir()

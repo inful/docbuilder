@@ -11,7 +11,6 @@ hugo:
   title: UID Permalink Ref Test
   description: Test uid/alias based permalink ref shortcode injection
   base_url: http://localhost:1313/
-  theme: relearn
 
 output:
   directory: PLACEHOLDER  # Will be replaced with temp output dir in test

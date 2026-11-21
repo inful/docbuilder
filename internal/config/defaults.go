@@ -116,7 +116,8 @@ func (h *HugoDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Hugo.Title == "" {
 		cfg.Hugo.Title = "Documentation Portal"
 	}
-	// Theme is always Relearn - no longer configurable
+	// The theme is Docsy; the navigation chrome mode defaults to
+	// "full" (see normalizeHugoConfig).
 	return nil
 }
 

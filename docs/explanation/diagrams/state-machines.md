@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: 5e73e8afc6c1ef3df5ba3cadcdd8856ac61fa9d1f549652da99f3543b97cea0b
-lastmod: "2026-11-19"
+fingerprint: 7650e5ad71a18670da18881aa40fd5eb2c51acb320dbf2816e3dee752ae538c0
+lastmod: "2026-11-21"
 tags:
   - state-machines
   - lifecycle
@@ -79,7 +79,7 @@ stateDiagram-v2
 - Computing documentation set hash
 
 **Generating**:
-- Applying Relearn theme defaults
+- Applying Docsy theme defaults
 - Merging user parameters
 - Writing hugo.yaml
 - Creating/updating go.mod
@@ -263,7 +263,7 @@ stateDiagram-v2
 stateDiagram-v2
     [*] --> Loading
     Loading --> ApplyingDefaults: Config loaded
-    ApplyingDefaults --> MergingParams: Relearn defaults applied
+    ApplyingDefaults --> MergingParams: Docsy defaults applied
     MergingParams --> AddingModule: User params merged
     AddingModule --> WritingConfig: Module path added
     WritingConfig --> Ready: hugo.yaml written
@@ -277,14 +277,14 @@ stateDiagram-v2
     Error --> [*]
     
     note right of ApplyingDefaults
-        Hardcoded Relearn defaults:
-        themeVariant, collapsibleMenu,
-        mermaid, math, etc.
+        The theme defaults:
+        offlineSearch, the light/dark
+        menu, the foldable sidebar
     end note
     
     note right of AddingModule
         Fixed module:
-        github.com/McShelby/hugo-theme-relearn
+        github.com/docsy/docsy/theme
     end note
 ```
 
@@ -296,7 +296,7 @@ stateDiagram-v2
 - Extracting Hugo parameters
 
 **ApplyingDefaults**:
-- Setting Relearn theme defaults
+- Setting Docsy theme defaults
 - Configuring theme variant
 - Enabling features (Mermaid, math)
 - Setting navigation options
@@ -328,29 +328,18 @@ stateDiagram-v2
 
 ### Configuration Defaults Applied
 
-**Theme Appearance**:
-- `themeVariant`: `["auto", "zen-light", "zen-dark"]`
-- `themeVariantAuto`: `["zen-light", "zen-dark"]`
-- `showVisitedLinks`: `true`
+**Search**:
+- `offlineSearch`: `true` (the theme's own index; no JSON output format)
 
-**Navigation**:
-- `collapsibleMenu`: `true`
-- `alwaysopen`: `false`
-- `disableBreadcrumb`: `false`
-- `disableLandingPageButton`: `true`
+**Appearance**:
+- `ui.showLightDarkModeMenu`: `true` (the light/dark switch in the navbar)
+- `ui.sidebar_menu_foldable`: `true` (the sidebar sections fold)
 
-**Features**:
-- `mermaid.enable`: `true`
-- `math.enable`: `true`
-- `disableSearch`: `false` (search enabled)
+**View transitions**:
+- `enable_transitions`: `true` when `hugo.enable_page_transitions` is set
 
-**Footer**:
-- `disableGeneratorVersion`: `false`
-- `disableLanguageSwitchingButton`: `true`
-
-**Content**:
-- `disableShortcutsTitle`: `false`
-- `disableTagHiddenPages`: `false`
+**Chrome**:
+- `td.chrome`: unset by default; `shared` when `hugo.chrome: shared` is set
 
 ---
 

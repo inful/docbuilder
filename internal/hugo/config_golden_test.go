@@ -36,11 +36,11 @@ func normalizeConfig(t *testing.T, path string) []byte {
 	return out
 }
 
-func TestHugoConfigGolden_RelearnDefaultTaxonomies(t *testing.T) {
+func TestHugoConfigGolden_DefaultTaxonomies(t *testing.T) {
 	out := t.TempDir()
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{
-			Title: "Relearn Site",
+			Title: "Docsy Site",
 		},
 		Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}}},
 	}
@@ -49,7 +49,7 @@ func TestHugoConfigGolden_RelearnDefaultTaxonomies(t *testing.T) {
 		t.Fatalf("generate: %v", err)
 	}
 	actual := normalizeConfig(t, filepath.Join(out, "hugo.yaml"))
-	golden := filepath.Join("testdata", "hugo_config", "relearn_default_taxonomies.yaml")
+	golden := filepath.Join("testdata", "hugo_config", "docsy_default_taxonomies.yaml")
 	// #nosec G304 - test file
 	want, err := os.ReadFile(golden)
 	if err != nil {
@@ -63,15 +63,15 @@ func TestHugoConfigGolden_RelearnDefaultTaxonomies(t *testing.T) {
 			}
 			return
 		}
-		t.Fatalf("relearn default taxonomies hugo.yaml mismatch; run UPDATE_GOLDEN=1 go test ./internal/hugo -run TestHugoConfigGolden_RelearnDefaultTaxonomies to accept")
+		t.Fatalf("default taxonomies hugo.yaml mismatch; run UPDATE_GOLDEN=1 go test ./internal/hugo -run TestHugoConfigGolden_DefaultTaxonomies to accept")
 	}
 }
 
-func TestHugoConfigGolden_RelearnCustomTaxonomies(t *testing.T) {
+func TestHugoConfigGolden_CustomTaxonomies(t *testing.T) {
 	out := t.TempDir()
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{
-			Title: "Relearn Site with Custom Taxonomies",
+			Title: "Docsy Site with Custom Taxonomies",
 			Taxonomies: map[string]string{
 				"category":    "categories",
 				"tag":         "tags",
@@ -85,7 +85,7 @@ func TestHugoConfigGolden_RelearnCustomTaxonomies(t *testing.T) {
 		t.Fatalf("generate: %v", err)
 	}
 	actual := normalizeConfig(t, filepath.Join(out, "hugo.yaml"))
-	golden := filepath.Join("testdata", "hugo_config", "relearn_custom_taxonomies.yaml")
+	golden := filepath.Join("testdata", "hugo_config", "docsy_custom_taxonomies.yaml")
 	// #nosec G304 - test file
 	want, err := os.ReadFile(golden)
 	if err != nil {
@@ -99,7 +99,7 @@ func TestHugoConfigGolden_RelearnCustomTaxonomies(t *testing.T) {
 			}
 			return
 		}
-		t.Fatalf("relearn custom taxonomies hugo.yaml mismatch; run UPDATE_GOLDEN=1 go test ./internal/hugo -run TestHugoConfigGolden_RelearnCustomTaxonomies to accept")
+		t.Fatalf("custom taxonomies hugo.yaml mismatch; run UPDATE_GOLDEN=1 go test ./internal/hugo -run TestHugoConfigGolden_CustomTaxonomies to accept")
 	}
 }
 

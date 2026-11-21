@@ -27,7 +27,7 @@ import (
 
 const skipReasonNoChanges = "no_changes"
 
-// Generator handles Hugo site generation with Relearn theme.
+// Generator handles Hugo site generation with the Docsy theme.
 type Generator struct {
 	config    *config.Config
 	outputDir string // final output dir
@@ -43,10 +43,6 @@ type Generator struct {
 	stateManager state.RepositoryMetadataWriter
 	// keepStaging preserves staging directory on failure for debugging (set via WithKeepStaging)
 	keepStaging bool
-	// categoriesMenu holds the result of the categories-menu stage, if
-	// the sidebar mode is "categories". The config writer picks it up
-	// when emitting hugo.yaml. nil means "no categories menu".
-	categoriesMenu *models.CategoriesMenu
 	// onDocumentReady (optional) is invoked once per non-generated document
 	// immediately after it has been written to disk. It is the daemon-mode
 	// hook for pushing document content to a downstream consumer (e.g.
@@ -282,9 +278,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 
 	pipeline := models.NewPipeline().
 		Add(models.StagePrepareOutput, stages.StagePrepareOutput).
-		Add(models.StageCategoriesMenu, stages.StageCategoriesMenu).
 		Add(models.StageGenerateConfig, stages.StageGenerateConfig).
-		Add(models.StageLayouts, stages.StageLayouts).
 		Add(models.StageCopyContent, stages.StageCopyContent).
 		Add(models.StageIndexes, stages.StageIndexes).
 		Add(models.StageRunHugo, stages.StageRunHugo).
@@ -428,9 +422,7 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		Add(models.StagePrepareOutput, stages.StagePrepareOutput).
 		Add(models.StageCloneRepos, stages.StageCloneRepos).
 		Add(models.StageDiscoverDocs, stages.StageDiscoverDocs).
-		Add(models.StageCategoriesMenu, stages.StageCategoriesMenu).
 		Add(models.StageGenerateConfig, stages.StageGenerateConfig).
-		Add(models.StageLayouts, stages.StageLayouts).
 		Add(models.StageCopyContent, stages.StageCopyContent).
 		Add(models.StageIndexes, stages.StageIndexes).
 		Add(models.StageRunHugo, stages.StageRunHugo).

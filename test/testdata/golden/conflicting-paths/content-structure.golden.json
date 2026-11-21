@@ -5,14 +5,14 @@
         "title": "Conflicting Paths Test",
         "type": "docs"
       },
-      "contentHash": "sha256:8b432c0ef23ac120"
+      "contentHash": "sha256:9b0fd864516a8100"
     },
     "content/repo-a/_index.md": {
       "frontmatter": {
         "title": "Repo A",
         "type": "docs"
       },
-      "contentHash": "sha256:8530393e4a5d32af"
+      "contentHash": "sha256:bcffb39669762705"
     },
     "content/repo-a/api.md": {
       "frontmatter": {
@@ -35,7 +35,7 @@
         "title": "Repo B",
         "type": "docs"
       },
-      "contentHash": "sha256:89a8977c0a690011"
+      "contentHash": "sha256:9fed0faade5b13b7"
     },
     "content/repo-b/setup.md": {
       "frontmatter": {

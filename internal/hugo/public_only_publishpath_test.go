@@ -26,7 +26,7 @@ import (
 // Result: both public_only on and public_only off produce
 // public/drift/img/nett/pic.png - no doubling. The minimal case does not
 // reproduce the bug, which suggests the production trigger is something
-// more specific (Relearn theme permalinks, multiple page bundles, a
+// more specific (theme permalinks, multiple page bundles, a
 // static-asset conflict, or a stale public/ from a prior build).
 //
 // If you can share the actual content/ tree from the broken instance,
@@ -293,7 +293,7 @@ func TestPublicOnly_PageBundleImage_PublishPath(t *testing.T) {
 
 			// Strip the {{ children }} shortcode that the docbuilder
 			// pipeline writes into generated _index.md files - it requires
-			// the Relearn theme, which we don't load in this test.
+			// the theme, which we don't load in this test.
 			if err := filepath.Walk(filepath.Join(dir, "content"), func(path string, info os.FileInfo, err error) error {
 				if err != nil || info.IsDir() {
 					return err

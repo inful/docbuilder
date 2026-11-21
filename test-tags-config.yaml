@@ -20,7 +20,6 @@ hugo:
   title: "CI Tools Documentation"
   description: "Testing tag cloning with versioning"
   base_url: "http://localhost:1313"
-  theme: "relearn"
   language_code: "en"
 
 output:

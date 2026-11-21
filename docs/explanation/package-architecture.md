@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 2e0f6c0b1f001d202d4b04baf09789193e3a63f7b8ed35245d151ad2bdd11f66
-lastmod: "2026-11-19"
+fingerprint: 1e5358025ca565d5da7dd3b413f5af43a44a02085ab4d631154accc8daecb902
+lastmod: "2026-11-21"
 tags:
   - architecture
   - packages
@@ -323,7 +323,7 @@ hugo/
 │   ├── frontmatter.go
 │   ├── frontmatter_builder.go
 │   ├── editlink.go
-│   └── config_writer.go      # Relearn theme configuration
+│   └── config_writer.go      # Docsy theme configuration
 └── pipeline/                  # Fixed transform pipeline (ADR-003)
     ├── transforms.go          # All 11 transforms
     ├── generators.go          # Document generators
@@ -333,9 +333,9 @@ hugo/
 **Key Components:**
 
 ```go
-// Relearn theme configuration in config_writer.go
-func (g *Generator) applyRelearnThemeDefaults(params map[string]any) {
-    // Apply Relearn-specific defaults
+// Docsy theme configuration in config_writer.go
+func (g *Generator) applyDocsyThemeDefaults(params map[string]any) {
+    // Apply Docsy-specific defaults
 }
 
 // Fixed transform pipeline in pipeline/transforms.go

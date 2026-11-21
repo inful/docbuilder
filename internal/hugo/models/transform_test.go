@@ -238,7 +238,7 @@ func (m *mockGeneratorProvider) GetForgeCapabilities(_ string) ForgeCapabilities
 type mockConfigProvider struct{}
 
 func (m *mockConfigProvider) GetHugoConfig() HugoConfig {
-	return HugoConfig{ThemeType: "relearn"}
+	return HugoConfig{ThemeType: "docsy"}
 }
 
 func (m *mockConfigProvider) GetForgeConfig() ForgeConfig {

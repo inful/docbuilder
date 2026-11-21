@@ -10,7 +10,7 @@ import (
 
 func TestInjectPermalink(t *testing.T) {
 	baseURL := "https://docs.example.com/"
-	transform := injectPermalink(baseURL, false)
+	transform := injectPermalink(baseURL)
 
 	t.Run("Injects permalink when UID and alias match", func(t *testing.T) {
 		doc := &Document{
@@ -30,7 +30,7 @@ func TestInjectPermalink(t *testing.T) {
 
 		assert.Contains(t, doc.Content, "https://docs.example.com/_uid/12345/")
 		assert.Contains(t, doc.Content, "[my-page]")
-		assert.Contains(t, doc.Content, "{{% badge style=\"note\" title=\"permalink\" %}}")
+		assert.Contains(t, doc.Content, permalinkLabel)
 	})
 
 	t.Run("Does not inject when already present", func(t *testing.T) {
@@ -96,37 +96,5 @@ func TestInjectPermalink(t *testing.T) {
 		_, err := transform(doc)
 		require.NoError(t, err)
 		assert.NotContains(t, doc.Content, "permalink-badge")
-	})
-}
-
-// TestInjectPermalinkDocsy checks the Docsy shape of the permalink:
-// Docsy has no badge shortcode, so the link is plain markdown.
-func TestInjectPermalinkDocsy(t *testing.T) {
-	baseURL := "https://docs.example.com/"
-	transform := injectPermalink(baseURL, true)
-
-	doc := &Document{
-		Extension: markdownExtension,
-		FrontMatter: map[string]any{
-			"title": "My Page",
-			"uid":   "12345",
-			testPermalinkAliasesKey: []any{
-				testPermalinkAliasUID,
-			},
-		},
-		Content: "# My Page\n\nContent here.",
-	}
-
-	_, err := transform(doc)
-	require.NoError(t, err)
-
-	assert.Contains(t, doc.Content, "https://docs.example.com/_uid/12345/")
-	assert.Contains(t, doc.Content, permalinkLabel)
-	assert.NotContains(t, doc.Content, "badge")
-
-	t.Run("Does not inject twice", func(t *testing.T) {
-		_, err := transform(doc)
-		require.NoError(t, err)
-		assert.Equal(t, 1, strings.Count(doc.Content, permalinkLabel))
 	})
 }
