@@ -285,7 +285,7 @@ func LoadWithResult(configPath string) (*LoadResult, *Config, error) {
 	}
 
 	// Expand environment variables in the YAML content
-	expandedData := os.ExpandEnv(string(data))
+	expandedData := expandEnv(string(data))
 
 	var config Config
 	if err := yaml.Unmarshal([]byte(expandedData), &config); err != nil {
@@ -473,7 +473,7 @@ func IsConfigVersion(configPath string) (bool, error) {
 	}
 
 	// Expand environment variables
-	expandedData := os.ExpandEnv(string(data))
+	expandedData := expandEnv(string(data))
 
 	// Try to parse just the version field
 	var versionCheck struct {
