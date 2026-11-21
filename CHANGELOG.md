@@ -9,6 +9,31 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-11-21
+
+### Added
+- **A second theme: Docsy**. `hugo.theme: docsy` builds the site with
+  the Docsy theme; `relearn` stays the default. The choice is
+  experimental until the default flips, after Docsy has been verified
+  by use.
+
+  The two themes disagree about how a site is put together, so the
+  build adapts in five places: the module import (Docsy lives in the
+  `theme` subdirectory of its repository and is its own Go module), the
+  shortcodes the generated pages carry (Docsy has no `children` and no
+  `badge`, so the permalink is written as plain markdown), the layout
+  overrides (Docsy takes the custom CSS, the view transitions and the
+  template metadata in its head-end hook), the navigation (Docsy's
+  navigation is the content tree; the categories stay a taxonomy, so
+  their landing pages exist either way) and the search (Docsy's
+  offline index needs no JSON output format).
+
+  Hugo 0.170 has no Sass support of its own, so the four files Docsy
+  needs — the compiled stylesheet, the Bootstrap JavaScript and the
+  two web fonts the stylesheet references — are vendored in the
+  repository. `scripts/vendor-docsy-assets.sh` rebuilds them; the
+  build needs neither Sass nor Node.
+
 ## [0.25.1] - 2026-11-21
 
 ### Security

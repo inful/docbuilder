@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 
 	"gopkg.in/yaml.v3"
@@ -38,8 +39,8 @@ func (g *Generator) GenerateHugoConfig() error {
 	root.EnsureGoldmarkParserAttributeBlockEnabled()
 	root.EnsureHighlightDefaults()
 
-	// Phase 2: Apply Relearn theme defaults
-	g.applyRelearnThemeDefaults(params)
+	// Phase 2: Apply theme defaults
+	g.applyThemeDefaults(params)
 
 	// Phase 3: User overrides (deep merge)
 	if g.config.Hugo.Params != nil {
@@ -58,9 +59,9 @@ func (g *Generator) GenerateHugoConfig() error {
 		}
 	}
 
-	// Phase 5: Configure Relearn theme via Hugo Modules
+	// Phase 5: Configure the theme via Hugo Modules
 	root.Module = &models.ModuleConfig{
-		Imports: []models.ModuleImport{{Path: "github.com/McShelby/hugo-theme-relearn", Version: relearnVersion}},
+		Imports: []models.ModuleImport{themeModuleImport(g.config.Hugo.ThemeName())},
 	}
 
 	// Enable math passthrough for Relearn
@@ -73,14 +74,22 @@ func (g *Generator) GenerateHugoConfig() error {
 
 	// Enable search JSON (Relearn uses Lunr search) and taxonomy JSON outputs
 	if !g.config.Build.LiveReload {
-		root.SetHomeOutputsHTMLRSSJSON()
-		root.SetTaxonomyOutputsHTMLJSON()
+		if g.config.Hugo.ThemeName() == config.ThemeDocsy {
+			// Docsy's offline search reads the theme's own index; it
+			// needs no JSON output format, and asking for one would
+			// leave Hugo warning about a missing layout.
+			root.SetHomeOutputsHTMLRSS()
+		} else {
+			root.SetHomeOutputsHTMLRSSJSON()
+			root.SetTaxonomyOutputsHTMLJSON()
+		}
 	}
 
 	// Shared sidebar: the navigation is rendered once into its own output
 	// format and injected in the browser, so it is not embedded in every
-	// page. The home page carries the fragment.
-	if g.config.Hugo.Sidebar.IsShared() {
+	// page. The home page carries the fragment. Docsy renders its own
+	// navigation per page, so the fragment is a Relearn concern.
+	if g.config.Hugo.Sidebar.IsShared() && g.config.Hugo.ThemeName() != config.ThemeDocsy {
 		root.OutputFormats = SharedNavOutputFormats()
 		root.EnsureOutputs()
 		home := root.Outputs["home"]
@@ -145,8 +154,11 @@ func (g *Generator) GenerateHugoConfig() error {
 	// the user-supplied menu on top, and before yaml.Marshal so the
 	// final hugo.yaml includes the categories menus and sidebarmenus
 	// blocks. The build is a no-op when the mode is "default" or
-	// unset.
-	g.ApplyCategoriesMenuToConfig(root)
+	// unset. Docsy has no sidebarmenus: its navigation is the content
+	// tree, so the categories stay a taxonomy there.
+	if g.config.Hugo.ThemeName() != config.ThemeDocsy {
+		g.ApplyCategoriesMenuToConfig(root)
+	}
 
 	data, err := yaml.Marshal(root)
 	if err != nil {
@@ -167,6 +179,16 @@ func (g *Generator) GenerateHugoConfig() error {
 	slog.Debug("Hugo configuration content:\n" + string(data))
 
 	return nil
+}
+
+// applyThemeDefaults applies the parameter defaults of the theme the
+// build targets.
+func (g *Generator) applyThemeDefaults(params map[string]any) {
+	if g.config.Hugo.ThemeName() == config.ThemeDocsy {
+		g.applyDocsyThemeDefaults(params)
+		return
+	}
+	g.applyRelearnThemeDefaults(params)
 }
 
 // applyRelearnThemeDefaults applies Relearn-specific parameter defaults.

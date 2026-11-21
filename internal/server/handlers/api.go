@@ -49,7 +49,7 @@ func (h *APIHandlers) HandleDocsStatus(w http.ResponseWriter, r *http.Request) {
 		Status:      "ready",
 		Title:       h.config.Hugo.Title,
 		Description: h.config.Hugo.Description,
-		Theme:       "relearn",
+		Theme:       h.config.Hugo.ThemeName(),
 		BaseURL:     h.config.Hugo.BaseURL,
 		OutputDir:   h.config.Output.Directory,
 		Timestamp:   time.Now().UTC(),
@@ -140,7 +140,7 @@ func (h *APIHandlers) sanitizeConfig(cfg *config.Config) responses.ConfigSummary
 	return responses.ConfigSummary{
 		Hugo: responses.HugoSummary{
 			Title:       cfg.Hugo.Title,
-			Theme:       "relearn",
+			Theme:       h.config.Hugo.ThemeName(),
 			BaseURL:     cfg.Hugo.BaseURL,
 			Description: cfg.Hugo.Description,
 		},
