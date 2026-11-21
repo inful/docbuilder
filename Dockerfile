@@ -9,7 +9,7 @@
 FROM ubuntu:22.04 AS downloader
 ARG TARGETOS=linux
 ARG TARGETARCH
-ARG HUGO_VERSION="0.152.2"
+ARG HUGO_VERSION="0.170.1"
 ARG GO_VERSION="1.26.11"
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -34,11 +34,16 @@ RUN --mount=type=cache,target=/tmp/downloads \
     tar -C /usr/local -xzf "/tmp/downloads/${GO_FILE}" && \
     /usr/local/go/bin/go version
 
-# Download Hugo Extended with caching
+# Download Hugo with caching
+#
+# Hugo 0.170.0 ended the extended edition: one binary with every
+# feature but LibSass, and Dart Sass is the only transpiler. The
+# extended archives are now aliases, so the build takes the standard
+# one.
 RUN --mount=type=cache,target=/tmp/downloads \
     HUGO_ARCH="${TARGETARCH}" && \
     echo "Downloading Hugo ${HUGO_VERSION} for ${TARGETOS}-${HUGO_ARCH}" && \
-    HUGO_FILE="hugo_extended_${HUGO_VERSION}_${TARGETOS}-${HUGO_ARCH}.tar.gz" && \
+    HUGO_FILE="hugo_${HUGO_VERSION}_${TARGETOS}-${HUGO_ARCH}.tar.gz" && \
     if [ ! -f "/tmp/downloads/${HUGO_FILE}" ]; then \
       wget -q "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/${HUGO_FILE}" \
       -O "/tmp/downloads/${HUGO_FILE}"; \
@@ -84,7 +89,7 @@ RUN /out/docbuilder --version && \
 # Final runtime image
 ############################
 FROM debian:bookworm-slim AS runtime-minimal
-ARG HUGO_VERSION="0.152.2"
+ARG HUGO_VERSION="0.170.1"
 
 WORKDIR /data
 

@@ -42,14 +42,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/hugo
-          key: hugo-0.152.2-linux-amd64
+          key: hugo-0.170.1-linux-amd64
 
-      - name: Install Hugo Extended
+      - name: Install Hugo
         if: steps.cache-hugo.outputs.cache-hit != 'true'
         run: |
-          HUGO_VERSION="0.152.2"
-          wget -q "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz"
-          tar -xzf "hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz" hugo
+          HUGO_VERSION="0.170.1"
+          wget -q "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_linux-amd64.tar.gz"
+          tar -xzf "hugo_${HUGO_VERSION}_linux-amd64.tar.gz" hugo
           mkdir -p /tmp/hugo
           mv hugo /tmp/hugo/
 
@@ -91,14 +91,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/hugo
-          key: hugo-0.152.2-linux-amd64
+          key: hugo-0.170.1-linux-amd64
 
-      - name: Install Hugo Extended
+      - name: Install Hugo
         if: steps.cache-hugo.outputs.cache-hit != 'true'
         run: |
-          HUGO_VERSION="0.152.2"
-          wget -q "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz"
-          tar -xzf "hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz" hugo
+          HUGO_VERSION="0.170.1"
+          wget -q "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_linux-amd64.tar.gz"
+          tar -xzf "hugo_${HUGO_VERSION}_linux-amd64.tar.gz" hugo
           mkdir -p /tmp/hugo
           mv hugo /tmp/hugo/
 
@@ -207,14 +207,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/hugo
-          key: hugo-0.152.2-linux-amd64
+          key: hugo-0.170.1-linux-amd64
 
-      - name: Install Hugo Extended
+      - name: Install Hugo
         if: steps.docs_changed.outputs.changed == 'true' && steps.cache-hugo.outputs.cache-hit != 'true'
         run: |
-          HUGO_VERSION="0.152.2"
-          wget -q "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz"
-          tar -xzf "hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz" hugo
+          HUGO_VERSION="0.170.1"
+          wget -q "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_linux-amd64.tar.gz"
+          tar -xzf "hugo_${HUGO_VERSION}_linux-amd64.tar.gz" hugo
           mkdir -p /tmp/hugo
           mv hugo /tmp/hugo/
 
