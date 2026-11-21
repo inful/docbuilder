@@ -97,6 +97,7 @@ func generateCustomHeaderAssets(ctx *GenerationContext) ([]*StaticAsset, error) 
 		assets = append(assets,
 			&StaticAsset{Path: "layouts/_partials/hooks/head-end.html", Content: content},
 			&StaticAsset{Path: "layouts/_partials/head-css.html", Content: []byte(docsyHeadCSS)},
+			&StaticAsset{Path: docsyPageMetaLinksPath, Content: docsyPageMetaLinks},
 		)
 		assets = append(assets, docsyVendoredAssets()...)
 		return assets, nil

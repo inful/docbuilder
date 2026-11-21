@@ -42,12 +42,19 @@ var docsyFontSolid []byte
 //go:embed assets/docsy/VERSION
 var docsyVendoredVersion string
 
+//go:embed assets/docsy-page-meta-links.html
+var docsyPageMetaLinks []byte
+
 // docsyHeadCSS is the project-level override of the theme's
 // stylesheet partial. It links the vendored stylesheet instead of
 // asking Hugo to compile the theme's SCSS.
 const docsyHeadCSS = `{{- $css := resources.Get "css/docsy.css" | minify | fingerprint -}}
 <link href="{{ $css.RelPermalink }}" rel="stylesheet" integrity="{{ $css.Data.Integrity }}" crossorigin="anonymous">
 `
+
+// docsyPageMetaLinksPath is where the page metadata override lands in
+// the Hugo project. It shadows the theme's partial of the same name.
+const docsyPageMetaLinksPath = "layouts/_partials/page-meta-links.html"
 
 // IsDocsy reports whether the build targets the Docsy theme.
 func IsDocsy(cfg *config.Config) bool {

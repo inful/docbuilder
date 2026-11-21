@@ -1,0 +1,22 @@
+{{- /*
+  The page metadata links of a Docsy site.
+
+  Docsy's own partial builds the edit link from "github_repo" and
+  "github_branch", which only works for GitHub. DocBuilder computes
+  the edit URL for the forge the page came from - GitHub, GitLab or
+  Gitea - and puts it in the front matter, so the link is right for
+  every forge.
+
+  The print link is Docsy's own and stays.
+*/ -}}
+{{ if .File -}}
+{{ $editURL := .Params.editURL }}
+<div class="td-page-meta ms-2 pb-1 pt-2 mb-0">
+{{ with $editURL }}
+  <a href="{{ . }}" class="td-page-meta--edit td-page-meta__edit" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square"></i> {{ T "post_edit_this" }}</a>
+{{ end }}
+{{ with .CurrentSection.AlternativeOutputFormats.Get "print" }}
+  <a id="print" href="{{ .RelPermalink }}"><i class="fa-solid fa-print"></i> {{ T "print_entire_section" }}</a>
+{{ end }}
+</div>
+{{ end -}}
