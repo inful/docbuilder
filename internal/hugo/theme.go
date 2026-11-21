@@ -32,4 +32,19 @@ func (g *Generator) applyDocsyThemeDefaults(params map[string]any) {
 	if params["offlineSearch"] == nil {
 		params["offlineSearch"] = true
 	}
+
+	// The light/dark menu and the foldable sidebar are what Relearn
+	// offers by default: a variant switch in the navbar and menu
+	// sections that fold. Docsy leaves both off.
+	ui, _ := params["ui"].(map[string]any)
+	if ui == nil {
+		ui = map[string]any{}
+		params["ui"] = ui
+	}
+	if ui["showLightDarkModeMenu"] == nil {
+		ui["showLightDarkModeMenu"] = true
+	}
+	if ui["sidebar_menu_foldable"] == nil {
+		ui["sidebar_menu_foldable"] = true
+	}
 }

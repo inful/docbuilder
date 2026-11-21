@@ -9,6 +9,19 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.26.1] - 2026-11-21
+
+### Fixed
+- **The Docsy site had no dark mode and no edit link.** Relearn
+  offers a light/dark switch and an "Edit this page" link out of the
+  box; Docsy leaves both off, and its own edit link only works for
+  GitHub.
+
+  The Docsy build now switches the theme variant on, folds the
+  sidebar sections the way Relearn does, and renders the edit link
+  from the URL DocBuilder computes for the page's forge - so GitLab
+  and Gitea pages get one too.
+
 ## [0.26.0] - 2026-11-21
 
 ### Added
