@@ -4,8 +4,8 @@ aliases:
 categories:
   - ci-cd
 date: 2025-12-15T00:00:00Z
-fingerprint: fefd7538419e04e6b8651414359e65d0f5a671a0945d933a4f5f703ae841c83d
-lastmod: "2026-11-19"
+fingerprint: 51dd5291636eb8719582b6cd32324abe34cb00e35adfc8aa5482de5a62480bcc
+lastmod: "2026-11-22"
 tags:
   - continuous-integration
   - docker
@@ -148,6 +148,13 @@ docker run --rm docbuilder:test --version
 - Linting (golangci-lint)
 - Test coverage
 - Security scanning
+
+### Required Checks
+- `Test (Go 1.24)` runs on every pull request.
+- `lint` runs only when a documentation file changes. A pull request
+  that changes none does not run it, and the branch protection waits
+  for a check that never reports: such a pull request has to carry a
+  documentation change, or an administrator has to merge it.
 
 ## Deployment
 
