@@ -9,6 +9,22 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.28.6] - 2026-11-22
+
+More findings from the fifth audit of the whole repository.
+
+### Fixed
+- **A failed promotion took the whole site away.** The build renames
+  the current site to a backup before it moves the new one into place.
+  When that move failed, the site stayed at the backup and the daemon
+  served nothing until the next build. The old site is put back now.
+
+- **A page without a document file crashed the daemon.** The broken
+  link event reads the name of the document the broken link is in. A
+  page that has no document file - which a caller that only knows the
+  rendered page does not have - made the daemon panic. The event is
+  published with empty source fields now.
+
 ## [0.28.5] - 2026-11-22
 
 A fifth audit of the whole repository.
