@@ -43,6 +43,14 @@ func withDefaults(apiURL, baseURL, defAPI, defBase string) (string, string) {
 // tokenFromConfig extracts token from forge config or returns an error.
 func tokenFromConfig(fg *Config, forgeName string) (string, error) {
 	if fg != nil && fg.Auth != nil && fg.Auth.Type == cfg.AuthTypeToken {
+		if fg.Auth.Token == "" {
+			// The recommended form of the configuration is
+			// `token: "${GITHUB_TOKEN}"`, and the variable is missing in
+			// the unit of the daemon. Every call to the forge would
+			// answer with a 401, and the operator would look at a
+			// configuration that looks right.
+			return "", fmt.Errorf("%s client has an empty token", forgeName)
+		}
 		return fg.Auth.Token, nil
 	}
 	return "", fmt.Errorf("%s client requires token authentication", forgeName)
