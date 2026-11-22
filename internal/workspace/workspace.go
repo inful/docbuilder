@@ -57,11 +57,14 @@ func (m *Manager) Create() error {
 		return nil
 	}
 
-	// Ephemeral mode: create timestamped directory
-	timestamp := time.Now().Format("20060102-150405")
-	tempDir := filepath.Join(m.baseDir, fmt.Sprintf("docbuilder-%s", timestamp))
-
-	if err := os.MkdirAll(tempDir, 0o750); err != nil {
+	// Ephemeral mode: a directory of its own. The name holds the time
+	// so a human can tell when it was made, and a random part so two
+	// builds that start in the same second do not share it: the first
+	// one to finish would delete the workspace of the other while it
+	// clones, and that build would publish a site without pages.
+	pattern := fmt.Sprintf("docbuilder-%s-", time.Now().Format("20060102-150405"))
+	tempDir, err := os.MkdirTemp(m.baseDir, pattern)
+	if err != nil {
 		return fmt.Errorf("failed to create workspace directory: %w", err)
 	}
 
