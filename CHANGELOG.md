@@ -26,6 +26,11 @@ commits; pin to a SHA for reproducibility per the README.
   was ignored and the site stayed stale. A repository configured with
   `paths: ["."]` is rebuilt now, for every change.
 
+- **A marker in a page was quietly removed.** The content pipeline had
+  a transform that looked for an `@glossary` marker, deleted it and
+  generated nothing in its place. A page that used the marker lost it
+  without gaining a glossary. The transform is gone.
+
 ## [0.28.1] - 2026-11-22
 
 ### Fixed

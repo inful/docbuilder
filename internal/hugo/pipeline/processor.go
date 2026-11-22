@@ -215,12 +215,11 @@ func defaultTransforms(cfg *config.Config) []FileTransform {
 		escapeShortcodesInCodeBlocks,      // 7. Escape Hugo shortcodes in code blocks
 		rewriteRelativeLinks(cfg),         // 8. Fix markdown links
 		rewriteImageLinks,                 // 9. Fix image paths
-		generateFromKeywords,              // 10. Create new files based on keywords (e.g., @glossary)
-		addRepositoryMetadata(cfg),        // 11. Add repo/commit/source metadata
-		addEditLink(cfg),                  // 12. Generate edit URL
-		injectPermalink(cfg.Hugo.BaseURL), // 13. Append stable permalink badge
-		serializeDocument,                 // 14. Serialize to final bytes (FM + content)
-		fingerprintContent,                // 15. Add content fingerprint (must be last)
+		addRepositoryMetadata(cfg),        // 10. Add repo/commit/source metadata
+		addEditLink(cfg),                  // 11. Generate edit URL
+		injectPermalink(cfg.Hugo.BaseURL), // 12. Append stable permalink badge
+		serializeDocument,                 // 13. Serialize to final bytes (FM + content)
+		fingerprintContent,                // 14. Add content fingerprint (must be last)
 	}
 }
 
