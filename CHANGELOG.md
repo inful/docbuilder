@@ -9,6 +9,41 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.34.2] - 2026-11-23
+
+### Fixed
+- **The in-memory event store keeps one connection.** A second connection
+  of the pool opened a database of its own, and every statement on it
+  failed with "no such table: events".
+
+- **The password of the NATS URL stays out of the logs.** The URL holds
+  a password in the documentation, and it was logged as it is.
+
+- **The discovery does not empty the number of documents.** The
+  discovery does not know the number, and it wrote a zero over the
+  number the build had written.
+
+- **A broken link of a page without a document does not panic.**
+
+- **A repository that could not be cloned counts as changed.** The build
+  skipped and the site stayed without the pages of that repository.
+
+- **A build that does not publish writes a report that says so.** The
+  next build reads the report to decide whether it may skip, and the
+  site was behind the workspace: only a build that runs publishes it.
+
+- **A link that goes above the root of the repository keeps no "../" in
+  its address.**
+
+- **The name of a versioned repository is a path.** It was built from the
+  display name of the version, which holds spaces and may hold a slash,
+  so two versions could share one name and overwrite each other.
+
+- **The counters of the repositories are raised.** Every repository
+  stayed "pending" on the status page, and the operator could not tell
+  which of them was built.
+
+
 ### Fixed
 - **The findings of the code scanning are gone.** The alerts of the
   CodeQL scan of the repository are addressed: every workflow says what
