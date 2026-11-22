@@ -321,8 +321,10 @@ $RECYCLE.BIN/
 site
 bin/docbuilder
 /*.docbuilder
-daemon-data/*
-daemon-data/repos/daemon-state.json
+# The daemon's runtime state: the state file, the event log and the
+# clones. The daemon writes it in the working directory, and the tests
+# write it inside the package directory.
+**/daemon-data/
 docker-test-output/output
 test-output/
 test-output.log
