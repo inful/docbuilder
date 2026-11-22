@@ -56,15 +56,35 @@ func NewBuildHistoryProjection(store Store, maxHistorySize int) *BuildHistoryPro
 	}
 }
 
-// Rebuild reconstructs the projection from all events in the store.
+// maxRebuildEvents bounds how many events a rebuild replays. The
+// projection keeps the last maxSize builds, so the events of older builds
+// are not needed.
+const maxRebuildEvents = 2000
+
+// Rebuild reconstructs the projection from the stored events.
 // This is typically called at startup.
 func (p *BuildHistoryProjection) Rebuild(ctx context.Context) error {
-	// Get all events from the beginning of time
-	events, err := p.store.GetRange(ctx, time.Time{}, time.Now().Add(time.Hour))
+	// One event more than the limit tells us whether the window cut the
+	// log short.
+	events, err := p.store.GetRecent(ctx, maxRebuildEvents+1)
 	if err != nil {
 		return errors.WrapError(err, errors.CategoryEventStore, "failed to retrieve events for reconstruction").
 			WithCause(ErrProjectionRebuildFailed).
 			Build()
+	}
+
+	// The window can cut a build in half. Its first events alone would
+	// make it look like it is still running, so that build is dropped.
+	if len(events) > maxRebuildEvents {
+		oldestBuild := events[0].BuildID()
+		kept := events[:0]
+		for _, event := range events {
+			if event.BuildID() == oldestBuild {
+				continue
+			}
+			kept = append(kept, event)
+		}
+		events = kept
 	}
 
 	p.mu.Lock()

@@ -650,6 +650,20 @@ func (d *Daemon) schedulePeriodicJobs(ctx context.Context) error {
 	}
 	d.lifecycle.promJobID = promJobID
 
+	// The event log is pruned on a schedule, not after every build: the
+	// delete scans the timestamp index, and a build does not change which
+	// events are old enough to be removed.
+	pruneJobID, err := d.serve.scheduler.ScheduleEvery("daemon-event-prune", time.Hour, func() {
+		if d.GetStatus() != StatusRunning {
+			return
+		}
+		d.pruneEventStore(ctx)
+	})
+	if err != nil {
+		return err
+	}
+	d.lifecycle.pruneJobID = pruneJobID
+
 	return nil
 }
 

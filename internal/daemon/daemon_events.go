@@ -55,8 +55,6 @@ func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, repor
 	// This is critical for skip evaluation to work correctly on subsequent builds.
 	if report != nil && report.Outcome == models.OutcomeSuccess && d.state.stateManager != nil && d.config != nil {
 		d.updateStateAfterBuild(report)
-		// Keep the event log bounded between restarts too.
-		d.pruneEventStore(ctx)
 	}
 
 	// Trigger link verification after successful builds (low priority background task).

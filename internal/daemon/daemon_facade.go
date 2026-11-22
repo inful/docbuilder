@@ -32,6 +32,7 @@ type lifecycleStack struct {
 	syncJobID   string
 	statusJobID string
 	promJobID   string
+	pruneJobID  string
 }
 
 // stateStack owns the daemon's persistence layer: the typed state

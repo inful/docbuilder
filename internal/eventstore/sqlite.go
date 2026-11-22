@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"slices"
 	"sync"
 	"time"
 
@@ -130,6 +131,36 @@ func (s *SQLiteStore) GetRange(ctx context.Context, start, end time.Time) ([]Eve
 	defer func() { _ = rows.Close() }()
 
 	return s.scanEvents(rows)
+}
+
+// GetRecent retrieves the most recent events, oldest first.
+func (s *SQLiteStore) GetRecent(ctx context.Context, limit int) ([]Event, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if limit <= 0 {
+		return nil, nil
+	}
+
+	rows, err := s.db.QueryContext(ctx,
+		"SELECT id, build_id, event_type, timestamp, payload, metadata FROM events ORDER BY id DESC LIMIT ?",
+		limit,
+	)
+	if err != nil {
+		return nil, errors.WrapError(err, errors.CategoryEventStore, "failed to query recent events").
+			WithCause(ErrEventQueryFailed).
+			Build()
+	}
+	defer func() { _ = rows.Close() }()
+
+	events, err := s.scanEvents(rows)
+	if err != nil {
+		return nil, err
+	}
+	// The query returned the newest first; the callers want them in the
+	// order they happened.
+	slices.Reverse(events)
+	return events, nil
 }
 
 func (s *SQLiteStore) scanEvents(rows *sql.Rows) ([]Event, error) {
