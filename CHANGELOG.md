@@ -41,6 +41,11 @@ commits; pin to a SHA for reproducibility per the README.
   the first letter was upper-cased as a byte - which cut a multi-byte
   letter in half and left a broken character in the search results.
 
+- **The search results hold the words of the page, not the markup.**
+  The page was indexed as it was written, so an excerpt showed the
+  reader `**package manager**` and the fences of the code blocks. The
+  index now holds the text of the page.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added

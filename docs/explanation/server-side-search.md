@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2026-11-22T00:00:00Z
-fingerprint: 3e2c17bf5f74087370a6d76ce87e74a8c989b6ede73af064e3493ed49aae7541
+fingerprint: d9864ac511016339f968cd3b5d8a685c63c459a172d292f1c323861fa91a5117
 lastmod: "2026-11-22"
 tags:
   - search
@@ -158,9 +158,9 @@ half a query still finds the pages it can.
 - There is no typo tolerance beyond the prefix of a term.
 - There are no facets: the results cannot be filtered by category or
   repository.
-- The index holds the text of the pages, not their code blocks in
-  their original form. The words of a code block are searchable, but
-  not its punctuation.
+- The index holds the text of the pages, not their markup: a bold word
+  is indexed as a word, a link as its text. The words of a code block
+  are searchable, but not the punctuation around them.
 - A query is at most 256 characters long. A longer one is cut short:
   a search box is for words, not for programs.
 

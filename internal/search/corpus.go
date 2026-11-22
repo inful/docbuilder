@@ -12,6 +12,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
+	"git.home.luguber.info/inful/docbuilder/internal/markdown"
 )
 
 // Collect reads the documents of a built site.
@@ -162,7 +163,9 @@ func documentFor(path, url string) (*Document, bool, error) {
 		Title:      stringField(fields, "title"),
 		Categories: listField(fields, "categories"),
 		Tags:       listField(fields, "tags"),
-		Body:       strings.TrimSpace(string(parsed.Body())),
+		// The text of the page, not the markup around it: the reader
+		// searches for words and reads excerpts.
+		Body: markdown.PlainText(parsed.Body()),
 	}
 	if doc.Title == "" {
 		doc.Title = defaultTitle(url)
