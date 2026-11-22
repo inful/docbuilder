@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -72,8 +73,13 @@ func (a *HTTPErrorAdapter) WriteErrorResponse(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	ctx := r.Context()
-	_ = ctx // Use context for future enhancements (tracing, etc.)
+	// The request may be missing: the monitoring endpoints report an
+	// error of their own without one.
+	//nolint:contextcheck // there is no request to take the context from
+	ctx := context.Background()
+	if r != nil {
+		ctx = r.Context()
+	}
 
 	status := a.StatusCodeFor(err)
 	payload := a.FormatErrorResponse(err)
@@ -93,7 +99,7 @@ func (a *HTTPErrorAdapter) WriteErrorResponse(w http.ResponseWriter, r *http.Req
 	// Structured logging by severity
 	if c, ok := AsClassified(err); ok {
 		lvl := a.slogLevelFromSeverity(c.Severity())
-		a.logger.Log(r.Context(), lvl, c.Error())
+		a.logger.Log(ctx, lvl, c.Error())
 		return
 	}
 	// Unknown error

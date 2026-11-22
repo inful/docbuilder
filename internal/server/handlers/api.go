@@ -124,9 +124,13 @@ func (h *APIHandlers) HandleDaemonConfig(w http.ResponseWriter, r *http.Request)
 // sanitizeConfig creates a sanitized view of the configuration without secrets.
 func (h *APIHandlers) sanitizeConfig(cfg *config.Config) responses.ConfigSummary {
 	// Create sanitized forge summaries
-	forges := make([]responses.ForgeSummary, len(cfg.Forges))
-	for i, forge := range cfg.Forges {
-		forges[i] = responses.ForgeSummary{
+	forges := make([]responses.ForgeSummary, 0, len(cfg.Forges))
+	for _, forge := range cfg.Forges {
+		// An empty entry in the configuration is a nil pointer.
+		if forge == nil {
+			continue
+		}
+		forges = append(forges, responses.ForgeSummary{
 			Name:          forge.Name,
 			Type:          string(forge.Type),
 			BaseURL:       forge.BaseURL,
@@ -134,7 +138,7 @@ func (h *APIHandlers) sanitizeConfig(cfg *config.Config) responses.ConfigSummary
 			Groups:        forge.Groups,
 			AutoDiscover:  forge.AutoDiscover,
 			// Note: Auth details are intentionally omitted for security
-		}
+		})
 	}
 
 	return responses.ConfigSummary{

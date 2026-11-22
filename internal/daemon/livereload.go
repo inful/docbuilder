@@ -53,12 +53,14 @@ func (h *LiveReloadHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.nextID++
 	h.clients[client.id] = client
 	current := h.lastHash
+	// The number of clients is read while the lock is held: reading it
+	// outside the lock is a read of the map while another connection
+	// writes to it, and the runtime stops the whole process for it.
+	clients := len(h.clients)
 	h.mu.Unlock()
 	if h.metrics != nil {
 		h.metrics.IncrementCounter("livereload_connections_total")
-	}
-	if h.metrics != nil {
-		h.metrics.SetGauge("livereload_clients", int64(len(h.clients)))
+		h.metrics.SetGauge("livereload_clients", int64(clients))
 	}
 
 	// Initial comment / optional last hash event
