@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 1e5358025ca565d5da7dd3b413f5af43a44a02085ab4d631154accc8daecb902
-lastmod: "2026-11-21"
+fingerprint: b220da48f0d296ca04a59f297824fbd2335054397a0de2daa9a8f17320234a1b
+lastmod: "2026-11-22"
 tags:
   - architecture
   - packages
@@ -315,19 +315,21 @@ type DiscoveryConfig struct {
 ```
 hugo/
 ├── generator.go           # Main orchestrator
-├── config.go              # hugo.yaml generation
+├── config_writer.go       # hugo.yaml generation
 ├── content_copy.go        # Content processing
-├── index.go               # Index page generation
-├── runner.go              # Hugo binary execution
-├── models/                # Transform pipeline
-│   ├── frontmatter.go
-│   ├── frontmatter_builder.go
-│   ├── editlink.go
-│   └── config_writer.go      # Docsy theme configuration
+├── content_copy_pipeline.go  # Content pipeline wiring
+├── theme.go               # Docsy theme defaults
+├── modules.go             # Hugo Modules and go.mod
+├── models/                # Build report, build state, stage contracts
+│   ├── report.go
+│   ├── build_state.go
+│   ├── stages.go
+│   └── renderer.go
 └── pipeline/                  # Fixed transform pipeline (ADR-003)
-    ├── transforms.go          # All 11 transforms
+    ├── processor.go           # Transform order and execution
+    ├── document.go            # The Document type
     ├── generators.go          # Document generators
-    └── pipeline_test.go       # Pipeline tests
+    └── transform_*.go         # The transforms themselves
 ```
 
 **Key Components:**
@@ -788,7 +790,7 @@ type DirectBuildRequest struct {
 type BuildReport struct {
     Status      BuildStatus
     StartTime   time.Time
-    EndTime     time.Time  
+    EndTime     time.Time
     Stages      []StageReport
     Issues      []BuildIssue
     Summary     string
@@ -813,20 +815,20 @@ func (r *Runner) Run(ctx context.Context) (*BuildReport, error)
 ```go
 for _, stage := range r.stages {
     start := time.Now()
-    
+
     // Emit start event
     r.eventStore.Append(ctx, &Event{
         Type: EventStageStarted,
         Data: stage.Name(),
     })
-    
+
     // Execute stage
     err := stage.Execute(ctx, state)
     duration := time.Since(start)
-    
+
     // Record in state
     state.Pipeline.RecordStage(stage.Name(), duration, err)
-    
+
     // Emit complete event
     r.eventStore.Append(ctx, &Event{
         Type: EventStageCompleted,
@@ -836,7 +838,7 @@ for _, stage := range r.stages {
             Error:    err,
         },
     })
-    
+
     if err != nil {
         return nil, err
     }
@@ -896,7 +898,7 @@ cmd/docbuilder/
 ├── main.go                # CLI entry point
 └── commands/
     ├── build.go           # Build command
-    ├── init.go            # Init command  
+    ├── init.go            # Init command
     ├── discover.go        # Discovery command
     ├── daemon.go          # Daemon command
     ├── preview.go         # Preview command
@@ -910,7 +912,7 @@ cmd/docbuilder/
 ```go
 type CLI struct {
     Verbose bool `short:"v" help:"Verbose logging"`
-    
+
     Build    BuildCmd    `cmd:"" help:"Build documentation site"`
     Init     InitCmd     `cmd:"" help:"Initialize configuration"`
     Discover DiscoverCmd `cmd:"" help:"Discover documentation"`
@@ -978,10 +980,10 @@ func (s *Server) Start(ctx context.Context) error {
     // - Docs server routes (static files, /health, /ready)
     // - Admin server routes (admin API, /metrics)
     // - Webhook server routes (config-driven per-forge paths)
-    
+
     // Apply middleware
     handler := s.applyMiddleware(s.router)
-    
+
     // Start server
     return http.ListenAndServe(":8080", handler)
 }

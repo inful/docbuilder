@@ -29,6 +29,20 @@ func TestUnmarshalStrict_RejectsUnknownNestedKey(t *testing.T) {
 	}
 }
 
+// The transform pipeline is fixed (ADR-003), so there is no
+// hugo.transforms key. It used to be accepted and silently ignored;
+// now it has to be rejected so the user learns it does nothing.
+func TestUnmarshalStrict_RejectsTransformsKey(t *testing.T) {
+	raw := "version: \"2.0\"\nhugo:\n  transforms:\n    disable:\n      - some_transform\n"
+	_, err := unmarshalStrict([]byte(raw))
+	if err == nil {
+		t.Fatal("expected an error for the unknown hugo.transforms key")
+	}
+	if !strings.Contains(err.Error(), "transforms") {
+		t.Errorf("error should name the offending key, got: %v", err)
+	}
+}
+
 func TestUnmarshalStrict_AcceptsKnownKeys(t *testing.T) {
 	raw := "version: \"2.0\"\nhugo:\n  title: T\n  base_url: https://example.com\n" +
 		"repositories:\n  - url: https://example.com/a.git\n    name: a\n"

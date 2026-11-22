@@ -4,7 +4,7 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: 9e3aaf219376baf28419a7f7f17038b104a9043faf100fb13ae1dec5da1df2cf
+fingerprint: 66a601ae8cd3754e8088688f413a7cbf5f1d17297ea43a7c2ac9aa9716a61036
 lastmod: "2026-11-22"
 tags:
   - ui
