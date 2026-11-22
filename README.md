@@ -112,6 +112,10 @@ Use the official Docker image:
 docker pull ghcr.io/inful/docbuilder:latest
 ```
 
+The image carries the Go toolchain. Hugo imports the theme as a module
+and downloads it at render time, so Go has to be in the image; it is
+the largest part of it.
+
 ### Build from Source
 
 For development or if pre-built binaries aren't available for your platform:
