@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 5c81e5d71a22d30c6ed010b78c25bdbf75ac2ffec20915755be2cb79e10826ea
-lastmod: "2026-11-21"
+fingerprint: a7f802f9ad738bd9f6f137c1b175473f3b1f2c3e8332eda924c9284173331a3c
+lastmod: "2026-11-22"
 tags:
   - architecture
   - design
@@ -128,11 +128,10 @@ DocBuilder can run as a long-running HTTP service for incremental builds and con
 - **State Persistence**: Tracks repository state across restarts (`daemon-state.json`)
 - **Event Stream**: Real-time build progress notifications
 
-**Delta Detection Strategy** (`internal/daemon/delta_manager.go`):
-1. Compare current repository commit hashes with last known state
-2. Classify changes: `quick_hash_diff`, `assumed_changed`, `unknown`
-3. Decide build strategy: `full_rebuild`, `incremental`, or `skip`
-4. Update state file after successful build
+**Change Detection** (`internal/build/validation`):
+1. Compare the discovered content paths (`doc_files_hash`) and the configuration snapshot (`config_hash`) against the persisted state
+2. Compare each repository's current commit against the commit recorded in the state file
+3. Skip the build when nothing changed, and record the per-repository commit in the state file
 
 **Scheduler** (`internal/daemon/scheduler.go`):
 - Periodic rebuild scheduling (cron-like intervals)
@@ -157,7 +156,7 @@ DocBuilder can run as a long-running HTTP service for incremental builds and con
 ## Extensibility Points
 
 - **Add new transform**: Create function in `internal/hugo/pipeline/transforms.go` and add to `defaultTransforms()` list
-- **Add new generator**: Create function in `internal/hugo/pipeline/generators.go` and add to `defaultGenerators()` list  
+- **Add new generator**: Create function in `internal/hugo/pipeline/generators.go` and add to `defaultGenerators()` list
 - **Theme customization**: Docsy is hardcoded; customize via `params` in config or override templates in `layouts/` (see [use-docsy-theme.md](../how-to/use-docsy-theme.md))
 - **Additional issue codes**: Augment taxonomy without breaking consumers
 - **Future caching**: Leverage `doc_files_hash` for selective downstream regeneration
@@ -166,4 +165,4 @@ DocBuilder can run as a long-running HTTP service for incremental builds and con
 ## Non-Goals
 
 - Rendering arbitrary SSGs other than Hugo.
-- Full-text search indexing logic (delegated to Hugo theme or external indexing). 
+- Full-text search indexing logic (delegated to Hugo theme or external indexing).

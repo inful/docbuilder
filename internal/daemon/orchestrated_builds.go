@@ -64,16 +64,6 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 		RepoSnapshot:  evt.Snapshot,
 		LiveReloadHub: d.optional.liveReload,
 	}
-	if evt.LastRepoURL != "" && evt.LastReason != "" {
-		reason := evt.LastReason
-		if evt.LastBranch != "" {
-			reason = fmt.Sprintf("%s:%s", evt.LastReason, evt.LastBranch)
-		}
-		meta.DeltaRepoReasons = map[string]string{
-			evt.LastRepoURL: fmt.Sprintf("%s (%s)", reason, evt.DebounceCause),
-		}
-	}
-
 	jobType := queue.BuildTypeManual
 	switch evt.LastReason {
 	case "webhook":
