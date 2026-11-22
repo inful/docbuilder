@@ -709,7 +709,13 @@ func handleCreateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	out := map[string]any{"path": abs, "wrote": true}
 	if lintAfter {
 		//nolint:contextcheck // lint fixer uses context.Background() internally; fix is local
-		out["lint_result"] = runLintFixOn(abs)
+		result := runLintFixOn(abs)
+		out["lint_result"] = result
+		// The fixer may have renamed the file: the path the caller holds
+		// is the old one, and the file is at the new one.
+		if newPath, ok := result["path"].(string); ok {
+			out["path"] = newPath
+		}
 	}
 	b, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
@@ -790,7 +796,13 @@ func handleUpdateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	out := map[string]any{"path": abs, "wrote": true, "merge_strategy": strategy}
 	if req.GetBool("lint_after", false) {
 		//nolint:contextcheck // lint fixer uses context.Background() internally; fix is local
-		out["lint_result"] = runLintFixOn(abs)
+		result := runLintFixOn(abs)
+		out["lint_result"] = result
+		// The fixer may have renamed the file: the path the caller holds
+		// is the old one, and the file is at the new one.
+		if newPath, ok := result["path"].(string); ok {
+			out["path"] = newPath
+		}
 	}
 	b, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
@@ -887,13 +899,20 @@ func runLintFixOn(path string) map[string]any {
 	if err != nil {
 		return map[string]any{"error": err.Error()}
 	}
-	return map[string]any{
+	out := map[string]any{
 		"renames":       len(res.FilesRenamed),
 		"links_updated": len(res.LinksUpdated),
 		"fingerprints":  len(res.Fingerprints),
 		"has_errors":    res.HasErrors(),
 		"summary":       res.Summary(),
 	}
+	// The fixer renames a file whose name does not follow the
+	// conventions. The path the caller holds is the old one, and the
+	// file is at the new one.
+	if len(res.FilesRenamed) > 0 && res.FilesRenamed[0].Success {
+		out["path"] = res.FilesRenamed[0].NewPath
+	}
+	return out
 }
 
 // lintExcludes extracts the lint exclude patterns from a server config,
