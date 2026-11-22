@@ -9,6 +9,51 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-11-22
+
+The search of the site now runs on the server.
+
+### Added
+- **A server-side search.** The daemon keeps an index of the rendered
+  pages and answers the queries at `/api/search`. The index never
+  reaches the visitor: the browser asks for the results and receives
+  them.
+
+  The index is a SQLite FTS5 table, so the search costs no new
+  dependency - SQLite was already part of the binary. The ranking is
+  BM25, a hit in the title counts more than a hit in the body, the
+  words are stemmed and the last word of a query may be a prefix.
+
+  The index is built after every build, from the transformed markdown
+  of that build, and it lives in the daemon's state directory, so it
+  survives a restart.
+
+### Fixed
+- **The search index was more than half taxonomy pages.** The index the
+  theme built held an entry for every tag and every category, and each
+  of those entries repeats the text of every page that carries the
+  tag. A site with many tags was mostly a list of tag pages, and they
+  competed with the real documents in every search.
+
+  The taxonomy pages are not part of the content tree and are not
+  indexed now. A search for a word that appears in a tag name returns
+  the pages with that tag, not the page that lists them.
+
+- **Every visitor downloaded the text of the whole site.** The theme
+  wrote the full text of every page into a JSON file that every page
+  view fetched, parsed and indexed in the browser. The file is megabytes
+  on a site of a few hundred pages, and it grows with every page. It
+  stays empty now: the browser asks the server instead.
+
+### Configuration
+- **`search.provider`** decides where the search runs: `server` (the
+  daemon's own index) or `lunr` (the browser-side index the theme
+  ships). The default follows the deployment: a daemon serves the site
+  and answers the queries, a site that is built as a static tree has no
+  server to ask and searches in the browser.
+- **`search.max_results`** is how many results a search returns. The
+  default is 10.
+
 ## [0.28.6] - 2026-11-22
 
 More findings from the fifth audit of the whole repository.
