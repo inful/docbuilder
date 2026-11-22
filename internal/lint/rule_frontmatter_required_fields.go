@@ -133,11 +133,19 @@ func dateStringValue(v any) (string, bool) {
 }
 
 // lastmodStringValue coerces a YAML-parsed lastmod value to a string.
+//
+// A date without a time is read by the YAML parser as a time, so
+// "lastmod: 2026-01-01" arrives here as a time and not as a string.
+// The rule asks for the day, so the time is cut off.
 func lastmodStringValue(v any) (string, bool) {
-	if s, ok := v.(string); ok {
-		return s, true
+	switch value := v.(type) {
+	case string:
+		return value, true
+	case time.Time:
+		return value.Format(lastmodLayout), true
+	default:
+		return "", false
 	}
-	return "", false
 }
 
 func (r *FrontmatterRequiredFieldsRule) missingIssue(filePath, field string) Issue {
