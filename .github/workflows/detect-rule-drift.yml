@@ -25,6 +25,9 @@ on:
 jobs:
   detect-rule-drift:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write  # Required for PR comments
 
     steps:
       - name: Checkout code

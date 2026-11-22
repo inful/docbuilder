@@ -9,6 +9,14 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Fixed
+- **The findings of the code scanning are gone.** The alerts of the
+  CodeQL scan of the repository are addressed: every workflow says what
+  the token of GitHub may do, the link checker knows the schemes a
+  browser runs as code, the webhook handler keeps the headers of a
+  request out of the log, and the walk for the nearest page stays under
+  the root of the documentation.
+
 ## [0.34.1] - 2026-11-23
 
 ### Fixed
