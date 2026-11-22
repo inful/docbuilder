@@ -298,6 +298,15 @@ func (s *Server) findNearestValidParent(root, urlPath string) string {
 	// Clean the path
 	urlPath = filepath.Clean(urlPath)
 
+	// The URL path is the only user input here, so every candidate is
+	// resolved under the docs root and has to stay there before it
+	// reaches the filesystem. The edit handler resolves its paths the
+	// same way.
+	rootPrefix := filepath.Clean(root)
+	if !strings.HasSuffix(rootPrefix, string(filepath.Separator)) {
+		rootPrefix += string(filepath.Separator)
+	}
+
 	// Try parent paths, working upward
 	for urlPath != "/" && urlPath != "." {
 		urlPath = filepath.Dir(urlPath)
@@ -305,12 +314,13 @@ func (s *Server) findNearestValidParent(root, urlPath string) string {
 			urlPath = "/"
 		}
 
-		// Check if this path exists as index.html. testPath is built from
-		// filepath.Clean(urlPath) above, so ".." components have already
-		// been collapsed — the read-only os.Stat can't escape the
-		// configured docs root.
+		// Check if this path exists as index.html.
 		testPath := filepath.Join(root, urlPath, "index.html")
-		//nolint:gosec // the path is cleaned and stays under the docs root
+		cleanPath := filepath.Clean(testPath)
+		if !strings.HasPrefix(cleanPath, rootPrefix) {
+			return "/"
+		}
+		//nolint:gosec // the path is resolved under the docs root and stays there
 		if _, err := os.Stat(testPath); err == nil {
 			// Ensure path ends with / for directory-style URLs
 			if !strings.HasSuffix(urlPath, "/") {
@@ -319,10 +329,14 @@ func (s *Server) findNearestValidParent(root, urlPath string) string {
 			return urlPath
 		}
 
-		// Also check direct file. Same justification as above.
+		// Also check direct file.
 		if urlPath != "/" {
 			testPath = filepath.Join(root, urlPath)
-			//nolint:gosec // the path is cleaned and stays under the docs root
+			cleanPath = filepath.Clean(testPath)
+			if !strings.HasPrefix(cleanPath, rootPrefix) {
+				return "/"
+			}
+			//nolint:gosec // the path is resolved under the docs root and stays there
 			if stat, err := os.Stat(testPath); err == nil && !stat.IsDir() {
 				return urlPath
 			}

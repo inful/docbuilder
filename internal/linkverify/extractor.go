@@ -168,6 +168,8 @@ func isInternalLink(linkURL string, baseURL *url.URL) bool {
 	if strings.HasPrefix(linkURL, "mailto:") ||
 		strings.HasPrefix(linkURL, "tel:") ||
 		strings.HasPrefix(linkURL, "javascript:") ||
+		strings.HasPrefix(linkURL, "data:") ||
+		strings.HasPrefix(linkURL, "vbscript:") ||
 		strings.HasPrefix(linkURL, "#") {
 		return true // These are not external links
 	}
@@ -216,7 +218,8 @@ func ShouldVerifyLink(link *Link) bool {
 	if strings.HasPrefix(link.URL, "mailto:") ||
 		strings.HasPrefix(link.URL, "tel:") ||
 		strings.HasPrefix(link.URL, "javascript:") ||
-		strings.HasPrefix(link.URL, "data:") {
+		strings.HasPrefix(link.URL, "data:") ||
+		strings.HasPrefix(link.URL, "vbscript:") {
 		return false
 	}
 

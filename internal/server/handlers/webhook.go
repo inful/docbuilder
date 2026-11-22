@@ -119,10 +119,13 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 	if client, ok := h.forgeClients[forgeName]; ok && client != nil {
 		event, err = client.ParseWebhookEvent(body, eventType)
 		if err != nil {
+			// The event type comes from a request header, and the parse
+			// error carries it in its context, so the log keeps the
+			// message only: a header holds whatever the sender wants,
+			// newlines included.
 			slog.Warn("Failed to parse webhook event",
 				"forge", forgeName,
-				"event", eventType,
-				"error", err)
+				"error", err.Error())
 			// Continue even if parsing fails - acknowledge receipt
 		}
 	}
