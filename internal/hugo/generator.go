@@ -485,6 +485,15 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		}
 		return report, nil
 	}
+	// A repository that could not be cloned would take its pages out of
+	// the site. The site of the last build still has them, so it stays
+	// published and the build fails: the daemon retries, and the
+	// operator sees why.
+	if report.FailedRepositories > 0 && g.outputHasPublicIndex() {
+		g.abortStaging()
+		return report, fmt.Errorf("%d of %d repositories could not be cloned; the site was not published",
+			report.FailedRepositories, report.Repositories+report.FailedRepositories)
+	}
 	// Stage durations already written directly to report.
 	report.DeriveOutcome()
 	report.Finish()

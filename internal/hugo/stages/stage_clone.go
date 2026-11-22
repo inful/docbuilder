@@ -105,7 +105,10 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 		slog.Info("No repository head changes detected", slog.Int("repos", len(bs.Git.PostHeads)))
 	}
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
-		return models.NewWarnStageError(models.StageCloneRepos, fmt.Errorf("%w: all clones failed", models.ErrClone))
+		// Not one repository could be cloned. The build must stop here:
+		// the site that would be built holds nothing, and publishing it
+		// would take the documentation of the portal offline.
+		return models.NewFatalStageError(models.StageCloneRepos, fmt.Errorf("%w: all clones failed", models.ErrClone))
 	}
 	if bs.Report.FailedRepositories > 0 {
 		return models.NewWarnStageError(models.StageCloneRepos, fmt.Errorf("%w: %d failed out of %d", models.ErrClone, bs.Report.FailedRepositories, len(bs.Git.Repositories)))

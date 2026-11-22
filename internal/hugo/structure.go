@@ -55,6 +55,15 @@ func (g *Generator) beginStaging() error {
 	slog.Info("Creating staging directory for atomic build",
 		slog.String("staging", stage),
 		slog.String("output", g.outputDir))
+	// The staging directory is emptied first. It is left over by a build
+	// that was killed or that failed, and a page that is still in it
+	// would be published again.
+	if err := os.RemoveAll(stage); err != nil {
+		slog.Error("Failed to clear the staging directory",
+			slog.String("path", stage),
+			slog.String("error", err.Error()))
+		return err
+	}
 	if err := os.MkdirAll(stage, 0o750); err != nil {
 		slog.Error("Failed to create staging directory",
 			slog.String("path", stage),
