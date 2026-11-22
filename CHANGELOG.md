@@ -32,6 +32,10 @@ commits; pin to a SHA for reproducibility per the README.
   chooses the server; a plain build, which produces a static tree,
   chooses the browser-side index the theme ships.
 
+- **The daemon now releases the search index when it stops.** The index
+  kept its file handle on the state directory, and its write-ahead log
+  was only folded back into the index when the last connection went.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added
