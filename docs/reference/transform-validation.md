@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: b3d843e5a7db062fe6abd245bdcb579918ef0644d79e3a0eb02deb9d6fde2926
-lastmod: "2026-11-19"
+fingerprint: 74ec55cf898acf3a34bf075f978279acf85b6c3db5cf51bcce68fe625d3e3066
+lastmod: "2026-11-22"
 tags:
   - validation
   - transforms
@@ -16,9 +16,12 @@ uid: 17f711ab-2410-4ae1-96f1-384ebacc19ac
 ---
 
 > **⚠️ DEPRECATED:** This document describes validation for the old registry-based transform system that was removed on December 16, 2025.
-> 
+>
 > The new fixed transform pipeline uses explicit ordering and does not require dependency validation.
 > See [ADR-003: Fixed Transform Pipeline](../adr/ADR-003-fixed-transform-pipeline.md) for current architecture.
+>
+> The package `internal/hugo/transforms/` and its tests were deleted with
+> the registry, so the test command in this page no longer applies.
 
 ---
 
@@ -201,7 +204,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
     if err := g.ValidateTransformPipeline(); err != nil {
         return fmt.Errorf("%w: %w", herrors.ErrContentTransformFailed, err)
     }
-    
+
     // Build and execute transforms...
 }
 ```

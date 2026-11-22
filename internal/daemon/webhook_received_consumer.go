@@ -485,13 +485,28 @@ func hasDocsRelevantChange(changedFiles []string, docsPaths []string) bool {
 		return p
 	}
 
+	// A docs path of "." (or "/") means the whole repository is
+	// documentation, so every changed file is a docs change.
+	isRootPath := func(p string) bool {
+		p = strings.TrimSpace(p)
+		return p == "." || p == "/" || p == "./" || p == "/."
+	}
+
 	nDocs := make([]string, 0, len(docsPaths))
+	rootDocs := false
 	for _, dp := range docsPaths {
+		if isRootPath(dp) {
+			rootDocs = true
+			continue
+		}
 		dp = normalize(dp)
 		if dp == "" {
 			continue
 		}
 		nDocs = append(nDocs, dp)
+	}
+	if rootDocs {
+		return true
 	}
 	if len(nDocs) == 0 {
 		nDocs = []string{"docs"}

@@ -31,10 +31,8 @@ A Go utility for creating documentation sites from multiple Git repositories usi
 - **Incremental builds**: Cache-aware execution skips unchanged repositories for faster CI pipelines
 - Conditional forge-level namespacing: when multiple distinct forge types are present (via `tags.forge_type`), content paths become `content/<forge>/<repository>/...`; single-forge builds keep `content/<repository>/...`.
 - Stable documentation set fingerprint: `BuildReport.DocFilesHash` (SHA-256 of sorted Hugo paths) now computed for both full (discovery) and direct generation paths. Persisted globally plus per‑repository (single‑repo builds share the same value) enabling fast incremental skip decisions across daemon restarts.
-- Incremental delta analysis: partial rebuilds when only a subset of repositories change (quick on-disk doc tree hashing heuristic).
 - Optional unchanged repository deletion detection (`build.detect_deletions`, default true) keeps global docs hash accurate after file removals in skipped repos.
-- Per‑repository delta reasons in `build-report.json` (`delta_repo_reasons`) for observability (`unknown`, `quick_hash_diff`, `assumed_changed`).
-- Metrics counters: `builds_partial`, `builds_full`, `doc_deletions_detected` exposed via metrics endpoints to tune incremental behavior.
+- Metrics: `docbuilder_daemon_builds_total`, `docbuilder_daemon_builds_failed_total`, `docbuilder_daemon_active_jobs` and `docbuilder_daemon_queue_length` are exposed by the Prometheus endpoint.
 
 ## Recommended Filesystem Layouts
 
@@ -57,10 +55,12 @@ The build process consists of sequential stages, each with a specific responsibi
 2. **CloneRepos** - Clone/update Git repositories with authentication
 3. **DiscoverDocs** - Find markdown files in configured documentation paths
 4. **GenerateConfig** - Create Hugo configuration with Docsy theme defaults
-5. **Layouts** - Copy layout templates
-6. **CopyContent** - Process and copy markdown files with transforms
-7. **Indexes** - Generate repository and section index pages
-8. **RunHugo** - Execute Hugo to render the final static site
+5. **CopyContent** - Process and copy markdown files with transforms
+6. **RunHugo** - Execute Hugo to render the final static site
+7. **PostProcess** - Publish the rendered site
+
+The direct path - the documentation is already known - skips the clone
+and the discovery stages.
 
 ### State Management
 
@@ -111,6 +111,10 @@ Use the official Docker image:
 ```bash
 docker pull ghcr.io/inful/docbuilder:latest
 ```
+
+The image carries the Go toolchain. Hugo imports the theme as a module
+and downloads it at render time, so Go has to be in the image; it is
+the largest part of it.
 
 ### Build from Source
 

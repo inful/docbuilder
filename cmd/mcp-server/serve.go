@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"os"
 
@@ -36,5 +35,5 @@ func (s *ServeCmd) Run() error {
 		Version:    version.Version,
 		Logger:     logger,
 	}
-	return run(context.Background(), cfg)
+	return run(cfg)
 }

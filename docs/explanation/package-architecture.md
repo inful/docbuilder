@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 6dd16e8590c6e25014b8622c5521fb98a4ae063683c6891bc3e99f4ac25d7acb
+fingerprint: f4b09c2d43ca95c4683c36739ef1640bb55aa71df75ff3e22906dfd4f8891fc0
 lastmod: "2026-11-22"
 tags:
   - architecture
@@ -761,7 +761,7 @@ build/
 
 ```
 PrepareOutput → CloneRepos → DiscoverDocs → GenerateConfig →
-Layouts → CopyContent → Indexes → RunHugo (optional)
+CopyContent → RunHugo (optional) → PostProcess
 ```
 
 **Key Interfaces:**

@@ -21,7 +21,6 @@ const (
 	StageDiscoverDocs   StageName = "discover_docs"
 	StageGenerateConfig StageName = "generate_config"
 	StageCopyContent    StageName = "copy_content"
-	StageIndexes        StageName = "indexes"
 	StageRunHugo        StageName = "run_hugo"
 	StagePostProcess    StageName = "post_process"
 )
@@ -72,7 +71,7 @@ func (e *StageError) Transient() bool {
 		if isSentinel(ErrDiscovery) {
 			return e.Kind == StageErrorWarning
 		}
-	case StagePrepareOutput, StageGenerateConfig, StageCopyContent, StageIndexes, StagePostProcess:
+	case StagePrepareOutput, StageGenerateConfig, StageCopyContent, StagePostProcess:
 		return false
 	}
 	return false

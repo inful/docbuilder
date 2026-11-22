@@ -12,6 +12,79 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 )
 
+// A repository whose docs live at its root is configured with the path
+// ".". Every file in it is then a docs change, so a push must rebuild.
+func TestHasDocsRelevantChange(t *testing.T) {
+	tests := []struct {
+		name         string
+		changedFiles []string
+		docsPaths    []string
+		want         bool
+	}{
+		{
+			name:         "root path matches any file",
+			changedFiles: []string{"README.md"},
+			docsPaths:    []string{"."},
+			want:         true,
+		},
+		{
+			name:         "root path matches a file in a subdirectory",
+			changedFiles: []string{"guide/intro.md"},
+			docsPaths:    []string{"."},
+			want:         true,
+		},
+		{
+			name:         "root path matches the docignore",
+			changedFiles: []string{".docignore"},
+			docsPaths:    []string{"."},
+			want:         true,
+		},
+		{
+			name:         "docs path matches a file below it",
+			changedFiles: []string{"docs/README.md"},
+			docsPaths:    []string{"docs"},
+			want:         true,
+		},
+		{
+			name:         "a file outside the docs path is not a docs change",
+			changedFiles: []string{"src/config.yaml"},
+			docsPaths:    []string{"docs"},
+			want:         false,
+		},
+		{
+			name:         "a sibling directory is not a docs change",
+			changedFiles: []string{"docsy/README.md"},
+			docsPaths:    []string{"docs"},
+			want:         false,
+		},
+		{
+			name:         "no docs paths fall back to docs",
+			changedFiles: []string{"docs/README.md"},
+			docsPaths:    nil,
+			want:         true,
+		},
+		{
+			name:         "no docs paths and no docs change",
+			changedFiles: []string{"src/main.go"},
+			docsPaths:    nil,
+			want:         false,
+		},
+		{
+			name:         "no changed files means the change may matter",
+			changedFiles: nil,
+			docsPaths:    []string{"docs"},
+			want:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := hasDocsRelevantChange(tt.changedFiles, tt.docsPaths)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestDaemon_TriggerWebhookBuild_IgnoresIrrelevantPushChanges(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()

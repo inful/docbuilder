@@ -45,9 +45,9 @@ type ctxKey int
 const stateKey ctxKey = 1
 
 // run is the binary's entry point: load config, register tools/resources,
-// and serve over stdio until the host closes the connection or a signal arrives.
-func run(ctx context.Context, cfg serverConfig) error {
-	_ = ctx // reserved for future cancellation hooks
+// and serve over stdio until the host closes the connection or a signal
+// arrives.
+func run(cfg serverConfig) error {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.New(slog.DiscardHandler)
 	}

@@ -114,7 +114,12 @@ COPY --from=binary --chown=nonroot:nonroot /out/docbuilder /usr/local/bin/docbui
 COPY --from=downloader --chown=nonroot:nonroot /usr/local/bin/hugo /usr/local/bin/hugo
 COPY --from=downloader /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
-# Copy Go runtime (required for Hugo modules)
+# Copy the Go runtime.
+#
+# Hugo imports the theme as a module and shells out to Go to resolve and
+# download it - at render time, in this container. Go is therefore part
+# of the runtime and not a build-time tool. It is the largest thing in
+# the image, and the price of a theme that can be a module.
 COPY --from=downloader --chown=nonroot:nonroot /usr/local/go /usr/local/go
 
 # The work directory belongs to the user that runs the daemon. It is

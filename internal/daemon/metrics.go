@@ -70,7 +70,6 @@ type SystemMetricsSnapshot struct {
 	GCRuns      uint32  `json:"gc_runs"`
 	NextGCMB    float64 `json:"next_gc_mb"`
 	LastGCPause float64 `json:"last_gc_pause_ms"`
-	CPUUsage    float64 `json:"cpu_usage_percent"`
 }
 
 // NewMetricsCollector creates a new metrics collector.
@@ -206,7 +205,6 @@ func (mc *MetricsCollector) getSystemMetrics() SystemMetricsSnapshot {
 		GCRuns:      memStats.NumGC,
 		NextGCMB:    float64(memStats.NextGC) / 1024 / 1024,
 		LastGCPause: float64(memStats.PauseNs[(memStats.NumGC+255)%256]) / 1e6, // Convert to milliseconds
-		CPUUsage:    0.0,                                                       // TODO: Implement CPU usage tracking
 	}
 }
 

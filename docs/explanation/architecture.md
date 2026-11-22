@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 07ba7f0c0c42282a800481dabfbd3188f72652fda571ed9685955ad18b987e50
+fingerprint: e6bff1e77d8cdebf3231136a947e0bc2740d0d6df10eea20b83b1d8246316525
 lastmod: "2026-11-22"
 tags:
   - architecture
@@ -51,10 +51,7 @@ Forge namespacing (conditional `content/<forge>/<repo>/...`) prevents collisions
 ## Idempotence & Change Detection
 
 - Repository update strategy (`clone_strategy`) avoids unnecessary reclones.
-- **Delta Detection**: QuickHash comparison tracks repository changes between builds
-  - `quick_hash_diff`: Git commit hash changed (most common)
-  - `assumed_changed`: Unable to verify, assumes changed for safety
-  - `unknown`: Change detection failed or unavailable
+- **Change detection**: the repository heads and the set of documented files are compared between builds.
 - Combined check: unchanged repo heads + identical doc file set ⇒ logged and optionally triggers early exit (when output already valid).
 - **Skip Evaluation**: Daemon mode intelligently decides between `full_rebuild`, `incremental`, or `skip`
 - `doc_files_hash` (SHA-256 of sorted content paths) offers external determinism for CI/CD.

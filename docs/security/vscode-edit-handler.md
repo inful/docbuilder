@@ -4,8 +4,8 @@ aliases:
 categories:
   - security
 date: 2026-01-01T00:00:00Z
-fingerprint: bc14125cc26e7fb3e27c6c3d29616d48b3ee770becd25fbe0d65fb1962337d8b
-lastmod: "2026-11-19"
+fingerprint: b6999589ed25e9d8340f43920e5c6832ab5ec8648fd76c79e0eb72e3840583cf
+lastmod: "2026-11-22"
 tags: []
 title: VS Code Edit Handler Security
 uid: 2fc65921-3513-436e-aa99-8cb4202560cb
@@ -21,7 +21,7 @@ The VS Code edit handler (`/_edit/` endpoint) allows opening documentation files
 
 **Potential Attackers:**
 - Malicious HTTP requests from unauthorized users
-- Path traversal attacks to access files outside docs directory  
+- Path traversal attacks to access files outside docs directory\
 - Command injection via file paths or IPC socket paths
 - Symlink attacks to access sensitive system files
 - Environment variable injection via socket paths
@@ -39,8 +39,8 @@ if !s.config.Build.VSCodeEditLinks {
     return http.StatusNotFound
 }
 ```
-**Control:** Feature disabled by default, requires explicit `--vscode` flag  
-**Threat Mitigated:** Unauthorized access  
+**Control:** Feature disabled by default, requires explicit `--vscode` flag\
+**Threat Mitigated:** Unauthorized access\
 **OWASP:** A01:2021 Broken Access Control
 
 ### 2. Mode Restriction
@@ -49,8 +49,8 @@ if s.config.Daemon != nil && s.config.Daemon.Storage.RepoCacheDir != "" {
     return http.StatusNotImplemented
 }
 ```
-**Control:** Only works in preview mode (single local repository)  
-**Threat Mitigated:** Multi-repository security boundary violations  
+**Control:** Only works in preview mode (single local repository)\
+**Threat Mitigated:** Multi-repository security boundary violations\
 **OWASP:** A01:2021 Broken Access Control
 
 ### 3. Path Traversal Protection
@@ -61,8 +61,8 @@ if !strings.HasPrefix(cleanPath, cleanDocs) {
     return errors.New("Invalid file path")
 }
 ```
-**Control:** Validates resolved paths stay within docs directory  
-**Threat Mitigated:** Path traversal (../../../etc/passwd)  
+**Control:** Validates resolved paths stay within docs directory\
+**Threat Mitigated:** Path traversal (../../../etc/passwd)\
 **OWASP:** A01:2021 Broken Access Control
 
 **Additional Hardening:**
@@ -77,9 +77,9 @@ if fileInfo.Mode()&os.ModeSymlink != 0 {
     return errors.New("Symlinks are not allowed")
 }
 ```
-**Control:** Rejects all symlinks  
-**Threat Mitigated:** Symlink attacks to escape docs directory  
-**OWASP:** A01:2021 Broken Access Control  
+**Control:** Rejects all symlinks\
+**Threat Mitigated:** Symlink attacks to escape docs directory\
+**OWASP:** A01:2021 Broken Access Control\
 **CVE Examples:** CVE-2022-24765 (Git symlink traversal)
 
 ### 5. File Type Restriction
@@ -89,8 +89,8 @@ if ext != ".md" && ext != ".markdown" {
     return errors.New("Only markdown files can be edited")
 }
 ```
-**Control:** Only markdown files allowed  
-**Threat Mitigated:** Opening sensitive non-documentation files  
+**Control:** Only markdown files allowed\
+**Threat Mitigated:** Opening sensitive non-documentation files\
 **OWASP:** A01:2021 Broken Access Control
 
 ### 6. Command Injection Prevention
@@ -98,9 +98,9 @@ if ext != ".md" && ext != ".markdown" {
 // Direct exec without shell
 cmd := exec.CommandContext(ctx, codeCmd, "--reuse-window", "--goto", absPath)
 ```
-**Control:** No shell invocation (`bash -c`), direct exec only  
-**Threat Mitigated:** Shell injection attacks  
-**OWASP:** A03:2021 Injection  
+**Control:** No shell invocation (`bash -c`), direct exec only\
+**Threat Mitigated:** Shell injection attacks\
+**OWASP:** A03:2021 Injection\
 **CWE:** CWE-78 (OS Command Injection)
 
 **Previous vulnerable pattern:**
@@ -126,7 +126,7 @@ func validateIPCSocketPath(socketPath string) error {
     if !strings.HasSuffix(socketPath, ".sock") { ... }
 }
 ```
-**Control:** Multi-layered socket path validation  
+**Control:** Multi-layered socket path validation\
 **Threats Mitigated:**
 - Environment variable injection via newlines
 - Malicious socket paths
@@ -137,8 +137,8 @@ func validateIPCSocketPath(socketPath string) error {
 ctx, cancel := context.WithTimeout(parentCtx, 5*time.Second)
 defer cancel()
 ```
-**Control:** 5 second timeout on command execution  
-**Threat Mitigated:** Resource exhaustion, hanging processes  
+**Control:** 5 second timeout on command execution\
+**Threat Mitigated:** Resource exhaustion, hanging processes\
 **OWASP:** A05:2021 Security Misconfiguration
 
 ### 9. Validated Executable Paths
@@ -149,9 +149,19 @@ vscodePaths := []string{
     "/usr/bin/code",
 }
 ```
-**Control:** Code CLI path from trusted locations only  
-**Threat Mitigated:** Malicious executable substitution  
+**Control:** Code CLI path from trusted locations only\
+**Threat Mitigated:** Malicious executable substitution\
 **OWASP:** A08:2021 Software and Data Integrity Failures
+
+### 10. Local Request Only
+```go
+if !isLoopbackRequest(r) {
+    return http.StatusForbidden
+}
+```
+**Control:** The endpoint answers only requests that come from the machine that runs the preview server. The peer address is read from the connection, not from a header, because a header can be set by whoever sends the request.
+**Threat Mitigated:** Remote trigger of a command on the developer's machine (the docs port is reachable from the network)
+**OWASP:** A01:2021 Broken Access Control
 
 ## Security Testing
 
@@ -162,6 +172,7 @@ vscodePaths := []string{
 - ✅ IPC socket validation (injection attempts)
 - ✅ File type restrictions
 - ✅ Invalid paths and edge cases
+- ✅ Requests from another host are refused
 
 ### Penetration Testing Scenarios
 

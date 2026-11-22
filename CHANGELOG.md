@@ -9,6 +9,63 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.28.2] - 2026-11-22
+
+A second audit of the whole repository. Two of the findings were real
+bugs, the rest were documentation that had drifted, code that did
+nothing and logic that no test covered.
+
+### Security
+- **The edit endpoint answered requests that came from the network.**
+  The preview server keeps the documentation port open so a developer
+  can look at the site from another machine, and the endpoint that
+  opens a file in the editor was on that port. Opening a file runs a
+  command on the machine, so anyone who could reach the port could make
+  the editor open a file. The endpoint now answers only requests that
+  come from the machine itself.
+
+- **The CI actions were pinned to tags.** A tag can be moved, so the
+  code that runs in CI - with the repository's token - was not
+  necessarily the code that was reviewed. Every action is pinned to the
+  commit its tag names now, with the tag kept beside it as a comment.
+
+### Fixed
+- **A repository whose documentation lives at its root never rebuilt on
+  a push.** The webhook filter compares the changed files with the
+  documentation paths of the repository. The path that means "the whole
+  repository" is `.`, and no file name starts with `./`, so every push
+  was ignored and the site stayed stale. A repository configured with
+  `paths: ["."]` is rebuilt now, for every change.
+
+- **A marker in a page was quietly removed.** The content pipeline had
+  a transform that looked for an `@glossary` marker, deleted it and
+  generated nothing in its place. A page that used the marker lost it
+  without gaining a glossary. The transform is gone.
+
+- **The README promised a report field and three metrics that do not
+  exist.** The delta analyzer that filled them in went with the unused
+  code in v0.28.0, and the feature list still named them. It names the
+  metrics the Prometheus endpoint really exports now.
+
+### Changed
+- **The status snapshot has no `cpu_usage_percent` field.** It was
+  never filled in, so it reported a flat zero that read like a
+  measurement. A reader that expects the field has to read the
+  Prometheus endpoint instead, where `process_cpu_seconds_total` is the
+  real number.
+
+### Removed
+- **A build stage that did nothing.** The pipeline had an "indexes"
+  stage that returned without work: the indexes are generated while
+  the content is copied. The stage is gone, a build no longer reports
+  it, and the documentation lists the stages the code really runs.
+
+- **A CPU usage that was always zero.** The status snapshot carried a
+  `cpu_usage_percent` field that was never filled in, so it reported a
+  flat zero that read like a measurement. The Prometheus endpoint has
+  the real numbers (`process_cpu_seconds_total`), and the field is
+  gone.
+
 ## [0.28.1] - 2026-11-22
 
 ### Fixed

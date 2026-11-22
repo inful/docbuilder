@@ -65,6 +65,37 @@ func TestHandleVSCodeEdit_DaemonMode(t *testing.T) {
 	}
 }
 
+// TestHandleVSCodeEdit_RejectsRemoteClient tests that the handler only
+// answers a request that comes from the machine itself. The docs port is
+// reachable from the network, and opening a file in the editor runs a
+// command here.
+func TestHandleVSCodeEdit_RejectsRemoteClient(t *testing.T) {
+	cfg := &config.Config{
+		Build: config.BuildConfig{
+			VSCodeEditLinks: true,
+		},
+		Repositories: []config.Repository{
+			{URL: "/tmp"},
+		},
+	}
+
+	srv := &Server{cfg: cfg}
+	srv.vscodeRunCLI = func(ctx context.Context, codeCmd string, args []string, env []string) (string, string, error) {
+		t.Fatal("the editor command must not run for a remote client")
+		return "", "", nil
+	}
+
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_edit/test.md", nil)
+	req.RemoteAddr = "203.0.113.10:5555"
+	w := httptest.NewRecorder()
+
+	srv.handleVSCodeEdit(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("Expected status 403, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
 // TestValidateAndResolveEditPath_InvalidPrefix tests URL prefix validation.
 func TestValidateAndResolveEditPath_InvalidPrefix(t *testing.T) {
 	cfg := &config.Config{
@@ -694,6 +725,7 @@ func TestHandleVSCodeEdit_Integration(t *testing.T) {
 	srv.vscodeOpenBackoffs = []time.Duration{}
 	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_edit/test.md", nil)
 	req.URL.Path = "/_edit/test.md"
+	req.RemoteAddr = "127.0.0.1:5555"
 	req.Header.Set("Referer", "http://localhost:1314/docs/")
 	w := httptest.NewRecorder()
 
