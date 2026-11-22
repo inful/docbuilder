@@ -60,13 +60,13 @@ const (
 //   - serve:      runtime services (HTTP server, scheduler, event bus, metrics)
 //   - optional:   opt-in features (livereload, link verifier, outbound dispatcher)
 //
-// The shared counters `activeJobs` and `queueLength` stay on the
-// façade because they are read from multiple sub-systems and would
-// have to be back-referenced from the sub-structs otherwise.
+// The shared counter `queueLength` stays on the façade because it is
+// read from multiple sub-systems and would have to be back-referenced
+// from the sub-structs otherwise. The number of running builds comes
+// from the build queue itself.
 type Daemon struct {
 	config         *config.Config
 	configFilePath string
-	activeJobs     int32
 	queueLength    atomic.Int32
 
 	lifecycle lifecycleStack
@@ -222,9 +222,11 @@ func (d *Daemon) initScheduler() error {
 // append-only log, the projection is the read-side view, and the
 // emitter translates daemon events into the store.
 func (d *Daemon) initStateStack(cfg *config.Config) error {
-	stateDir := cfg.Daemon.Storage.RepoCacheDir
+	// The state lives in its own directory, not in the repository cache:
+	// sharing one directory meant every state save walked every clone.
+	stateDir := cfg.Daemon.Storage.StateDir
 	if stateDir == "" {
-		stateDir = "./daemon-data" // Default data directory
+		stateDir = config.DefaultStateDir // Default data directory
 	}
 
 	stateServiceResult := state.NewService(stateDir)
@@ -243,12 +245,43 @@ func (d *Daemon) initStateStack(cfg *config.Config) error {
 	d.state.eventEmitter = NewEventEmitter(eventStore, d.state.buildProjection)
 	d.state.eventEmitter.daemon = d // Wire back reference for hooks
 
+	// Prune the event log before rebuilding the projection: the projection
+	// replays every stored event, so an unbounded log means an unbounded
+	// startup.
+	d.pruneEventStore(context.Background())
+
 	// Rebuild projection from existing events. Non-fatal: a corrupt log
 	// leaves the projection empty rather than failing daemon startup.
 	if rebuildErr := d.state.buildProjection.Rebuild(context.Background()); rebuildErr != nil {
 		slog.Warn("Failed to rebuild build history projection", logfields.Error(rebuildErr))
 	}
 	return nil
+}
+
+// pruneEventStore removes the build events older than the configured
+// retention window.
+func (d *Daemon) pruneEventStore(ctx context.Context) {
+	if d.state.eventStore == nil || d.config == nil || d.config.Daemon == nil {
+		return
+	}
+	retention := strings.TrimSpace(d.config.Daemon.Storage.EventRetention)
+	if retention == "" || retention == "0" {
+		return
+	}
+	window, err := time.ParseDuration(retention)
+	if err != nil || window <= 0 {
+		slog.Warn("Invalid daemon.storage.event_retention, keeping all events",
+			"event_retention", retention, "error", err)
+		return
+	}
+	removed, err := d.state.eventStore.Prune(ctx, time.Now().Add(-window))
+	if err != nil {
+		slog.Warn("Failed to prune old build events", logfields.Error(err))
+		return
+	}
+	if removed > 0 {
+		slog.Info("Pruned old build events", "removed", removed, "retention", retention)
+	}
 }
 
 // initLiveReload constructs the SSE-based live reload hub. Only invoked
@@ -367,7 +400,13 @@ func (d *Daemon) initBuildDebouncer(cfg *config.Config) error {
 // in-memory and a warning is logged — repo-updates keep working, just
 // without persistence across restarts.
 func (d *Daemon) initRepoUpdater(cfg *config.Config) {
-	remoteCache, cacheErr := git.NewRemoteHeadCache(cfg.Daemon.Storage.RepoCacheDir)
+	// The remote-head cache is daemon state, not a clone: it belongs in the
+	// state directory, not with the repositories.
+	stateDir := cfg.Daemon.Storage.StateDir
+	if stateDir == "" {
+		stateDir = config.DefaultStateDir
+	}
+	remoteCache, cacheErr := git.NewRemoteHeadCache(stateDir)
 	if cacheErr != nil {
 		slog.Warn("Failed to initialize remote HEAD cache; disabling persistence", logfields.Error(cacheErr))
 		remoteCache, _ = git.NewRemoteHeadCache("")
@@ -771,9 +810,12 @@ func (d *Daemon) GetStatus() Status {
 	return status
 }
 
-// GetActiveJobs returns the number of active build jobs.
+// GetActiveJobs returns the number of build jobs currently running.
 func (d *Daemon) GetActiveJobs() int {
-	return int(atomic.LoadInt32(&d.activeJobs))
+	if d.build.buildQueue == nil {
+		return 0
+	}
+	return d.build.buildQueue.ActiveCount()
 }
 
 // GetQueueLength returns the current build queue length.
@@ -875,6 +917,7 @@ func (d *Daemon) jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, err
 		OutputDir:       resolveOutputDir(cfg),
 		Incremental:     true, // Daemon mode uses incremental updates to leverage remote HEAD cache
 		SkipState:       skipState,
+		StateManager:    skipState,
 		OnDocumentReady: onDocReady,
 		Options: build.BuildOptions{
 			SkipIfUnchanged: cfg.Build.SkipIfUnchanged,

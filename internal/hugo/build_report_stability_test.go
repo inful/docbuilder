@@ -31,16 +31,6 @@ func TestBuildReportStability(t *testing.T) {
 	if r.DocFilesHash == "" {
 		r.DocFilesHash = ""
 	}
-	if r.DeltaDecision == "" {
-		r.DeltaDecision = ""
-	}
-	if r.DeltaChangedRepos == nil {
-		r.DeltaChangedRepos = nil
-	}
-	if r.DeltaRepoReasons == nil {
-		r.DeltaRepoReasons = nil
-	}
-
 	// Normalize dynamic fields
 	r.Start = time.Unix(0, 0).UTC()
 	r.End = time.Unix(0, 0).UTC()

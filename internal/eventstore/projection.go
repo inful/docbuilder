@@ -196,6 +196,17 @@ func (p *BuildHistoryProjection) addToHistoryLocked(summary *BuildSummary) {
 	// Trim to max size
 	if len(p.history) > p.maxSize {
 		p.history = p.history[:p.maxSize]
+		// The summary map holds every build ever seen; drop the ones that
+		// just fell out of the history so it cannot grow without bound.
+		kept := make(map[string]struct{}, len(p.history))
+		for _, h := range p.history {
+			kept[h.BuildID] = struct{}{}
+		}
+		for id := range p.builds {
+			if _, ok := kept[id]; !ok {
+				delete(p.builds, id)
+			}
+		}
 	}
 }
 

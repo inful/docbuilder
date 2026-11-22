@@ -51,7 +51,7 @@ func writePrevReport(t *testing.T, outDir string, files, rendered int, docHash s
 		Files             int    `json:"files"`
 		RenderedPages     int    `json:"rendered_pages"`
 		DocFilesHash      string `json:"doc_files_hash"`
-		DocBuilderVersion string `json:"doc_builder_version"`
+		DocBuilderVersion string `json:"docbuilder_version"`
 		HugoVersion       string `json:"hugo_version"`
 	}{1, files, rendered, docHash, "unknown", ""} // Match current version
 	b, err := json.Marshal(prev)
@@ -335,7 +335,7 @@ func writePrevReportWithVersions(t *testing.T, outDir string, repos, files, rend
 		"files":                 files,
 		"rendered_pages":        rendered,
 		"doc_files_hash":        docHash,
-		"doc_builder_version":   dbVersion,
+		"docbuilder_version":    dbVersion,
 		"hugo_version":          hugoVersion,
 		"outcome":               "success",
 		"start":                 time.Now().Format(time.RFC3339),
@@ -344,7 +344,6 @@ func writePrevReportWithVersions(t *testing.T, outDir string, repos, files, rend
 		"stage_error_kinds":     map[string]string{},
 		"stage_counts":          map[string]any{},
 		"index_templates":       map[string]any{},
-		"delta_repo_reasons":    map[string]string{},
 		"errors":                []string{},
 		"warnings":              []string{},
 		"issues":                []any{},
@@ -356,8 +355,6 @@ func writePrevReportWithVersions(t *testing.T, outDir string, repos, files, rend
 		"retries_exhausted":     false,
 		"skip_reason":           "",
 		"clone_stage_skipped":   false,
-		"delta_decision":        "",
-		"delta_changed_repos":   []string{},
 		"config_hash":           "",
 		"pipeline_version":      0,
 		"effective_render_mode": "",

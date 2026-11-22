@@ -18,12 +18,12 @@ test/
 │   └── helpers.go       # Test helper functions
 └── testdata/
     ├── repos/           # Source repository structures
-    │   └── themes/
-    │       └── relearn-basic/  # Test repository
+    │   ├── edge-cases/  # Malformed and unusual inputs
+    │   └── transforms/  # Front matter, links and image handling
     ├── configs/         # Test configurations
-    │   └── relearn-basic.yaml
+    │   └── docsy-basic.yaml
     └── golden/          # Verified output snapshots
-        └── relearn-basic/
+        └── frontmatter-injection/
             ├── hugo-config.golden.yaml        # Hugo configuration
             └── content-structure.golden.json  # Content files + front matter
 ```
@@ -35,7 +35,7 @@ test/
 go test ./test/integration
 
 # Run specific test
-go test ./test/integration -run TestGolden_RelearnBasic
+go test ./test/integration -run TestGolden_FrontmatterInjection
 
 # Skip in short mode (for quick test runs)
 go test -short ./...
@@ -53,7 +53,7 @@ When you intentionally change the output (e.g., adding new features or fixing bu
 go test ./test/integration -update-golden
 
 # Update specific test
-go test ./test/integration -run TestGolden_RelearnBasic -update-golden
+go test ./test/integration -run TestGolden_FrontmatterInjection -update-golden
 ```
 
 **Important**: Always review the diff before committing updated golden files!
@@ -69,8 +69,8 @@ git diff test/testdata/golden/
 Add a new directory under `test/testdata/repos/` with sample documentation:
 
 ```bash
-mkdir -p test/testdata/repos/themes/my-feature
-mkdir -p test/testdata/repos/themes/my-feature/docs
+mkdir -p test/testdata/repos/my-feature
+mkdir -p test/testdata/repos/my-feature/docs
 ```
 
 Add markdown files with appropriate front matter and content.
@@ -90,7 +90,6 @@ repositories:
 
 hugo:
   title: My Feature Test
-  theme: relearn
   # ... other config
 
 output:
@@ -108,9 +107,9 @@ func TestGolden_MyFeature(t *testing.T) {
         t.Skip("Skipping golden test in short mode")
     }
 
-    repoPath := setupTestRepo(t, "../../test/testdata/repos/themes/my-feature")
+    repoPath := setupTestRepo(t, "../../test/testdata/repos/my-feature")
     cfg := loadGoldenConfig(t, "../../test/testdata/configs/my-feature.yaml")
-    
+
     cfg.Repositories[0].URL = repoPath
     outputDir := t.TempDir()
     cfg.Output.Directory = outputDir
@@ -149,7 +148,7 @@ go test ./test/integration -run TestGolden_MyFeature
 ### Hugo Configuration (`hugo-config.golden.yaml`)
 
 Complete generated Hugo configuration including:
-- Basic settings (title, baseURL, theme)
+- Basic settings (title, baseURL)
 - Theme-specific parameters
 - Module imports (for themes using Hugo modules)
 - Menu configuration
@@ -216,7 +215,7 @@ Add normalization in `helpers.go` if needed.
 
 Ensure paths are relative to the test file location:
 ```go
-setupTestRepo(t, "../../test/testdata/repos/themes/relearn-basic")
+setupTestRepo(t, "../../test/testdata/repos/transforms/frontmatter-injection")
 ```
 
 ## CI Integration

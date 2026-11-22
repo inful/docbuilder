@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 )
 
 // injectPermalink appends a copyable permalink badge to documents with a UID.
@@ -20,7 +22,7 @@ func injectPermalink(baseURL string) FileTransform {
 			return nil, nil
 		}
 
-		aliasWant := "/_uid/" + uid + "/"
+		aliasWant := frontmatterops.UIDAliasPath(uid)
 		if !hasAlias(doc.FrontMatter, aliasWant) {
 			return nil, nil
 		}

@@ -29,9 +29,6 @@ type BuildJobMetadata struct {
 	// Keys are repository URLs.
 	RepoSnapshot map[string]string `json:"repo_snapshot,omitempty"`
 
-	// Delta analysis
-	DeltaRepoReasons map[string]string `json:"delta_repo_reasons,omitempty"`
-
 	// Live reload
 	LiveReloadHub LiveReloadHub `json:"-"`
 

@@ -196,6 +196,15 @@ func (bq *BuildQueue) GetActiveJobs() []*BuildJob {
 	return active
 }
 
+// ActiveCount returns how many jobs are currently running. It is the
+// count a caller wants when it reports concurrency; GetActiveJobs
+// copies the jobs themselves.
+func (bq *BuildQueue) ActiveCount() int {
+	bq.mu.RLock()
+	defer bq.mu.RUnlock()
+	return len(bq.active)
+}
+
 // Enqueue adds a new build job to the queue.
 func (bq *BuildQueue) Enqueue(job *BuildJob) error {
 	if job == nil {
@@ -323,6 +332,15 @@ func (bq *BuildQueue) emitCompletionEvents(ctx context.Context, job *BuildJob, e
 	bq.emitBuildCompletedEvent(ctx, job, duration, report)
 }
 
+// setBuildReport stores the report of a finished build on the job.
+// A job is readable through JobSnapshot while it runs, so the write
+// happens under the queue lock.
+func (bq *BuildQueue) setBuildReport(job *BuildJob, report *models.BuildReport) {
+	bq.mu.Lock()
+	defer bq.mu.Unlock()
+	EnsureTypedMeta(job).BuildReport = report
+}
+
 func (bq *BuildQueue) extractBuildReport(job *BuildJob) *models.BuildReport {
 	if job.TypedMeta != nil && job.TypedMeta.BuildReport != nil {
 		return job.TypedMeta.BuildReport
@@ -377,8 +395,7 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 		attempts++
 		report, err := bq.builder.Build(ctx, job)
 		if report != nil {
-			meta := EnsureTypedMeta(job)
-			meta.BuildReport = report
+			bq.setBuildReport(job, report)
 		}
 		if err == nil {
 			if report != nil && totalRetries > 0 {

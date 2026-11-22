@@ -168,6 +168,29 @@ func (s *SQLiteStore) scanEvents(rows *sql.Rows) ([]Event, error) {
 	return events, nil
 }
 
+// Prune deletes the events older than the given time and returns how many
+// were removed.
+func (s *SQLiteStore) Prune(ctx context.Context, olderThan time.Time) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	result, err := s.db.ExecContext(ctx, "DELETE FROM events WHERE timestamp < ?", olderThan.Unix())
+	if err != nil {
+		return 0, errors.WrapError(err, errors.CategoryEventStore, "failed to prune old events").
+			WithContext("older_than", olderThan).
+			WithCause(ErrEventPruneFailed).
+			Build()
+	}
+	removed, err := result.RowsAffected()
+	if err != nil {
+		return 0, errors.WrapError(err, errors.CategoryEventStore, "failed to count pruned events").
+			WithContext("older_than", olderThan).
+			WithCause(ErrEventPruneFailed).
+			Build()
+	}
+	return removed, nil
+}
+
 // Close closes the database connection.
 func (s *SQLiteStore) Close() error {
 	s.mu.Lock()

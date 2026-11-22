@@ -1,4 +1,5 @@
 # Example configuration for docbuilder
+version: "2.0"
 forges:
   - name: "company-github"
     type: github
@@ -90,11 +91,10 @@ hugo:
   title: "My Documentation Site"
   description: "Aggregated documentation from multiple repositories"
   base_url: "https://docs.example.com"
-  theme: "relearn"
-  
+
   # Optional: Enable smooth page transitions
   # enable_page_transitions: true
-  
+
   params:
     search:
       enable: true

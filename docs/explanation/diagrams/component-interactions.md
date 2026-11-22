@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: 369e14296c8d5a07eef44367f941378fcbde72c1dddd910d5c1d8291f26edf68
-lastmod: "2026-11-21"
+fingerprint: 2fef75506f45051af7d00359c79696daa5a67d6bbd36a40709d14cbc6eabc294
+lastmod: "2026-11-22"
 tags:
   - components
   - interactions
@@ -41,7 +41,7 @@ Generation Flow:
 1. Load config → title, baseURL, etc.
 2. Apply Docsy defaults (via applyDocsyThemeDefaults)
 3. User params deep merge (user values override defaults)
-4. Add dynamic fields (build_date, doc_builder_version)
+4. Add dynamic fields (build_date, docbuilder_version)
 5. Add Hugo module: github.com/docsy/docsy/theme
 6. Configure i18n settings (defaultContentLanguage: "en")
 7. Write hugo.yaml to staging directory
@@ -282,7 +282,7 @@ Multi-level change detection optimizes incremental builds.
                   ├─ Detect removed files
                   ├─ Deletions? → Include
                   └─ Cost: O(n) - set difference
-               
+
                ▼
     ┌──────────────────────┐
     │    ChangeSet         │
@@ -299,47 +299,47 @@ Multi-level change detection optimizes incremental builds.
 ```go
 func DetectChanges(repos []Repository, prevState BuildState) ChangeSet {
     changeSet := NewChangeSet()
-    
+
     for _, repo := range repos {
         // Level 1: HEAD comparison
         currentHEAD := git.GetHEAD(repo)
         previousHEAD := prevState.Commits[repo.Name]
-        
+
         if currentHEAD != previousHEAD {
             changeSet.AddChanged(repo, "HEAD changed")
             continue
         }
-        
+
         // Level 2: Quick directory hash
         dirHash := computeDirectoryHash(repo.Path)
         prevHash := prevState.DirectoryHashes[repo.Name]
-        
+
         if dirHash != prevHash {
             changeSet.AddChanged(repo, "directory structure changed")
             continue
         }
-        
+
         // Level 3: Documentation files hash
         docs := DiscoverDocs(repo)
         docHash := computeDocHash(docs)
         prevDocHash := prevState.DocHashes[repo.Name]
-        
+
         if docHash != prevDocHash {
             changeSet.AddChanged(repo, "documentation changed")
             continue
         }
-        
+
         // Level 4: Deletion detection
         prevDocs := prevState.DocsByRepo[repo.Name]
         if detectDeletions(docs, prevDocs) {
             changeSet.AddChanged(repo, "files deleted")
             continue
         }
-        
+
         // No changes detected
         changeSet.AddSkipped(repo, "no changes")
     }
-    
+
     return changeSet
 }
 ```

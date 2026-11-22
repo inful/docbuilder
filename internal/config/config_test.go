@@ -67,7 +67,6 @@ func TestLoadConfig(t *testing.T) {
 		"  title: Test Documentation\n" +
 		"  description: Test description\n" +
 		"  base_url: https://test.example.com\n" +
-		"  theme: relearn\n" +
 		"monitoring:\n" +
 		"  metrics:\n" +
 		"    enabled: true\n" +
@@ -385,85 +384,6 @@ func TestInit(t *testing.T) {
 	err = Init(configPath, true)
 	if err != nil {
 		t.Errorf("InitV2() with force should succeed: %v", err)
-	}
-}
-
-func TestIsConfigVersion(t *testing.T) {
-	tests := []struct {
-		name          string
-		configContent string
-		expectedV2    bool
-		expectedError bool
-	}{
-		{
-			name: "V2 config",
-			configContent: `version: "2.0"
-forges:
-  - name: test
-    type: github`,
-			expectedV2: true,
-		},
-		{
-			name: "V2.1 config",
-			configContent: `version: "2.1"
-forges:
-  - name: test
-    type: github`,
-			expectedV2: true,
-		},
-		{
-			name: "V1 config",
-			configContent: `repositories:
-  - url: https://github.com/test/test.git
-    name: test`,
-			expectedV2: false,
-		},
-		{
-			name:          "Invalid YAML",
-			configContent: `invalid: yaml: content: [[[`,
-			expectedV2:    false,
-			expectedError: false, // Should not error, just return false
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tmpFile, err := os.CreateTemp(t.TempDir(), "test-is-v2-*.yaml")
-			if err != nil {
-				t.Fatalf("Failed to create temp file: %v", err)
-			}
-			defer func() { _ = os.Remove(tmpFile.Name()) }()
-
-			if _, writeErr := tmpFile.WriteString(tt.configContent); writeErr != nil {
-				t.Fatalf("Failed to write config: %v", writeErr)
-			}
-			_ = tmpFile.Close()
-
-			isV2, err := IsConfigVersion(tmpFile.Name())
-
-			if tt.expectedError && err == nil {
-				t.Errorf("IsV2Config() expected error, got nil")
-				return
-			}
-
-			if !tt.expectedError && err != nil {
-				t.Errorf("IsV2Config() unexpected error: %v", err)
-				return
-			}
-
-			if isV2 != tt.expectedV2 {
-				t.Errorf("IsV2Config() = %v, want %v", isV2, tt.expectedV2)
-			}
-		})
-	}
-
-	// Test non-existent file
-	isV2, err := IsConfigVersion("/non/existent/file.yaml")
-	if err == nil {
-		t.Error("IsV2Config() should error for non-existent file")
-	}
-	if isV2 {
-		t.Error("IsV2Config() should return false for non-existent file")
 	}
 }
 

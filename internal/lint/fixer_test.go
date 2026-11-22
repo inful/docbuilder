@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -121,7 +122,7 @@ func TestFixer_RenameFile(t *testing.T) {
 	// #nosec G304 -- test reads a temp file path under t.TempDir().
 	updatedBytes, readErr := os.ReadFile(expectedNewFile)
 	require.NoError(t, readErr)
-	uid, hasUID := extractUIDFromFrontmatter(string(updatedBytes))
+	uid, hasUID := frontmatterops.ExtractUID(updatedBytes)
 	require.True(t, hasUID)
 	_, parseErr := uuid.Parse(uid)
 	require.NoError(t, parseErr)

@@ -28,12 +28,21 @@ type Fixer struct {
 	autoConfirm bool // Skip confirmation prompts (for CI/automated use)
 	nowFn       func() time.Time
 
-	// linkCache holds the links of the markdown files that were read
-	// during this fix run. Reading and parsing a file is the slow part
-	// of looking for the links to a renamed file, and the fixer looks
-	// for them once per renamed file. A file that is written is taken
-	// out of the cache, so the next look sees the new content.
-	linkCache map[string][]resolvedLink
+	// linkCache holds the links of the markdown files that were read.
+	// Reading and parsing a file is the slow part of looking for the
+	// links to a renamed file, and the fixer looks for them once per
+	// renamed file. The cache outlives a run: the entries carry the
+	// file's size and modification time, so an entry that no longer
+	// matches the file is read again.
+	linkCache map[string]cachedLinks
+}
+
+// cachedLinks holds the links of one markdown file, with the state of
+// the file they were read from.
+type cachedLinks struct {
+	links   []resolvedLink
+	size    int64
+	modTime time.Time
 }
 
 // NewFixer creates a new fixer with the given linter and options.
@@ -111,10 +120,6 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 
 // fix is the internal implementation that actually performs the fixes.
 func (f *Fixer) fix(path string) (*FixResult, error) {
-	// Every run starts with an empty link cache: the files may have
-	// changed since the last run.
-	f.linkCache = make(map[string][]resolvedLink)
-
 	// First, run linter to find issues
 	result, err := f.linter.LintPath(path)
 	if err != nil {

@@ -33,15 +33,41 @@ type PageMetadata struct {
 	RenderedPath string         // Path in rendered site
 	RenderedURL  string         // Full URL of rendered page
 	FrontMatter  map[string]any // Parsed front matter
-	BaseURL      string         // Site base URL
-	BuildID      string         // Build identifier
-	BuildTime    time.Time      // Build timestamp
-	ContentHash  string         // MD5 hash of page content for change detection
+	// ContentPath is the source markdown of the page on disk. The front
+	// matter is read from it only when a broken link needs it, so a build
+	// does not read every content file again.
+	ContentPath string
+	BaseURL     string    // Site base URL
+	BuildID     string    // Build identifier
+	BuildTime   time.Time // Build timestamp
+	ContentHash string    // MD5 hash of page content for change detection
 
 	// Links are the links extracted from the rendered page. The caller
 	// that already read the page fills them in, so the page does not
 	// have to be read a second time.
 	Links []*Link
+}
+
+// frontMatter returns the front matter of the page. It is read from the
+// source file on demand: only a broken link needs it, so most builds never
+// read the content files again.
+func (p *PageMetadata) frontMatter() map[string]any {
+	if p.FrontMatter != nil {
+		return p.FrontMatter
+	}
+	if p.ContentPath == "" {
+		return nil
+	}
+	contentBytes, err := os.ReadFile(filepath.Clean(p.ContentPath))
+	if err != nil {
+		return nil
+	}
+	fm, err := ParseFrontMatter(contentBytes)
+	if err != nil {
+		return nil
+	}
+	p.FrontMatter = fm
+	return fm
 }
 
 // VerificationService manages link verification operations.
@@ -543,7 +569,7 @@ func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL 
 		RenderedURL:  page.RenderedURL,
 
 		// Front matter
-		FrontMatter: page.FrontMatter,
+		FrontMatter: page.frontMatter(),
 
 		// Build context
 		BuildID:   page.BuildID,
@@ -551,17 +577,17 @@ func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL 
 	}
 
 	// Extract specific front matter fields
-	if page.FrontMatter != nil {
-		if title, ok := page.FrontMatter["title"].(string); ok {
+	if fm := page.frontMatter(); fm != nil {
+		if title, ok := fm["title"].(string); ok {
 			event.Title = title
 		}
-		if desc, ok := page.FrontMatter["description"].(string); ok {
+		if desc, ok := fm["description"].(string); ok {
 			event.Description = desc
 		}
-		if date, ok := page.FrontMatter["date"].(string); ok {
+		if date, ok := fm["date"].(string); ok {
 			event.Date = date
 		}
-		if typ, ok := page.FrontMatter["type"].(string); ok {
+		if typ, ok := fm["type"].(string); ok {
 			event.Type = typ
 		}
 	}

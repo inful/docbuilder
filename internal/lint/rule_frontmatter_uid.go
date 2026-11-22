@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 	"github.com/google/uuid"
 )
 
@@ -76,7 +77,7 @@ func (r *FrontmatterUIDRule) Check(filePath string) ([]Issue, error) {
 	}
 
 	// Check for uid-based alias
-	expectedAlias := "/_uid/" + uidStr + "/"
+	expectedAlias := frontmatterops.UIDAliasPath(uidStr)
 	aliasesAny, hasAliases := obj["aliases"]
 	if !hasAliases {
 		return []Issue{r.missingAliasIssue(filePath, uidStr)}, nil

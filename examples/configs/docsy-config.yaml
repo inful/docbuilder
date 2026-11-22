@@ -1,3 +1,4 @@
+version: "2.0"
 repositories:
   - url: /tmp/test-docs-repo
     name: test-docs
@@ -12,10 +13,9 @@ repositories:
       type: token
       token: "${GIT_ACCESS_TOKEN}"
 hugo:
-  title: 'Relearn Test Documentation'
-  description: 'Testing DocBuilder with Relearn theme using a local repo'
+  title: 'Docsy Test Documentation'
+  description: 'Testing DocBuilder with the Docsy theme using a local repo'
   base_url: 'http://localhost:1316'
-  theme: 'relearn'
 output:
-  directory: '/tmp/relearn-site'
+  directory: '/tmp/docsy-site'
   clean: true

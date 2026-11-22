@@ -373,11 +373,6 @@ func copyMetadata(metadata map[string]string) map[string]string {
 	return copyMap
 }
 
-// GetDocFiles returns all discovered documentation files.
-func (d *Discovery) GetDocFiles() []DocFile {
-	return d.docFiles
-}
-
 // GetDocFilesByRepository returns documentation files grouped by repository.
 func (d *Discovery) GetDocFilesByRepository() map[string][]DocFile {
 	result := make(map[string][]DocFile)
@@ -387,21 +382,6 @@ func (d *Discovery) GetDocFilesByRepository() map[string][]DocFile {
 		if file.Forge != "" {
 			key = file.Forge + "/" + key
 		}
-		result[key] = append(result[key], *file)
-	}
-	return result
-}
-
-// GetDocFilesBySection returns documentation files grouped by section.
-func (d *Discovery) GetDocFilesBySection() map[string][]DocFile {
-	result := make(map[string][]DocFile)
-	for i := range d.docFiles {
-		file := &d.docFiles[i]
-		repoKey := file.Repository
-		if file.Forge != "" {
-			repoKey = file.Forge + "/" + repoKey
-		}
-		key := repoKey + "/" + file.Section
 		result[key] = append(result[key], *file)
 	}
 	return result

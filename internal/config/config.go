@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"gopkg.in/yaml.v3"
@@ -195,6 +194,15 @@ type StorageConfig struct {
 	StateFile    string `yaml:"state_file"`     // Path to state file
 	RepoCacheDir string `yaml:"repo_cache_dir"` // Directory for cached repositories
 	OutputDir    string `yaml:"output_dir"`     // Output directory for generated site
+	// StateDir is where the daemon keeps its state: the state file, the
+	// event log and the remote-head cache. It is separate from the
+	// repository cache so that a cache wipe does not take the state with
+	// it, and so that walking the cache never walks the state.
+	StateDir string `yaml:"state_dir,omitempty"`
+	// EventRetention is how long build events are kept in the event store.
+	// "0" keeps everything; otherwise the store prunes events older than
+	// this duration, so the log cannot grow without bound.
+	EventRetention string `yaml:"event_retention,omitempty"`
 }
 
 // FilteringConfig represents repository filtering configuration, including required paths, ignore files, and name patterns.
@@ -285,10 +293,10 @@ func LoadWithResult(configPath string) (*LoadResult, *Config, error) {
 	}
 
 	// Expand environment variables in the YAML content
-	expandedData := os.ExpandEnv(string(data))
+	expandedData := expandEnv(string(data))
 
-	var config Config
-	if err := yaml.Unmarshal([]byte(expandedData), &config); err != nil {
+	config, err := unmarshalStrict([]byte(expandedData))
+	if err != nil {
 		return nil, nil, errors.WrapError(err, errors.CategoryConfig, "failed to unmarshal v2 config").Build()
 	}
 
@@ -303,7 +311,7 @@ func LoadWithResult(configPath string) (*LoadResult, *Config, error) {
 	result := &LoadResult{Warnings: []string{}}
 
 	// Normalization pass (case-fold enumerations, bounds, early coercions)
-	if nres, nerr := NormalizeConfig(&config); nerr != nil {
+	if nres, nerr := NormalizeConfig(config); nerr != nil {
 		return nil, nil, errors.WrapError(nerr, errors.CategoryConfig, "config normalization failed").Build()
 	} else if nres != nil && len(nres.Warnings) > 0 {
 		for _, w := range nres.Warnings {
@@ -311,16 +319,16 @@ func LoadWithResult(configPath string) (*LoadResult, *Config, error) {
 		}
 	}
 	// Apply defaults (after normalization so canonical values drive defaults)
-	if err := applyDefaults(&config); err != nil {
+	if err := applyDefaults(config); err != nil {
 		return nil, nil, errors.WrapError(err, errors.CategoryConfig, "failed to apply defaults").Build()
 	}
 
 	// Validate configuration
-	if err := validateConfig(&config); err != nil {
+	if err := validateConfig(config); err != nil {
 		return nil, nil, errors.WrapError(err, errors.CategoryConfig, "configuration validation failed").Build()
 	}
 
-	return result, &config, nil
+	return result, config, nil
 }
 
 // applyDefaults applies default values to a Config after normalization.
@@ -454,38 +462,6 @@ func Init(configPath string, force bool) error {
 	}
 
 	return nil
-}
-
-// IsConfigVersion returns true if the config file version field in the given file starts with "2.".
-func IsConfigVersion(configPath string) (bool, error) {
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return false, errors.NewError(errors.CategoryConfig, "configuration file not found").
-			WithContext("path", configPath).
-			Build()
-	}
-
-	// #nosec G304 - configPath is from CLI argument, user-controlled
-	data, err := os.ReadFile(filepath.Clean(configPath))
-	if err != nil {
-		return false, errors.WrapError(err, errors.CategoryConfig, "failed to read config file").
-			WithContext("path", configPath).
-			Build()
-	}
-
-	// Expand environment variables
-	expandedData := os.ExpandEnv(string(data))
-
-	// Try to parse just the version field
-	var versionCheck struct {
-		Version string `yaml:"version"`
-	}
-
-	if err := yaml.Unmarshal([]byte(expandedData), &versionCheck); err != nil {
-		// If it fails to parse, assume v1
-		return false, nil //nolint:nilerr // intentionally swallow parse errors to detect non-v2 configs
-	}
-
-	return strings.HasPrefix(versionCheck.Version, "2."), nil
 }
 
 // Historical note: legacy alias names (V2Config, LoadV2, InitV2, IsV2Config) were removed during cleanup.

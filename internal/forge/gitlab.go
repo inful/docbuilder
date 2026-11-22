@@ -366,6 +366,11 @@ func (c *GitLabClient) checkPathExists(ctx context.Context, projectID, filePath,
 
 // ValidateWebhook validates GitLab webhook signature.
 func (c *GitLabClient) ValidateWebhook(_ []byte, signature string, secret string) bool {
+	// An empty secret or token cannot be a valid credential: without this
+	// check an empty signature would match an empty secret.
+	if signature == "" || secret == "" {
+		return false
+	}
 	// GitLab sends X-Gitlab-Token header with the secret. The
 	// comparison takes the same time for every byte, so a caller
 	// cannot learn the secret by timing the answer.

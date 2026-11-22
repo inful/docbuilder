@@ -23,8 +23,6 @@ forges:
 filtering:
   required_paths: ["docs"]
   ignore_files: [".docignore"]
-  min_doc_count: 1
-  max_repo_age: "2y"
 
 # Static repository definitions for testing
 repositories:
@@ -38,8 +36,6 @@ hugo:
   title: "Test Documentation Site"
   description: "Testing DocBuilder daemon mode"
   base_url: "http://localhost:1313"
-  theme: "relearn"
-  language_code: "en"
   params:
     version: "2.0.0"
     editPage: true
@@ -48,7 +44,7 @@ hugo:
 daemon:
   http:
     docs_port: 8080      # Documentation site serving port
-    webhook_port: 8081   # Webhook receiver port  
+    webhook_port: 8081   # Webhook receiver port
     admin_port: 8082     # Admin/management API port
   build_debounce:
     quiet_window: "10s"
@@ -61,4 +57,10 @@ daemon:
   storage:
     state_file: "./daemon-data/daemon-state.json"
     repo_cache_dir: "./daemon-data/repos"
-    output_dir: "./daemon-data/site"
+
+# The output directory is the canonical source; daemon.storage.output_dir
+# must match it when both are set.
+output:
+  directory: "./daemon-data/site"
+  clean: true
+

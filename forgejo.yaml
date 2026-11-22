@@ -17,6 +17,7 @@ forges:
     type: "forgejo"
     api_url: "https://git.home.luguber.info/api/v1"
     base_url: "https://git.home.luguber.info"
+    auto_discover: true
     auth:
       type: "token"
       token: "${LUGUBER_TOKEN}"
@@ -37,11 +38,9 @@ hugo:
   title: "Updated Documentation Hub"
   description: "Automated documentation from multiple repositories (hot-reloaded)"
   base_url: "http://localhost:8080"
-  theme: "relearn"
 
 monitoring:
   health:
-    enabled: true
     path: "/health"
   metrics:
     enabled: true

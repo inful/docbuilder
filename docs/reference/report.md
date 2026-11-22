@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 2f251749b332870c28b43f7bf62a40422d0e16edabd71676ffecca138c6d318e
-lastmod: "2026-11-19"
+fingerprint: 172f7348a5aafbd36d97554d3df2e42a7f61e0d421d91a8db1842d3e19f54bfd
+lastmod: "2026-11-22"
 tags:
   - reports
   - builds
@@ -30,7 +30,7 @@ DocBuilder writes a machine-readable `build-report.json` and a summary `build-re
 | Field | Type | Description |
 |-------|------|-------------|
 | schema_version | int | Schema contract version (currently 1). |
-| doc_builder_version | string | DocBuilder version that generated the report. |
+| docbuilder_version | string | DocBuilder version that generated the report. |
 | hugo_version | string | Hugo version detected during build. |
 | start | time | Build start timestamp (UTC). |
 | end | time | Build completion timestamp (UTC). |
@@ -79,9 +79,6 @@ DocBuilder writes a machine-readable `build-report.json` and a summary `build-re
 |-------|------|-------------|
 | doc_files_hash | string | Stable SHA‑256 hex of sorted Hugo content paths. |
 | config_hash | string | Configuration hash for change detection. |
-| delta_decision | string | Decision made for incremental build: `full_rebuild`, `incremental`, `skip`. |
-| delta_changed_repos | []string | List of repositories that changed (incremental builds). |
-| delta_repo_reasons | object | Map of repository name → change reason (`quick_hash_diff`, `assumed_changed`, `unknown`). |
 | skip_reason | string | Reason for early exit (e.g., `no_changes`, `no_repositories`). |
 
 ### Template Information
@@ -132,23 +129,14 @@ Codes include (non-exhaustive):
 
 ## Incremental Build Support
 
-When running in daemon/incremental mode, the report includes delta-specific fields:
-
-- **delta_decision**: Strategy chosen (`full_rebuild`, `incremental`, `skip`)
-- **delta_changed_repos**: Repositories with changes detected
-- **delta_repo_reasons**: Per-repository change detection method
-  - `quick_hash_diff`: Git commit hash changed
-  - `assumed_changed`: Unable to verify, assumed changed for safety
-  - `unknown`: Change detection failed or unavailable
-
-These fields enable observability into incremental build decisions and help diagnose unexpected full rebuilds.
+Change detection in daemon mode is driven by `doc_files_hash` (the hash of the discovered content paths) and `config_hash` (the hash of the configuration snapshot). When both are unchanged, the daemon skips the build and records `skip_reason: no_changes`. See `config_hash` above.
 
 ## Example Report
 
 ```json
 {
   "schema_version": 1,
-  "doc_builder_version": "2.1.0",
+  "docbuilder_version": "2.1.0",
   "hugo_version": "0.139.3",
   "repositories": 2,
   "files": 15,

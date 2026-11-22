@@ -31,4 +31,7 @@ var (
 
 	// ErrProjectionRebuildFailed indicates rebuilding a projection failed.
 	ErrProjectionRebuildFailed = errors.EventStoreError("failed to rebuild projection").Build()
+
+	// ErrEventPruneFailed indicates pruning old events failed.
+	ErrEventPruneFailed = errors.EventStoreError("failed to prune old events").Build()
 )

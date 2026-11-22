@@ -21,7 +21,7 @@ var (
 		if defaultDaemonInstance == nil {
 			return 0
 		}
-		return float64(atomic.LoadInt32(&defaultDaemonInstance.activeJobs))
+		return float64(defaultDaemonInstance.GetActiveJobs())
 	})
 	daemonQueueLengthGauge = prom.NewGaugeFunc(prom.GaugeOpts{Namespace: "docbuilder", Name: "daemon_queue_length", Help: "Current queued build jobs waiting for workers"}, func() float64 {
 		if defaultDaemonInstance == nil {

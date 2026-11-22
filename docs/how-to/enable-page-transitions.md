@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: d87e97396a2c86ae117d51f9d164a7d382ecd76021692e83594620ade7273d35
-lastmod: "2026-11-21"
+fingerprint: 66a601ae8cd3754e8088688f413a7cbf5f1d17297ea43a7c2ac9aa9716a61036
+lastmod: "2026-11-22"
 tags:
   - ui
   - transitions
@@ -24,7 +24,7 @@ The implementation uses browser-native CSS-only transitions with the `@view-tran
 
 ## Prerequisites
 
-- Hugo theme: `docsy` (DocBuilder's default theme)
+- Hugo theme: Docsy (DocBuilder's only theme; it is not a config option)
 - Modern browser with View Transitions API support:
   - Chrome 126+
   - Edge 126+
@@ -39,8 +39,7 @@ Add the following to your `config.yaml` under the `hugo` section:
 ```yaml
 hugo:
   title: "My Documentation Site"
-  theme: "docsy"
-  
+
   # Enable page transitions
   enable_page_transitions: true
 ```
@@ -57,7 +56,6 @@ hugo:
 
 ```yaml
 hugo:
-  theme: "docsy"
   enable_page_transitions: true
 ```
 
@@ -124,7 +122,6 @@ View Transitions work well with other theme features:
 
 ```yaml
 hugo:
-  theme: "docsy"
   enable_page_transitions: true
   params:
     # Theme-specific parameters work alongside transitions
@@ -140,7 +137,6 @@ To disable transitions, set `enable_page_transitions: false` or remove the optio
 
 ```yaml
 hugo:
-  theme: "docsy"
   # enable_page_transitions: false  # Explicitly disabled
 ```
 

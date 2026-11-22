@@ -119,3 +119,65 @@ func TestRedactConfig_NilAuthBlock(t *testing.T) {
 		t.Errorf("nil auth should stay nil, got %#v", r.Repositories[0].Auth)
 	}
 }
+
+func TestRedactConfig_MasksWebhookSecret(t *testing.T) {
+	cfg := &config.Config{
+		Forges: []*config.ForgeConfig{{
+			Name: "github",
+			Auth: &config.AuthConfig{Type: config.AuthTypeToken, Token: "ghp_supersecret"},
+			Webhook: &config.WebhookConfig{ //nolint:gosec // test-only secret value
+				Secret: "webhook-super-secret",
+				Path:   "/webhooks/github",
+			},
+		}},
+	}
+
+	r := redactConfig(cfg)
+	if got := r.Forges[0].Webhook.Secret; got != redactedMarker {
+		t.Errorf("webhook secret: got %q want %q", got, redactedMarker)
+	}
+	// The rest of the webhook block stays readable so the LLM can still
+	// reason about the endpoint.
+	if got := r.Forges[0].Webhook.Path; got != "/webhooks/github" {
+		t.Errorf("webhook path should be unchanged, got %q", got)
+	}
+	if got := r.Forges[0].Auth.Token; got != redactedMarker {
+		t.Errorf("auth token: got %q want %q", got, redactedMarker)
+	}
+	// The caller's config must not be mutated.
+	if got := cfg.Forges[0].Webhook.Secret; got != "webhook-super-secret" {
+		t.Errorf("redactConfig must not mutate the input, secret is %q", got)
+	}
+	if got := cfg.Forges[0].Auth.Token; got != "ghp_supersecret" {
+		t.Errorf("redactConfig must not mutate the input, token is %q", got)
+	}
+}
+
+func TestRedactConfig_JSONOmitsWebhookSecret(t *testing.T) {
+	cfg := &config.Config{
+		Forges: []*config.ForgeConfig{{
+			Name:    "github",
+			Webhook: &config.WebhookConfig{Secret: "webhook-super-secret"}, //nolint:gosec // test-only secret value
+		}},
+	}
+	b, err := json.Marshal(redactConfig(cfg))
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if strings.Contains(string(b), "webhook-super-secret") {
+		t.Errorf("redacted JSON still contains the webhook secret: %s", string(b))
+	}
+}
+
+func TestRedactConfig_EmptyWebhookSecretStaysEmpty(t *testing.T) {
+	cfg := &config.Config{
+		Forges: []*config.ForgeConfig{{
+			Name:    "github",
+			Webhook: &config.WebhookConfig{},
+		}},
+	}
+	r := redactConfig(cfg)
+	if got := r.Forges[0].Webhook.Secret; got != "" {
+		t.Errorf("empty webhook secret should stay empty, got %q", got)
+	}
+}

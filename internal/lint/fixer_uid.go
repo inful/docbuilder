@@ -1,7 +1,6 @@
 package lint
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -13,74 +12,16 @@ import (
 )
 
 func preserveUIDAcrossContentRewrite(original, updated string) string {
-	uid, hasUID := extractUIDFromFrontmatter(original)
+	uid, hasUID := frontmatterops.ExtractUID([]byte(original))
 	if !hasUID {
 		return updated
 	}
 
-	withUID, changed := addUIDIfMissingWithValue(updated, uid)
+	withUID, changed := frontmatterops.EnsureUIDValueInContent([]byte(updated), uid)
 	if !changed {
 		return updated
 	}
-	return withUID
-}
-
-func extractUIDFromFrontmatter(content string) (string, bool) {
-	fields, _, had, _, err := frontmatterops.Read([]byte(content))
-	if err != nil || !had {
-		return "", false
-	}
-
-	val, ok := fields["uid"]
-	if !ok {
-		return "", false
-	}
-
-	s := strings.TrimSpace(fmt.Sprint(val))
-	if s == "" {
-		return "", false
-	}
-	return s, true
-}
-
-func addUIDIfMissingWithValue(content, uid string) (string, bool) {
-	if strings.TrimSpace(uid) == "" {
-		return content, false
-	}
-
-	fields, body, had, style, err := frontmatterops.Read([]byte(content))
-	if err != nil {
-		return content, false
-	}
-	if style.Newline == "" {
-		style.Newline = "\n"
-	}
-	if fields == nil {
-		fields = map[string]any{}
-	}
-
-	uidChanged, err := frontmatterops.EnsureUIDValue(fields, uid)
-	if err != nil {
-		return content, false
-	}
-	if !uidChanged {
-		return content, false
-	}
-
-	if !had {
-		had = true
-		if len(body) > 0 && !bytes.HasPrefix(body, []byte(style.Newline)) {
-			body = append([]byte(style.Newline), body...)
-		} else if len(body) == 0 {
-			body = append([]byte(style.Newline), body...)
-		}
-	}
-
-	out, err := frontmatterops.Write(fields, body, had, style)
-	if err != nil {
-		return content, false
-	}
-	return string(out), true
+	return string(withUID)
 }
 
 func (f *Fixer) applyUIDFixes(targets map[string]struct{}, uidIssueCounts map[string]int, fixResult *FixResult, fingerprintTargets map[string]struct{}) {
@@ -130,7 +71,7 @@ func (f *Fixer) ensureFrontmatterUID(filePath string) UIDUpdate {
 		return op
 	}
 
-	updated, changed := addUIDIfMissing(string(data))
+	updated, changed := frontmatterops.EnsureUIDInContent(data)
 	if !changed {
 		return op
 	}
@@ -146,50 +87,13 @@ func (f *Fixer) ensureFrontmatterUID(filePath string) UIDUpdate {
 		return op
 	}
 
-	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil { //nolint:gosec // filePath is derived from the lint target set
+	if writeErr := os.WriteFile(filePath, updated, info.Mode().Perm()); writeErr != nil { //nolint:gosec // filePath is derived from the lint target set
 		op.Success = false
 		op.Error = fmt.Errorf("write file for uid update: %w", writeErr)
 		return op
 	}
 
 	return op
-}
-
-func addUIDIfMissing(content string) (string, bool) {
-	fields, body, had, style, err := frontmatterops.Read([]byte(content))
-	if err != nil {
-		// Malformed frontmatter; don't try to guess.
-		return content, false
-	}
-	if style.Newline == "" {
-		style.Newline = "\n"
-	}
-	if fields == nil {
-		fields = map[string]any{}
-	}
-
-	uid, uidChanged, err := frontmatterops.EnsureUID(fields)
-	if err != nil || !uidChanged {
-		return content, false
-	}
-
-	// Best-effort: if this fails, keep UID but skip alias.
-	_, _ = frontmatterops.EnsureUIDAlias(fields, uid)
-
-	if !had {
-		had = true
-		if len(body) > 0 && !bytes.HasPrefix(body, []byte(style.Newline)) {
-			body = append([]byte(style.Newline), body...)
-		} else if len(body) == 0 {
-			body = append([]byte(style.Newline), body...)
-		}
-	}
-
-	out, err := frontmatterops.Write(fields, body, had, style)
-	if err != nil {
-		return content, false
-	}
-	return string(out), true
 }
 
 func (f *Fixer) applyUIDAliasesFixes(targets map[string]struct{}, uidAliasIssueCounts map[string]int, fixResult *FixResult, fingerprintTargets map[string]struct{}) {
@@ -233,7 +137,7 @@ func (f *Fixer) ensureFrontmatterUIDAlias(filePath string) UIDUpdate {
 		return op
 	}
 
-	uid, hasUID := extractUIDFromFrontmatter(string(data))
+	uid, hasUID := frontmatterops.ExtractUID(data)
 	if !hasUID || uid == "" {
 		// Should not happen if linter ran correctly, but be defensive
 		op.Success = false
@@ -241,7 +145,7 @@ func (f *Fixer) ensureFrontmatterUIDAlias(filePath string) UIDUpdate {
 		return op
 	}
 
-	updated, changed := addUIDAliasIfMissing(string(data), uid)
+	updated, changed := frontmatterops.EnsureUIDAliasInContent(data, uid)
 	if !changed {
 		return op
 	}
@@ -257,32 +161,11 @@ func (f *Fixer) ensureFrontmatterUIDAlias(filePath string) UIDUpdate {
 		return op
 	}
 
-	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil { //nolint:gosec // filePath is derived from the lint target set
+	if writeErr := os.WriteFile(filePath, updated, info.Mode().Perm()); writeErr != nil { //nolint:gosec // filePath is derived from the lint target set
 		op.Success = false
 		op.Error = fmt.Errorf("write file for uid alias update: %w", writeErr)
 		return op
 	}
 
 	return op
-}
-
-func addUIDAliasIfMissing(content, uid string) (string, bool) {
-	fields, body, had, style, err := frontmatterops.Read([]byte(content))
-	if err != nil || !had {
-		return content, false
-	}
-	if style.Newline == "" {
-		style.Newline = "\n"
-	}
-
-	changed, err := frontmatterops.EnsureUIDAlias(fields, uid)
-	if err != nil || !changed {
-		return content, false
-	}
-
-	out, err := frontmatterops.Write(fields, body, had, style)
-	if err != nil {
-		return content, false
-	}
-	return string(out), true
 }

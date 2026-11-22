@@ -1,12 +1,12 @@
 # DocBuilder AI Coding Instructions
 
-DocBuilder is a Go CLI tool that aggregates documentation from multiple Git repositories into a single Hugo static site. It uses the Relearn theme with intelligent theme-specific configuration.
+DocBuilder is a Go CLI tool that aggregates documentation from multiple Git repositories into a single Hugo static site. It uses the Docsy theme with intelligent theme-specific configuration.
 
 ## Architecture Overview
 
 The application follows a pipeline pattern:
 1. **Configuration** (`internal/config/`) - Loads YAML config with environment variable expansion
-2. **Workspace** (`internal/workspace/`) - Creates temporary directories for Git operations  
+2. **Workspace** (`internal/workspace/`) - Creates temporary directories for Git operations
 3. **Git Client** (`internal/git/`) - Handles repository cloning/updating with authentication
 4. **Discovery** (`internal/docs/`) - Finds markdown files in configured paths within repos
 5. **Hugo Generator** (`internal/hugo/`) - Creates Hugo sites with theme-specific optimizations
@@ -42,20 +42,19 @@ repositories:
 ```
 
 ### Theme System
-DocBuilder currently **hard-pins** the Hugo theme to **Relearn**.
+DocBuilder currently **hard-pins** the Hugo theme to **Docsy**.
 
-- The Hugo Modules import is always `github.com/McShelby/hugo-theme-relearn`.
-- Any user-provided `hugo.theme` (or older theme fields) should be treated as legacy/no-op; internally the theme is normalized to `relearn`.
-- When a user-provided `hugo.theme` value is detected and differs from `relearn`, emit a structured warning log at INFO level: `user-supplied theme "<value>" ignored; DocBuilder is Relearn-only and normalizes theme to "relearn"`. Do not return an error.
+- The Hugo Modules import is always `github.com/docsy/docsy/theme`.
+- There is no `hugo.theme` config key: the theme is not selectable, and an unknown key is a config error (the config parser rejects unknown keys).
 
 Theme configuration is generated in `internal/hugo/config_writer.go` and (at a high level) follows these phases:
 1. Core defaults (title/description/baseURL, markup defaults)
-2. Apply Relearn theme defaults via `applyRelearnThemeDefaults()`
+2. Apply Docsy theme defaults via `applyDocsyThemeDefaults()`
 3. Deep-merge user overrides from `hugo.params`
 4. Add dynamic params (eg. `build_date`, optional version metadata)
-5. Configure Hugo Modules import for Relearn and ensure a `go.mod` exists
-6. Enable math passthrough (Relearn)
-7. Configure outputs/taxonomies defaults and language config required by Relearn
+5. Configure Hugo Modules import for Docsy and ensure a `go.mod` exists
+6. Enable math passthrough (Docsy)
+7. Configure outputs/taxonomies defaults and language config required by Docsy
 8. Convert `hugo.menu` into Hugo config format (if provided)
 
 If you need support for another Hugo theme, treat it as a larger refactor (new config model + generator behavior). Do not add partial “multi-theme” scaffolding.
@@ -116,7 +115,7 @@ rg -l "pattern"
 - Correctly handles binary files and UTF-8
 
 ### Adding Hugo Theme Support
-DocBuilder is Relearn-only today. Do not introduce theme-selection or a theme registry unless the change explicitly includes:
+DocBuilder is Docsy-only today. Do not introduce theme-selection or a theme registry unless the change explicitly includes:
 - Config schema changes + normalization
 - Generator changes (config, layouts, assets, content assumptions)
 - Golden tests covering the new theme behavior
@@ -252,7 +251,7 @@ When creating or reorganizing test files:
 
 Follow the existing patterns in the repo (eg. the Hugo config golden tests under `internal/hugo/`).
 
-Omit the `hugo.theme` field from all test configs and snippets; do not set it to any value, including `relearn`. The normalization happens internally and tests should not depend on it being set.
+Omit the `hugo.theme` field from all test configs and snippets; it is not a valid key and the config parser rejects it. The theme is fixed internally and tests should not depend on it being set.
 
 Golden file location: `internal/hugo/testdata/hugo_config/feature_name.yaml`
 
@@ -343,7 +342,7 @@ func TestGolden_<Feature>(t *testing.T) {
     goldenDir := "../../test/testdata/golden/<feature>"
     verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
     verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
-    
+
     // Feature-specific verification (if needed)
     verifyFeatureAssets(t, outputDir, goldenDir+"/feature-assets.golden.json", *updateGolden)
 }
@@ -375,10 +374,10 @@ func verifyFeatureAssets(t *testing.T, outputDir, goldenPath string, updateGolde
     actual := FeatureAssets{
         Files: make(map[string]FeatureFile),
     }
-    
+
     // Check feature files exist and contain expected markers
     featurePath := filepath.Join(outputDir, "static", "feature-file.ext")
-    actual.Files["feature-file.ext"] = verifyAssetFile(t, featurePath, 
+    actual.Files["feature-file.ext"] = verifyAssetFile(t, featurePath,
         []string{"marker1", "marker2"})
 
     // Update or compare golden file
@@ -395,7 +394,7 @@ func verifyFeatureAssets(t *testing.T, outputDir, goldenPath string, updateGolde
 
     goldenData, err := os.ReadFile(goldenPath)
     require.NoError(t, err, "failed to read golden file: %s", goldenPath)
-    
+
     var expected FeatureAssets
     err = json.Unmarshal(goldenData, &expected)
     require.NoError(t, err)
@@ -450,7 +449,7 @@ Available in `test/integration/helpers.go`:
 
 - **Normalization**: Dynamic fields (timestamps, temp paths) must be normalized before comparison
 - **Markers**: Use content markers (e.g., specific CSS/JS patterns) instead of full content comparison
-- **Descriptive Names**: Test names should clearly indicate feature: `TestGolden_RelearnTransitions`
+- **Descriptive Names**: Test names should clearly indicate feature: `TestGolden_DocsyTransitions`
 - **Realistic Content**: Test repositories should have realistic markdown content with proper frontmatter
 - **Documentation**: Add comments explaining what each golden file verifies
 - **Coverage**: Test both enabled and disabled states of features
@@ -777,7 +776,7 @@ internal/lint/fixer_confirmation.go     # 112 lines - user confirmation
 
 **External Dependencies:**
 - `github.com/go-git/go-git/v5` for Git operations
-- `github.com/alecthomas/kong` for CLI parsing  
+- `github.com/alecthomas/kong` for CLI parsing
 - `gopkg.in/yaml.v3` for configuration
 - Hugo must be available in PATH for final site building
 - If `hugo` is not found in PATH, the build pipeline must fail fast with an actionable error: `hugo binary not found in PATH; install Hugo >= 0.120.0 and ensure it is on your PATH.` Do not proceed to site generation.

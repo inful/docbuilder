@@ -80,6 +80,30 @@ func (g *Generator) WithStateManager(sm state.RepositoryMetadataWriter) *Generat
 	return g
 }
 
+// persistRepoCommits records the commit each repository was built at, so the
+// next build can tell whether a repository changed. The state manager is
+// optional; without it no commit is recorded and the next build always
+// rebuilds.
+func (g *Generator) persistRepoCommits(bs *models.BuildState) {
+	if g.stateManager == nil {
+		return
+	}
+	tracker, ok := any(g.stateManager).(interface {
+		SetRepoLastCommit(url, name, branch, commit string)
+	})
+	if !ok {
+		return
+	}
+	for i := range bs.Git.Repositories {
+		repo := &bs.Git.Repositories[i]
+		commit, ok := bs.Git.PostHeads[repo.Name]
+		if !ok || commit == "" {
+			continue
+		}
+		tracker.SetRepoLastCommit(repo.URL, repo.Name, repo.Branch, commit)
+	}
+}
+
 // WithKeepStaging enables preservation of staging directory on failure for debugging.
 // When enabled, staging directory will not be cleaned up if Hugo build fails.
 func (g *Generator) WithKeepStaging(keep bool) *Generator {
@@ -435,6 +459,10 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		g.abortStaging()
 		return report, err
 	}
+	// Record the commit each repository was built at. The next build reads
+	// it back to decide whether anything changed, so it must be persisted
+	// here — where the repositories and their commits are both known.
+	g.persistRepoCommits(bs)
 	// IMPORTANT: stages.RunStages may return nil after an early skip (e.g. no repo
 	// HEAD changes and existing output is valid). In that case, we must not promote
 	// the staging directory, otherwise we could replace a valid site with an empty

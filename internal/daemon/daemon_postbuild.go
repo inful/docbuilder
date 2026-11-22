@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	ggit "github.com/go-git/go-git/v5"
-
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
@@ -37,47 +35,11 @@ func (d *Daemon) updateStateAfterBuild(report *models.BuildReport) {
 	}
 
 	// Update repository commits and hashes.
-	// Read from persistent workspace (repo_cache_dir/working) to get current commit SHAs.
-	workspacePath := filepath.Join(d.config.Daemon.Storage.RepoCacheDir, "working")
-	for i := range d.config.Repositories {
-		repo := &d.config.Repositories[i]
-		repoPath := filepath.Join(workspacePath, repo.Name)
-
-		// Check if repository exists
-		if _, err := os.Stat(filepath.Join(repoPath, ".git")); err != nil {
-			continue // Skip if not a git repository
-		}
-
-		// Open git repository to get current commit
-		gitRepo, err := ggit.PlainOpen(repoPath)
-		if err != nil {
-			slog.Warn("Failed to open git repository for state update",
-				"repository", repo.Name,
-				"path", repoPath,
-				"error", err)
-			continue
-		}
-
-		// Get HEAD reference
-		ref, err := gitRepo.Head()
-		if err != nil {
-			slog.Warn("Failed to get HEAD for state update",
-				"repository", repo.Name,
-				"error", err)
-			continue
-		}
-
-		commit := ref.Hash().String()
-
-		// Initialize repository state if needed
-		d.state.stateManager.EnsureRepositoryState(repo.URL, repo.Name, repo.Branch)
-
-		// Update commit in state
-		d.state.stateManager.SetRepoLastCommit(repo.URL, repo.Name, repo.Branch, commit)
-		slog.Debug("Updated repository commit in state",
-			"repository", repo.Name,
-			"commit", commit[:8])
-	}
+	// The per-repository commit is recorded by the build itself (the
+	// generator persists it where the repositories and their commits are
+	// both known). It used to be recorded here from d.config.Repositories,
+	// which is empty in forge/discovery mode — so discovered repositories
+	// never got commit metadata and the next build could never be skipped.
 
 	// Save state to disk
 	if err := d.state.stateManager.Save(); err != nil {
@@ -169,14 +131,10 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 			Name:         strings.TrimSuffix(filepath.Base(path), ".html"),
 		}
 
-		// Try to find corresponding content file to extract front matter
-		var frontMatter map[string]any
+		// The source markdown of the page. It is not read here: the front
+		// matter is only needed when a link turns out to be broken, and the
+		// link verifier reads it on demand.
 		contentPath := filepath.Join(outputDir, "content", strings.TrimSuffix(relPath, ".html")+".md")
-		if contentBytes, err := os.ReadFile(filepath.Clean(contentPath)); err == nil {
-			if fm, err := linkverify.ParseFrontMatter(contentBytes); err == nil {
-				frontMatter = fm
-			}
-		}
 
 		// Build rendered URL
 		renderedURL := d.config.Hugo.BaseURL
@@ -212,7 +170,7 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 			HugoPath:     contentPath,
 			RenderedPath: relPath,
 			RenderedURL:  renderedURL,
-			FrontMatter:  frontMatter,
+			ContentPath:  contentPath,
 			BaseURL:      d.config.Hugo.BaseURL,
 			BuildID:      buildID,
 			BuildTime:    time.Now(),

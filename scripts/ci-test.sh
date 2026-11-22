@@ -45,14 +45,14 @@ test_docker_build() {
 
 test_docker_integration() {
     echo -e "\n${YELLOW}Testing Docker integration...${NC}"
-    
+
     # Create test config
     cat > ci-test-config.yaml << EOF
+version: "2.0"
 hugo:
   title: "CI Test Docs"
-  baseURL: "https://test.example.com"
-  theme: relearn
-  
+  base_url: "https://test.example.com"
+
 repositories:
   - url: https://github.com/alecthomas/kong.git
     name: kong-docs
@@ -63,13 +63,13 @@ EOF
     # Run integration test
     rm -rf ci-test-output
     mkdir -p ci-test-output
-    
+
     docker run --rm \
         -v "$(pwd)/ci-test-config.yaml:/config.yaml:ro" \
         -v "$(pwd)/ci-test-output:/output" \
         docbuilder:ci-test \
         build -c /config.yaml -o /output --render-mode always -v
-    
+
     # Check output
     if [ -d "ci-test-output/public" ]; then
         echo -e "${GREEN}✅ Docker integration test passed${NC}"
@@ -79,7 +79,7 @@ EOF
         echo -e "${RED}❌ Docker integration test failed${NC}"
         exit 1
     fi
-    
+
     # Cleanup
     rm -f ci-test-config.yaml
     rm -rf ci-test-output
@@ -97,32 +97,32 @@ main() {
     echo "This script simulates the CI/CD pipeline locally"
     echo "It will run the same tests that run in Forgejo Actions"
     echo ""
-    
+
     # Check dependencies
     if ! command -v go &> /dev/null; then
         echo -e "${RED}❌ Go is not installed${NC}"
         exit 1
     fi
-    
+
     if ! command -v docker &> /dev/null; then
         echo -e "${RED}❌ Docker is not installed${NC}"
         exit 1
     fi
-    
+
     if ! command -v make &> /dev/null; then
         echo -e "${RED}❌ Make is not installed${NC}"
         exit 1
     fi
-    
+
     # Run tests
     trap cleanup EXIT
-    
+
     test_go_format
     test_go_build
     test_go_tests
     test_docker_build
     test_docker_integration
-    
+
     echo -e "\n${GREEN}🎉 All CI/CD tests passed!${NC}"
     echo "Your changes should work well in the Forgejo CI pipeline."
 }

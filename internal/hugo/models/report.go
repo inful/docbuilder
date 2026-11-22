@@ -135,12 +135,6 @@ type BuildReport struct {
 	CloneStageSkipped bool
 	// DocFilesHash is a stable hash (sha256 hex) of the discovered documentation file Hugo paths (sorted) for cache invalidation decisions.
 	DocFilesHash string
-	// DeltaDecision records analyzer decision: "full" | "partial" (empty if not evaluated)
-	DeltaDecision string
-	// DeltaChangedRepos lists repository URLs included in a partial rebuild decision.
-	DeltaChangedRepos []string
-	// DeltaRepoReasons maps repository URL -> reason string for inclusion/exclusion decisions (best effort; may be empty)
-	DeltaRepoReasons map[string]string
 	// ConfigHash stores the configuration snapshot hash used for this build (for skip/incremental decisions).
 	ConfigHash string
 	// PipelineVersion is an incrementing internal version for the orchestration/stage contract.
@@ -366,9 +360,6 @@ func (r BuildReport) MarshalJSON() ([]byte, error) {
 		IndexTemplates      map[string]IndexTemplateInfo `json:"index_templates,omitempty"`
 		CloneStageSkipped   bool                         `json:"clone_stage_skipped,omitempty"`
 		DocFilesHash        string                       `json:"doc_files_hash,omitempty"`
-		DeltaDecision       string                       `json:"delta_decision,omitempty"`
-		DeltaChangedRepos   []string                     `json:"delta_changed_repos,omitempty"`
-		DeltaRepoReasons    map[string]string            `json:"delta_repo_reasons,omitempty"`
 		ConfigHash          string                       `json:"config_hash,omitempty"`
 		PipelineVersion     int                          `json:"pipeline_version,omitempty"`
 		EffectiveRenderMode string                       `json:"effective_render_mode,omitempty"`
@@ -393,9 +384,6 @@ func (r BuildReport) MarshalJSON() ([]byte, error) {
 		IndexTemplates:      r2.IndexTemplates,
 		CloneStageSkipped:   r2.CloneStageSkipped,
 		DocFilesHash:        r2.DocFilesHash,
-		DeltaDecision:       r2.DeltaDecision,
-		DeltaChangedRepos:   r2.DeltaChangedRepos,
-		DeltaRepoReasons:    r2.DeltaRepoReasons,
 		ConfigHash:          r2.ConfigHash,
 		PipelineVersion:     r2.PipelineVersion,
 		EffectiveRenderMode: r2.EffectiveRenderMode,
@@ -454,9 +442,6 @@ func (r *BuildReport) UnmarshalJSON(data []byte) error {
 		IndexTemplates      map[string]IndexTemplateInfo `json:"index_templates,omitempty"`
 		CloneStageSkipped   bool                         `json:"clone_stage_skipped,omitempty"`
 		DocFilesHash        string                       `json:"doc_files_hash,omitempty"`
-		DeltaDecision       string                       `json:"delta_decision,omitempty"`
-		DeltaChangedRepos   []string                     `json:"delta_changed_repos,omitempty"`
-		DeltaRepoReasons    map[string]string            `json:"delta_repo_reasons,omitempty"`
 		ConfigHash          string                       `json:"config_hash,omitempty"`
 		PipelineVersion     int                          `json:"pipeline_version,omitempty"`
 		EffectiveRenderMode string                       `json:"effective_render_mode,omitempty"`
@@ -466,7 +451,6 @@ func (r *BuildReport) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &wire); err != nil {
 		return err
 	}
-
 	*r = BuildReport{
 		SchemaVersion:       wire.SchemaVersion,
 		Repositories:        wire.Repositories,
@@ -486,9 +470,6 @@ func (r *BuildReport) UnmarshalJSON(data []byte) error {
 		IndexTemplates:      wire.IndexTemplates,
 		CloneStageSkipped:   wire.CloneStageSkipped,
 		DocFilesHash:        wire.DocFilesHash,
-		DeltaDecision:       wire.DeltaDecision,
-		DeltaChangedRepos:   wire.DeltaChangedRepos,
-		DeltaRepoReasons:    wire.DeltaRepoReasons,
 		ConfigHash:          wire.ConfigHash,
 		PipelineVersion:     wire.PipelineVersion,
 		EffectiveRenderMode: wire.EffectiveRenderMode,

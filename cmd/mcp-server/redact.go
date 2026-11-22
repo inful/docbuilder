@@ -22,6 +22,7 @@ var secretFields = map[string]struct{}{
 	"keypath":  {},
 	"ssh_key":  {},
 	"api_key":  {},
+	"secret":   {},
 }
 
 // redactConfig returns a deep copy of cfg with every value under a secret
@@ -45,12 +46,36 @@ func redactConfig(cfg *config.Config) *config.Config {
 		copy(clone.Repositories, cfg.Repositories)
 	}
 	if len(cfg.Forges) > 0 {
+		// Deep-copy each forge: the slice holds pointers, so copying the
+		// slice alone would let a redaction below bleed back into the
+		// caller's config.
 		clone.Forges = make([]*config.ForgeConfig, len(cfg.Forges))
-		copy(clone.Forges, cfg.Forges)
+		for i, f := range cfg.Forges {
+			if f == nil {
+				continue
+			}
+			forgeCopy := *f
+			clone.Forges[i] = &forgeCopy
+		}
 	}
 	redactAuthSlice(clone.Repositories)
 	redactAuthSlice(clone.Forges)
+	redactForgeWebhookSecrets(clone.Forges)
 	return &clone
+}
+
+// redactForgeWebhookSecrets masks the webhook shared secret on every forge.
+// The secret sits next to Auth rather than inside it, so the Auth scrubber
+// never reaches it.
+func redactForgeWebhookSecrets(forges []*config.ForgeConfig) {
+	for _, f := range forges {
+		if f == nil || f.Webhook == nil {
+			continue
+		}
+		webhookCopy := *f.Webhook
+		redactStructFields(reflect.ValueOf(&webhookCopy).Elem())
+		f.Webhook = &webhookCopy
+	}
 }
 
 // redactAuthSlice walks a slice of structs that contain an Auth field and

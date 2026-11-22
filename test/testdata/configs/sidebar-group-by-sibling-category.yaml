@@ -11,11 +11,6 @@ hugo:
   title: "Sidebar Group By Sibling Category Demo"
   description: "Testing hugo.sidebar.group_by with a sibling-category axis"
   base_url: "http://localhost:1313/"
-  sidebar:
-    mode: categories
-    group_by:
-      minutes: [projects, team]
-      team: [projects]
 
 output:
   directory: PLACEHOLDER
