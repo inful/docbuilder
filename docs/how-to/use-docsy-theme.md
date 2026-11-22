@@ -6,8 +6,8 @@ categories:
   - how-to
 date: 2025-12-15T00:00:00Z
 description: The Docsy theme, and what the build does for you
-fingerprint: 8e54a6ad724bcffc4dc890134bee07c9a55f79898fd51aef77e233627578c04c
-lastmod: "2026-11-21"
+fingerprint: ae5554abdb2a23a37adcf8c52bd2f6920c24b76d75230f98c3b424792ad59bbd
+lastmod: "2026-11-22"
 tags:
   - themes
   - docsy
@@ -119,6 +119,26 @@ tags: [linting]
 A document may carry several categories; it appears in each of their
 landing pages. A document with no category still appears in the site -
 it is simply in no category listing.
+
+## The site does not ask the network
+
+The theme loads several assets from a CDN: the mermaid script, the KaTeX
+stylesheet and its fonts, the Bootstrap JavaScript, the Font Awesome
+fonts and the search library. A build without a network died on it, and
+a reader without a network saw a site without its scripts.
+
+DocBuilder serves its own copies of all of them, the way it already
+serves the compiled stylesheet: the assets are vendored in the
+repository and written into the Hugo project with every build.
+
+- `scripts/vendor-docsy-assets.sh` rebuilds the stylesheet, the
+  Bootstrap JavaScript and the fonts.
+- `scripts/vendor-docsy-cdn-assets.sh` fetches the KaTeX stylesheet and
+  its fonts.
+
+The mermaid script is the exception: the browser imports it as a module
+from the CDN, and the build does not check that the version exists any
+more, because the check was the only thing that needed the network.
 
 ## What the theme does not do
 
