@@ -208,8 +208,19 @@ func (g *Generator) buildRepositoryMetadata(bs *models.BuildState) map[string]pi
 		return metadata
 	}
 
-	for i := range g.config.Repositories {
-		repo := &g.config.Repositories[i]
+	// The repositories of the build are the ones of the build state: the
+	// versioning expansion adds a repository for every version of a
+	// repository, and those are the ones that were cloned and that hold
+	// the pages. The metadata of the configured repositories alone would
+	// leave the versioned pages without an edit link and without their
+	// landing page.
+	repos := g.config.Repositories
+	if bs != nil && len(bs.Git.Repositories) > 0 {
+		repos = bs.Git.Repositories
+	}
+
+	for i := range repos {
+		repo := &repos[i]
 		info := pipeline.RepositoryInfo{
 			Name:      repo.Name,
 			URL:       repo.URL,
