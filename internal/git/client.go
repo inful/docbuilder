@@ -164,6 +164,13 @@ func (c *Client) updateOnce(repo appcfg.Repository) (string, error) {
 		slog.Debug("Repository missing, cloning", logfields.Name(repo.Name))
 		return c.cloneOnce(repo)
 	}
+	// A tag never moves, so the clone that is there is the one that is
+	// wanted. The update fetches a branch, and a tag is not one: the
+	// fetch of "refs/heads/v1.2.3" fails for a repository that has only
+	// the tag, and the pages of the tag vanish from the site.
+	if repo.IsTag {
+		return repoPath, nil
+	}
 	path, err := c.updateExistingRepo(repoPath, repo)
 	if err != nil && isCorruptionError(err) {
 		// Self-heal: corrupt on-disk git state (e.g. truncated pack, bad
