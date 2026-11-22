@@ -9,6 +9,15 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Security
+- **The edit endpoint answered requests that came from the network.**
+  The preview server keeps the documentation port open so a developer
+  can look at the site from another machine, and the endpoint that
+  opens a file in the editor was on that port. Opening a file runs a
+  command on the machine, so anyone who could reach the port could make
+  the editor open a file. The endpoint now answers only requests that
+  come from the machine itself.
+
 ### Fixed
 - **A repository whose documentation lives at its root never rebuilt on
   a push.** The webhook filter compares the changed files with the

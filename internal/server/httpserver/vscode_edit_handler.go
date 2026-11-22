@@ -3,6 +3,7 @@ package httpserver
 import (
 	"errors"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -28,6 +29,18 @@ func (s *Server) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The docs port is reachable from the network: the preview server keeps
+	// it open so a developer can look at the site from another machine.
+	// Opening a file in the editor runs a command here, so the request has
+	// to come from the machine itself.
+	if !isLoopbackRequest(r) {
+		slog.Warn("VS Code edit handler: request from another host refused",
+			slog.String("path", r.URL.Path),
+			slog.String("remote_addr", r.RemoteAddr))
+		http.Error(w, "VS Code edit links are only available from the machine that runs the preview server", http.StatusForbidden)
+		return
+	}
+
 	// Extract and validate the file path
 	absPath, err := s.validateAndResolveEditPath(r.URL.Path)
 	if err != nil {
@@ -46,6 +59,22 @@ func (s *Server) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 	redirectTarget := safeRedirectTargetFromReferer(r)
 	//nolint:gosec // redirectTarget is constrained to same-origin/relative targets by safeRedirectTargetFromReferer
 	http.Redirect(w, r, redirectTarget, http.StatusSeeOther)
+}
+
+// isLoopbackRequest reports whether the request came from this machine.
+//
+// The peer address is read from the connection, not from a header: a
+// header can be set by whoever sends the request.
+func isLoopbackRequest(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	ip := net.ParseIP(strings.Trim(host, "[]"))
+	return ip != nil && ip.IsLoopback()
 }
 
 func safeRedirectTargetFromReferer(r *http.Request) string {
