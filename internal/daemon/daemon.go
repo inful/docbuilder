@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
@@ -60,14 +59,11 @@ const (
 //   - serve:      runtime services (HTTP server, scheduler, event bus, metrics)
 //   - optional:   opt-in features (livereload, link verifier, outbound dispatcher)
 //
-// The shared counter `queueLength` stays on the façade because it is
-// read from multiple sub-systems and would have to be back-referenced
-// from the sub-structs otherwise. The number of running builds comes
-// from the build queue itself.
+// The number of running builds and the number of queued builds both come
+// from the build queue itself, so no copy of them is kept here.
 type Daemon struct {
 	config         *config.Config
 	configFilePath string
-	queueLength    atomic.Int32
 
 	lifecycle lifecycleStack
 	state     *stateStack
@@ -818,9 +814,14 @@ func (d *Daemon) GetActiveJobs() int {
 	return d.build.buildQueue.ActiveCount()
 }
 
-// GetQueueLength returns the current build queue length.
+// GetQueueLength returns the number of build jobs waiting for a worker.
+// The build queue is the only owner of that number; the daemon does not
+// keep a second copy of it.
 func (d *Daemon) GetQueueLength() int {
-	return int(d.queueLength.Load())
+	if d.build.buildQueue == nil {
+		return 0
+	}
+	return d.build.buildQueue.Length()
 }
 
 // GetStartTime returns the daemon start time.

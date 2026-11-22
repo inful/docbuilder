@@ -27,7 +27,7 @@ var (
 		if defaultDaemonInstance == nil {
 			return 0
 		}
-		return float64(defaultDaemonInstance.queueLength.Load())
+		return float64(defaultDaemonInstance.GetQueueLength())
 	})
 	// Last build snapshot gauges.
 	daemonLastBuildRenderedPages = prom.NewGaugeFunc(prom.GaugeOpts{Namespace: "docbuilder", Name: "daemon_last_build_rendered_pages", Help: "Pages rendered in most recent completed build"}, func() float64 {

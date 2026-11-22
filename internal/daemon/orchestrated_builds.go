@@ -89,7 +89,6 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 		return
 	}
 
-	d.queueLength.Add(1)
 	slog.Info("Orchestrated build enqueued",
 		logfields.JobID(jobID),
 		slog.Int("repositories", len(reposForBuild)))
