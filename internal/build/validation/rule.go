@@ -35,7 +35,7 @@ type PreviousReport struct {
 	Files             int    `json:"files"`
 	RenderedPages     int    `json:"rendered_pages"`
 	DocFilesHash      string `json:"doc_files_hash"`
-	DocBuilderVersion string `json:"doc_builder_version"`
+	DocBuilderVersion string `json:"docbuilder_version"`
 	HugoVersion       string `json:"hugo_version"`
 	RawData           []byte `json:"-"` // original JSON bytes for checksum
 }

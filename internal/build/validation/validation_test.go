@@ -50,7 +50,7 @@ func writePrevReport(t *testing.T, outDir string, repos, files, rendered int, do
 		Files             int    `json:"files"`
 		RenderedPages     int    `json:"rendered_pages"`
 		DocFilesHash      string `json:"doc_files_hash"`
-		DocBuilderVersion string `json:"doc_builder_version"`
+		DocBuilderVersion string `json:"docbuilder_version"`
 		HugoVersion       string `json:"hugo_version"`
 	}{repos, files, rendered, docHash, "unknown", ""} // Match current version
 	b, err := json.Marshal(prev)

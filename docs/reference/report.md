@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 2f251749b332870c28b43f7bf62a40422d0e16edabd71676ffecca138c6d318e
-lastmod: "2026-11-19"
+fingerprint: 04426679b2288fce3fb69e0d2d2e126c45eb2cc4eca56faed3a0491572167ff0
+lastmod: "2026-11-22"
 tags:
   - reports
   - builds
@@ -30,7 +30,7 @@ DocBuilder writes a machine-readable `build-report.json` and a summary `build-re
 | Field | Type | Description |
 |-------|------|-------------|
 | schema_version | int | Schema contract version (currently 1). |
-| doc_builder_version | string | DocBuilder version that generated the report. |
+| docbuilder_version | string | DocBuilder version that generated the report. |
 | hugo_version | string | Hugo version detected during build. |
 | start | time | Build start timestamp (UTC). |
 | end | time | Build completion timestamp (UTC). |
@@ -148,7 +148,7 @@ These fields enable observability into incremental build decisions and help diag
 ```json
 {
   "schema_version": 1,
-  "doc_builder_version": "2.1.0",
+  "docbuilder_version": "2.1.0",
   "hugo_version": "0.139.3",
   "repositories": 2,
   "files": 15,

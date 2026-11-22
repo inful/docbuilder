@@ -12,6 +12,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/observability"
+	"git.home.luguber.info/inful/docbuilder/internal/state"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
@@ -45,8 +46,12 @@ func (s *DefaultBuildService) WithWorkspaceFactory(factory func() *workspace.Man
 // newHugoGenerator constructs the canonical Hugo site generator. Centralized
 // here so both Run and RunDirect build it the same way; tests can substitute
 // behavior by reaching for hugo.Generator.WithRenderer(&stages.NoopRenderer{}).
-func newHugoGenerator(cfg *appcfg.Config, outputDir string) *hugo.Generator {
-	return hugo.NewGenerator(cfg, outputDir)
+func newHugoGenerator(cfg *appcfg.Config, outputDir string, sm state.RepositoryMetadataWriter) *hugo.Generator {
+	gen := hugo.NewGenerator(cfg, outputDir)
+	if sm != nil {
+		gen = gen.WithStateManager(sm)
+	}
+	return gen
 }
 
 // Run executes the complete build pipeline.
@@ -122,7 +127,7 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		req.Config.Build.CloneStrategy = appcfg.CloneStrategyUpdate
 	}
 
-	generator := newHugoGenerator(req.Config, req.OutputDir)
+	generator := newHugoGenerator(req.Config, req.OutputDir, req.StateManager)
 	if req.OnDocumentReady != nil {
 		generator = generator.WithDocumentReady(req.OnDocumentReady)
 	}
@@ -182,7 +187,7 @@ func (s *DefaultBuildService) RunDirect(ctx context.Context, req DirectBuildRequ
 		return result, dberrors.ConfigError("config required").Build()
 	}
 
-	generator := newHugoGenerator(req.Config, req.OutputDir)
+	generator := newHugoGenerator(req.Config, req.OutputDir, nil)
 	if req.KeepStaging {
 		generator = generator.WithKeepStaging(true)
 	}
@@ -220,7 +225,7 @@ func (s *DefaultBuildService) evaluateSkip(ctx context.Context, req BuildRequest
 	ctx = observability.WithStage(ctx, "skip_evaluation")
 	observability.InfoContext(ctx, "Evaluating if build can be skipped")
 
-	generator := newHugoGenerator(req.Config, req.OutputDir)
+	generator := newHugoGenerator(req.Config, req.OutputDir, req.StateManager)
 	evaluator := validation.NewSkipEvaluator(req.OutputDir, req.SkipState, generator)
 
 	skipReport, canSkip := evaluator.Evaluate(ctx, req.Config.Repositories)

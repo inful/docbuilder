@@ -875,6 +875,7 @@ func (d *Daemon) jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, err
 		OutputDir:       resolveOutputDir(cfg),
 		Incremental:     true, // Daemon mode uses incremental updates to leverage remote HEAD cache
 		SkipState:       skipState,
+		StateManager:    skipState,
 		OnDocumentReady: onDocReady,
 		Options: build.BuildOptions{
 			SkipIfUnchanged: cfg.Build.SkipIfUnchanged,

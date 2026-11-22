@@ -8,6 +8,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
 // BuildService is the canonical interface for executing documentation builds.
@@ -48,6 +49,13 @@ type BuildRequest struct {
 	// of Options.SkipIfUnchanged. The daemon passes its state manager
 	// here; the CLI omits it.
 	SkipState validation.SkipStateAccess
+
+	// StateManager optionally persists the per-repository metadata the build
+	// discovers (document counts, document hashes, and the commit each
+	// repository was built at). Without it the next build cannot tell
+	// whether a repository changed, so skip-evaluation never fires. The
+	// daemon passes its state manager; the CLI omits it.
+	StateManager state.RepositoryMetadataWriter
 
 	// OnDocumentReady, when non-nil, is installed on the constructed
 	// hugo.Generator and invoked once per non-generated document
