@@ -9,6 +9,19 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Added
+- **The MCP server can read the published site.** Two tools,
+  `search_site` and `list_site_pages`, ask the documentation site the
+  daemon serves. An agent that writes documentation can see what the
+  site already holds - across every repository the daemon aggregated -
+  before it writes a page, so it neither duplicates a page nor misses
+  the one that covers the topic.
+
+- **The docs server answers with the inventory of the site.** The new
+  endpoint `/api/pages` lists the pages of the last published build
+  with their addresses and their titles. A `prefix` keeps only the
+  pages whose address starts with it.
+
 ## [0.33.1] - 2026-11-22
 
 ### Fixed

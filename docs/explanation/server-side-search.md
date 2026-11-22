@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2026-11-22T00:00:00Z
-fingerprint: 7d1d445701a5ca46729802437b610b0a6ca4d88652f57208b3eeecb1f22db848
+fingerprint: 1847e05dbce271c2078ae33efffbdea4a40d9cb8dbc4d806377385b5105be7a6
 lastmod: "2026-11-22"
 tags:
   - search
@@ -114,6 +114,48 @@ configuration allows with `limit`; the limit of the configuration is the
 ceiling, and a visitor cannot ask for more than that.
 
 An empty query is answered with an empty list, not with an error.
+
+## The pages of the site
+
+The docs server answers with the inventory of the site at `/api/pages`:
+
+```console
+$ curl 'http://localhost:8080/api/pages'
+{
+  "pages": [
+    {
+      "url": "/how-to/install-the-daemon/",
+      "title": "Installing the daemon"
+    }
+  ]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `pages` | The pages of the last published build. |
+| `pages[].url` | The address of the page. |
+| `pages[].title` | The title of the page. |
+
+A prefix keeps only the pages whose address starts with it:
+`/api/pages?prefix=/how-to/`. The prefix is read as it is written, so a
+`%` or an `_` in it is a part of an address and not a pattern.
+
+The list holds the pages of every repository the daemon aggregated, so
+it is the inventory of the whole site and not of one repository. A page
+that sets `exclude_search: true` is left out of it, the same way it is
+left out of the search.
+
+## The site and the MCP server
+
+The MCP server of docbuilder asks the same two endpoints, so an agent
+that writes documentation can see what the site already holds before it
+writes a page: `search_site` searches the published site, and
+`list_site_pages` lists its pages.
+
+Both read the site the daemon serves - the one that holds every
+repository it aggregated - and both show the last published build, so a
+page that was just written locally is not in them yet.
 
 ## How the results are found
 

@@ -5,11 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -35,6 +39,8 @@ func registerTools(srv *server.MCPServer, state *serverState) {
 	srv.AddTool(toolResolveTemplateInputs(), stateMiddleware(state)(handleResolveTemplateInputs))
 	srv.AddTool(toolLintDocs(), stateMiddleware(state)(handleLintDocs))
 	srv.AddTool(toolReadDoc(), stateMiddleware(state)(handleReadDoc))
+	srv.AddTool(toolSearchSite(), stateMiddleware(state)(handleSearchSite))
+	srv.AddTool(toolListSitePages(), stateMiddleware(state)(handleListSitePages))
 
 	// Mutating tools -------------------------------------------------------
 	srv.AddTool(toolCreateFromTemplate(), stateMiddleware(state)(handleCreateFromTemplate))
@@ -102,6 +108,33 @@ func toolReadDoc() mcp.Tool {
 		mcp.WithDescription("Read a documentation file and return its parsed frontmatter and body. "+
 			"Path must be inside the configured docs directory."),
 		mcp.WithString("path", mcp.Required(), mcp.Description("Path relative to the docs dir, or absolute path inside it.")),
+		mcp.WithReadOnlyHintAnnotation(true),
+	)
+}
+
+func toolSearchSite() mcp.Tool {
+	return mcp.NewTool("search_site",
+		mcp.WithDescription("Search the published documentation site and return the pages that match, "+
+			"with their URL, title and a matching excerpt. The site is the one the daemon serves, so the "+
+			"results cover every repository it aggregated - use this to find related or duplicated "+
+			"documentation before writing a new page. The index is the one of the last published build, "+
+			"so a page you just wrote locally is not in it yet."),
+		mcp.WithString("query", mcp.Required(), mcp.Description("The query. The query language of the site works: "+
+			"AND, OR and NOT combine the terms, \"a phrase\" has to appear as written, and title:, body:, "+
+			"tags: and categories: restrict a term to a field.")),
+		mcp.WithNumber("limit", mcp.Description("How many results to ask for. The site caps it at the maximum of its configuration.")),
+		mcp.WithReadOnlyHintAnnotation(true),
+	)
+}
+
+func toolListSitePages() mcp.Tool {
+	return mcp.NewTool("list_site_pages",
+		mcp.WithDescription("List the pages published on the documentation site, with their URL and title. "+
+			"The list covers every repository the daemon aggregated - use it to check whether a page already "+
+			"exists before writing one. It is the last published build, so a page you just wrote locally is "+
+			"not in it yet."),
+		mcp.WithString("prefix", mcp.Description("Keep only the pages whose URL starts with this, e.g. \"/myforge/myrepo/\". "+
+			"Empty means every page - narrow it on a large site.")),
 		mcp.WithReadOnlyHintAnnotation(true),
 	)
 }
@@ -542,6 +575,97 @@ func handleReadDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 		return toolErr("marshal", err)
 	}
 	return mcp.NewToolResultText(string(b)), nil
+}
+
+// handleSearchSite answers a query with the pages of the published site
+// that match it.
+func handleSearchSite(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	state := stateFromContext(ctx)
+	query, err := req.RequireString("query")
+	if err != nil {
+		return toolErrMsg("missing required argument: query")
+	}
+	if strings.TrimSpace(query) == "" {
+		return toolErrMsg("query must not be empty")
+	}
+
+	values := url.Values{"q": {query}}
+	if limit := req.GetInt("limit", 0); limit > 0 {
+		values.Set("limit", strconv.Itoa(limit))
+	}
+
+	body, err := fetchSiteJSON(ctx, state, "/api/search", values)
+	if err != nil {
+		return toolErr("search the published site", err)
+	}
+	return mcp.NewToolResultText(body), nil
+}
+
+// handleListSitePages answers with the pages of the published site.
+func handleListSitePages(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	state := stateFromContext(ctx)
+
+	values := url.Values{}
+	if prefix := strings.TrimSpace(req.GetString("prefix", "")); prefix != "" {
+		values.Set("prefix", prefix)
+	}
+
+	body, err := fetchSiteJSON(ctx, state, "/api/pages", values)
+	if err != nil {
+		return toolErr("list the pages of the published site", err)
+	}
+	return mcp.NewToolResultText(body), nil
+}
+
+// siteClient asks the published site for its answers. The timeout is
+// short: the site is a local server, and a tool that waits blocks the
+// host.
+var siteClient = &http.Client{Timeout: 5 * time.Second}
+
+// maxSiteResponse is the largest answer the site tools read. A bigger
+// one is not returned to the model: the list of every page of a large
+// site would fill the context of the host.
+const maxSiteResponse = 4 << 20
+
+// fetchSiteJSON asks the published site for an answer and returns its
+// body.
+//
+// The site is the one the daemon serves. When it does not answer - a
+// daemon that is not running, a site that does not serve the endpoint -
+// the error says so, so an empty answer is never read as "nothing is
+// there".
+func fetchSiteJSON(ctx context.Context, state *serverState, path string, values url.Values) (string, error) {
+	if state.baseURL == "" {
+		return "", errors.New("no site URL configured; pass --base-url or DOCBUILDER_TEMPLATE_BASE_URL, or set hugo.base_url in config.yaml")
+	}
+
+	endpoint := strings.TrimSuffix(state.baseURL, "/") + path
+	if len(values) > 0 {
+		endpoint += "?" + values.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return "", fmt.Errorf("build the request for %s: %w", endpoint, err)
+	}
+	resp, err := siteClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("the published site at %s is not reachable: %w", state.baseURL, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxSiteResponse+1))
+	if err != nil {
+		return "", fmt.Errorf("read the answer of %s: %w", endpoint, err)
+	}
+	if len(body) > maxSiteResponse {
+		return "", fmt.Errorf("the answer of %s is larger than %d bytes; narrow the request", endpoint, maxSiteResponse)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("the published site at %s answered %s: %s",
+			state.baseURL, resp.Status, strings.TrimSpace(string(body)))
+	}
+	return string(body), nil
 }
 
 func handleCreateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

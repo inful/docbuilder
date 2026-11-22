@@ -165,6 +165,10 @@ func (s *Server) startDocsServerWithListener(_ context.Context, ln net.Listener)
 	if s.opts.SearchHandle != nil {
 		mux.HandleFunc("/api/search", s.opts.SearchHandle)
 	}
+	// The pages of the site: the inventory of what is published.
+	if s.opts.PagesHandle != nil {
+		mux.HandleFunc("/api/pages", s.opts.PagesHandle)
+	}
 
 	// Root handler dynamically chooses between the Hugo output directory and the rendered "public" folder.
 	// This lets us begin serving immediately (before a static render completes) while automatically

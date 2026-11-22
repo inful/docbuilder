@@ -161,3 +161,36 @@ func (s *SearchService) resultLimit(r *http.Request) int {
 	}
 	return limit
 }
+
+// pagesResponse is the answer of the pages endpoint.
+type pagesResponse struct {
+	Pages []search.Page `json:"pages"`
+}
+
+// HandlePages answers with the pages the index holds.
+//
+// The list is the inventory of the published site: every page the last
+// build rendered, with the address it is served at and its title. A
+// prefix keeps only the pages whose address starts with it.
+//
+// A page that asks not to be searched is not in the index, so it is not
+// in this list either.
+func (s *SearchService) HandlePages(w http.ResponseWriter, r *http.Request) {
+	if s == nil || s.index == nil {
+		http.Error(w, "the site keeps no index of its pages", http.StatusServiceUnavailable)
+		return
+	}
+
+	prefix := strings.TrimSpace(r.URL.Query().Get("prefix"))
+	pages, err := s.index.Pages(r.Context(), prefix)
+	if err != nil {
+		slog.Warn("Failed to list the pages of the index", logfields.Error(err))
+		http.Error(w, "failed to list the pages", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(pagesResponse{Pages: pages}); err != nil {
+		slog.Warn("Failed to write the pages response", logfields.Error(err))
+	}
+}

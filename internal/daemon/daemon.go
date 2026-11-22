@@ -326,6 +326,7 @@ func (d *Daemon) initHTTPServer(cfg *config.Config) {
 		DetailedMetricsHandle: detailedMetrics,
 		PrometheusHandler:     prometheusOptionalHandler(d),
 		SearchHandle:          d.optional.search.HandleSearch,
+		PagesHandle:           d.optional.search.HandlePages,
 		StatusHandle:          statusHandlers.HandleStatusPage,
 	})
 }

@@ -50,6 +50,13 @@ type Result struct {
 	Score   float64 `json:"score"`
 }
 
+// Page is one page of the documentation as it is listed: where it is
+// served and what it is called.
+type Page struct {
+	URL   string `json:"url"`
+	Title string `json:"title"`
+}
+
 // searchStatement is the query the index is searched with.
 //
 // The weights of the bm25() function are per column: a hit in the
@@ -200,6 +207,47 @@ func (i *Index) Count(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("search: count: %w", err)
 	}
 	return n, nil
+}
+
+// Pages returns the pages the index holds, ordered by their address.
+//
+// The prefix, when it is not empty, keeps only the pages whose address
+// starts with it. The prefix is compared as it is written: a % or an _
+// in it is a part of an address, not a pattern.
+func (i *Index) Pages(ctx context.Context, prefix string) ([]Page, error) {
+	if i == nil || i.db == nil {
+		return nil, errors.New("search: index is not open")
+	}
+
+	const statement = `SELECT url, title FROM pages`
+	var rows *sql.Rows
+	var err error
+	if prefix == "" {
+		rows, err = i.db.QueryContext(ctx, statement+` ORDER BY url`)
+	} else {
+		// The prefix is compared with substr, not with LIKE: LIKE would
+		// read a % or an _ in the prefix as a wildcard.
+		rows, err = i.db.QueryContext(ctx, statement+` WHERE substr(url, 1, ?) = ? ORDER BY url`, len(prefix), prefix)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("search: list pages: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	// An empty list, not a nil one: the answer holds a list of pages
+	// even when there are none.
+	pages := []Page{}
+	for rows.Next() {
+		var p Page
+		if err := rows.Scan(&p.URL, &p.Title); err != nil {
+			return nil, fmt.Errorf("search: read page: %w", err)
+		}
+		pages = append(pages, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("search: read pages: %w", err)
+	}
+	return pages, nil
 }
 
 // Search returns the pages that match the query, best match first.

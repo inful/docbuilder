@@ -71,4 +71,8 @@ type Options struct {
 	// Optional: the search of the site. When it is set, the docs server
 	// answers queries at /api/search.
 	SearchHandle http.HandlerFunc
+
+	// Optional: the list of the pages of the site. When it is set, the
+	// docs server answers at /api/pages.
+	PagesHandle http.HandlerFunc
 }
