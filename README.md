@@ -57,10 +57,12 @@ The build process consists of sequential stages, each with a specific responsibi
 2. **CloneRepos** - Clone/update Git repositories with authentication
 3. **DiscoverDocs** - Find markdown files in configured documentation paths
 4. **GenerateConfig** - Create Hugo configuration with Docsy theme defaults
-5. **Layouts** - Copy layout templates
-6. **CopyContent** - Process and copy markdown files with transforms
-7. **Indexes** - Generate repository and section index pages
-8. **RunHugo** - Execute Hugo to render the final static site
+5. **CopyContent** - Process and copy markdown files with transforms
+6. **RunHugo** - Execute Hugo to render the final static site
+7. **PostProcess** - Publish the rendered site
+
+The direct path - the documentation is already known - skips the clone
+and the discovery stages.
 
 ### State Management
 

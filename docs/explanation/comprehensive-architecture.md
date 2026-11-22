@@ -184,17 +184,16 @@ type ClassifiedError struct {
 
 ### Pipeline Stages
 
-The build process executes 8 sequential stages:
+The build process executes 7 sequential stages:
 
 ```
 1. PrepareOutput    → Initialize directories
 2. CloneRepos       → Git operations
 3. DiscoverDocs     → Find markdown files
 4. GenerateConfig   → Create hugo.yaml
-5. Layouts          → Copy theme templates
-6. CopyContent      → Process markdown with transforms
-7. Indexes          → Generate index pages
-8. RunHugo          → Render static site (optional)
+5. CopyContent      → Process markdown with transforms, generate the index pages
+6. RunHugo          → Render static site (optional)
+7. PostProcess      → Publish the result
 ```
 
 Each stage:
@@ -395,13 +394,13 @@ Sequential pipeline for documentation generation:
 
 ```
 build/
-├── service.go             # BuildService interface  
+├── service.go             # BuildService interface
 ├── default_service.go     # Default pipeline executor
 ├── stages.go              # Stage definitions
 └── report.go              # Build reporting
 ```
 
-Executes pipeline stages (PrepareOutput → CloneRepos → DiscoverDocs → GenerateConfig → Layouts → CopyContent → Indexes → RunHugo).
+Executes pipeline stages (PrepareOutput → CloneRepos → DiscoverDocs → GenerateConfig → CopyContent → RunHugo → PostProcess).
 
 #### `internal/incremental/` *(Removed)*
 
@@ -421,7 +420,7 @@ cmd/docbuilder/
 ├── main.go            # CLI entry point
 └── commands/
     ├── build.go       # Build command
-    ├── init.go        # Init command  
+    ├── init.go        # Init command
     ├── discover.go    # Discovery command
     ├── daemon.go      # Daemon command
     ├── preview.go     # Preview command
@@ -516,29 +515,17 @@ PipelineRunner.Run(stages)
 └────────────┬────────────────────┘
              ↓
 ┌─────────────────────────────────┐
-│ Stage 5: Layouts                │
-│  - Copy custom layouts          │
-│  - Set up index templates       │
-└────────────┬────────────────────┘
-             ↓
-┌─────────────────────────────────┐
-│ Stage 6: CopyContent            │
+│ Stage 5: CopyContent            │
 │  - Parse front matter           │
 │  - Inject metadata              │
 │  - Add edit links               │
 │  - Apply transforms             │
+│  - Generate the index pages     │
 │  - Write to content/            │
 └────────────┬────────────────────┘
              ↓
 ┌─────────────────────────────────┐
-│ Stage 7: Indexes                │
-│  - Generate _index.md files     │
-│  - Repository indexes           │
-│  - Section indexes              │
-└────────────┬────────────────────┘
-             ↓
-┌─────────────────────────────────┐
-│ Stage 8: RunHugo (optional)     │
+│ Stage 6: RunHugo (optional)     │
 │  - Execute hugo build           │
 │  - Generate public/             │
 └────────────┬────────────────────┘

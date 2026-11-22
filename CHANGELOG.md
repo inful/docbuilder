@@ -31,6 +31,12 @@ commits; pin to a SHA for reproducibility per the README.
   generated nothing in its place. A page that used the marker lost it
   without gaining a glossary. The transform is gone.
 
+### Removed
+- **A build stage that did nothing.** The pipeline had an "indexes"
+  stage that returned without work: the indexes are generated while
+  the content is copied. The stage is gone, a build no longer reports
+  it, and the documentation lists the stages the code really runs.
+
 ## [0.28.1] - 2026-11-22
 
 ### Fixed

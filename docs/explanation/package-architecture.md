@@ -761,7 +761,7 @@ build/
 
 ```
 PrepareOutput → CloneRepos → DiscoverDocs → GenerateConfig →
-Layouts → CopyContent → Indexes → RunHugo (optional)
+CopyContent → RunHugo (optional) → PostProcess
 ```
 
 **Key Interfaces:**
