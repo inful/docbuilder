@@ -9,6 +9,8 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-11-22
+
 ### Added
 - **A "Create documentation issue" link on every page.** The link
   opens the new-issue page of the forge the page was written in, with
