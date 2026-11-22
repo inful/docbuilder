@@ -131,14 +131,10 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 			Name:         strings.TrimSuffix(filepath.Base(path), ".html"),
 		}
 
-		// Try to find corresponding content file to extract front matter
-		var frontMatter map[string]any
+		// The source markdown of the page. It is not read here: the front
+		// matter is only needed when a link turns out to be broken, and the
+		// link verifier reads it on demand.
 		contentPath := filepath.Join(outputDir, "content", strings.TrimSuffix(relPath, ".html")+".md")
-		if contentBytes, err := os.ReadFile(filepath.Clean(contentPath)); err == nil {
-			if fm, err := linkverify.ParseFrontMatter(contentBytes); err == nil {
-				frontMatter = fm
-			}
-		}
 
 		// Build rendered URL
 		renderedURL := d.config.Hugo.BaseURL
@@ -174,7 +170,7 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 			HugoPath:     contentPath,
 			RenderedPath: relPath,
 			RenderedURL:  renderedURL,
-			FrontMatter:  frontMatter,
+			ContentPath:  contentPath,
 			BaseURL:      d.config.Hugo.BaseURL,
 			BuildID:      buildID,
 			BuildTime:    time.Now(),
