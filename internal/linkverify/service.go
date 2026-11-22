@@ -164,19 +164,32 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 
 	slog.Info("Starting link verification", "page_count", len(pages))
 
+	// The pages are verified by a fixed number of workers and not by
+	// one goroutine per page: a portal with thousands of pages spawned
+	// thousands of goroutines, and every one of them held the links of
+	// its page in memory while it waited for its turn.
+	workers := min(maxConcurrent(s.cfg.MaxConcurrent), max(len(pages), 1))
+
+	queue := make(chan *PageMetadata)
+	for range workers {
+		s.wg.Go(func() {
+			for page := range queue {
+				s.verifyPage(ctx, page)
+			}
+		})
+	}
+
 	for _, page := range pages {
 		select {
 		case <-ctx.Done():
 			slog.Info("Link verification canceled")
+			close(queue)
 			s.wg.Wait()
 			return ctx.Err()
-		default:
+		case queue <- page:
 		}
-
-		// Verify page in background
-		s.wg.Add(1)
-		go s.verifyPage(ctx, page)
 	}
+	close(queue)
 
 	// Wait for all verifications to complete
 	s.wg.Wait()
@@ -187,8 +200,6 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 
 // verifyPage verifies all links in a single page.
 func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata) {
-	defer s.wg.Done()
-
 	// Check if page content has changed using MD5 hash
 	if page.ContentHash != "" {
 		if cachedHash, err := s.nats.GetPageHash(ctx, page.RenderedPath); err == nil && cachedHash == page.ContentHash {
