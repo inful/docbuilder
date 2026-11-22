@@ -17,8 +17,8 @@ func TestExampleConfigsLoad(t *testing.T) {
 		"examples/configs/config-v2-test.yaml",
 		"examples/configs/demo-config.yaml",
 		"examples/configs/git-home-config.yaml",
-		"examples/configs/relearn-config.yaml",
-		"examples/configs/relearn-example.yaml",
+		"examples/configs/docsy-config.yaml",
+		"examples/configs/docsy-example.yaml",
 		"test/config.test.yaml",
 		"test/testdata/config.test.yaml",
 	}

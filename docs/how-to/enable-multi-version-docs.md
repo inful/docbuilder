@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: 4fe5fef1d8401f66cb647ce26f2ff5dd183cbef227ac2cc63154ffa167dc16af
-lastmod: "2026-11-21"
+fingerprint: 15662473434295581758467a04c745bd2305a55b2218edf5db3558de30cc50f8
+lastmod: "2026-11-22"
 tags:
   - versioning
   - documentation
@@ -162,19 +162,18 @@ versioning:
   enabled: true
   strategy: branches_and_tags
   max_versions_per_repo: 5
-  
+
   # Include main development branches
   branch_patterns:
     - "main"
     - "develop"
-  
+
   # Include semantic version tags
   tag_patterns:
     - "v[0-9]*.[0-9]*.[0-9]*"
-  
+
 hugo:
   title: "API Documentation"
-  theme: docsy
   params:
     version_menu: true
 
@@ -241,7 +240,7 @@ Use shallow clones to reduce time:
 ```yaml
 build:
   shallow_depth: 1  # Only fetch latest commit
-  
+
 versioning:
   enabled: true
   max_versions_per_repo: 3  # Limit versions
@@ -276,7 +275,6 @@ The Docsy theme automatically detects version metadata and displays it in the na
 
 ```yaml
 hugo:
-  theme: docsy
   params:
     version_menu: true
 ```

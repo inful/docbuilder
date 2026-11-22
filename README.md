@@ -43,7 +43,7 @@ A Go utility for creating documentation sites from multiple Git repositories usi
 - Environment variable support with `.env` files
 - Incremental builds for faster updates
 - Auto-discover repositories (v2 config) across all organizations accessible to the token (Forgejo)
-- Relearn theme with sensible defaults and Hugo Modules
+- Docsy theme with sensible defaults and Hugo Modules
 
 ## Architecture
 
@@ -56,7 +56,7 @@ The build process consists of sequential stages, each with a specific responsibi
 1. **PrepareOutput** - Initialize output directories and clean previous builds
 2. **CloneRepos** - Clone/update Git repositories with authentication
 3. **DiscoverDocs** - Find markdown files in configured documentation paths
-4. **GenerateConfig** - Create Hugo configuration with Relearn theme defaults
+4. **GenerateConfig** - Create Hugo configuration with Docsy theme defaults
 5. **Layouts** - Copy layout templates
 6. **CopyContent** - Process and copy markdown files with transforms
 7. **Indexes** - Generate repository and section index pages
@@ -83,7 +83,7 @@ Documentation files undergo a transform pipeline:
 
 ### Extension Points
 
-- **Configuration**: Modify Relearn theme parameters via config
+- **Configuration**: Modify Docsy theme parameters via config
 - **Forges**: Support new Git hosting platforms with authentication methods
 
 ## Installation
@@ -308,16 +308,16 @@ docbuilder build -c config.yaml --render-mode never
 3. Else -> scaffold only.
 Hugo must be installed and on `PATH`. If the build fails, the scaffolded site remains available (warning is logged) so you can run `hugo` manually inside the output directory.
 
-### Relearn Theme
+### Docsy Theme
 
-DocBuilder uses the [Relearn theme](https://github.com/McShelby/hugo-theme-relearn) exclusively with automatic configuration:
+DocBuilder uses the [Docsy theme](https://github.com/docsy/docsy) exclusively with automatic configuration:
 
 - Creates/maintains a minimal `go.mod` (module name sanitized from `base_url` host)
-- Imports `github.com/McShelby/hugo-theme-relearn` as Hugo Module
-- Applies sensible Relearn defaults (themeVariant, search, navigation, etc.)
+- Imports `github.com/docsy/docsy/theme` as Hugo Module
+- Applies sensible Docsy defaults (offline search, light/dark menu, foldable sidebar, etc.)
 - User parameters in `hugo.params` override defaults via deep merge
 
-See [Use Relearn Theme](docs/how-to/use-relearn-theme.md) for customization options.
+See [Use Docsy Theme](docs/how-to/use-docsy-theme.md) for customization options.
 
 ### Index Page Templates (Main / Repository / Section)
 
@@ -548,7 +548,7 @@ DocBuilder includes comprehensive test coverage through multiple testing strateg
 
 Golden tests verify end-to-end functionality by comparing generated output against known-good "golden" files. These tests cover:
 
-- **Theme Support**: Relearn theme generation with comprehensive configuration
+- **Theme Support**: Docsy theme generation with comprehensive configuration
 - **Content Transformations**: Front matter injection, link rewrites, image paths
 - **Multi-Repository**: Repository aggregation and conflict resolution
 - **Edge Cases**: Empty docs, Unicode filenames, deep nesting, malformed input
@@ -561,10 +561,10 @@ Run golden tests:
 go test ./test/integration -run=TestGolden -v
 
 # Run specific test
-go test ./test/integration -run=TestGolden_RelearnBasic -v
+go test ./test/integration -run=TestGolden_FrontmatterInjection -v
 
 # Update golden files when output changes are expected
-go test ./test/integration -run=TestGolden_RelearnBasic -update-golden
+go test ./test/integration -run=TestGolden_FrontmatterInjection -update-golden
 
 # Skip in short mode for faster test runs
 go test ./test/integration -short
@@ -572,7 +572,7 @@ go test ./test/integration -short
 
 **CI Integration**: Golden tests run automatically on every PR via GitHub Actions with Hugo pre-installed.
 
-**Documentation**: See [docs/testing/golden-test-implementation.md](docs/testing/golden-test-implementation.md) for implementation details.
+**Documentation**: See [test/integration/README.md](test/integration/README.md) for implementation details.
 
 ### Unit Tests
 
@@ -861,7 +861,6 @@ hugo:
   title: Unified Docs
   description: Combined service & monorepo documentation
   base_url: https://docs.example.com
-  theme: relearn
 
 output:
   directory: ./site
