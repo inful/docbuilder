@@ -23,8 +23,8 @@ commits; pin to a SHA for reproducibility per the README.
   index.** The wait for the lock was set through a statement, which
   reaches only the one connection that ran it - every other connection
   the pool opened had no wait at all. The index now waits for the lock
-  on every connection, and the write takes the lock at the start of
-  the transaction instead of on its first write.
+  on every connection, takes the lock at the start of the transaction
+  instead of on its first write, and writes one build at a time.
 
 - **A static export ships a working search again.** The provider
   followed the configuration file: a file with a `daemon:` block made

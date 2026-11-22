@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"unicode"
 	"unicode/utf8"
 
@@ -63,6 +64,11 @@ const searchStatement = `SELECT url, title, snippet(pages, 4, '', '', '…', 20)
 // Index is the full-text index over the documentation.
 type Index struct {
 	db *sql.DB
+	// writeMu serializes the writes. Two builds that finish at the
+	// same time both rewrite the whole index, and SQLite lets only
+	// one writer at a time: the second one would fail with "database
+	// is locked" rather than wait. The lock makes it wait.
+	writeMu sync.Mutex
 }
 
 // Open opens the index in the given directory, creating it when it does
@@ -88,10 +94,13 @@ func Open(dir string) (*Index, error) {
 	// as "deferred" takes the write lock on its first write, and SQLite
 	// does not wait for the lock on that step - it fails at once. Two
 	// builds finishing at the same time would then break each other.
+	//
+	// The wait is long because a write of a big site takes a while,
+	// and a second write must not give up while the first one runs.
 	path := filepath.Join(dir, "search.db")
 	dsn := "file:" + path + "?" + url.Values{
 		"_pragma": {
-			"busy_timeout(5000)",
+			"busy_timeout(30000)",
 			"journal_mode(WAL)",
 			"synchronous(NORMAL)",
 		},
@@ -146,6 +155,11 @@ func (i *Index) Upsert(ctx context.Context, docs []Document) error {
 	if i == nil || i.db == nil {
 		return errors.New("search: index is not open")
 	}
+
+	// One write at a time: SQLite allows a single writer, and a
+	// second one fails rather than waits.
+	i.writeMu.Lock()
+	defer i.writeMu.Unlock()
 
 	tx, err := i.db.BeginTx(ctx, nil)
 	if err != nil {
