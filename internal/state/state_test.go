@@ -220,6 +220,15 @@ func testPersistence(t *testing.T) {
 		t.Fatalf("Failed to create test repository: %v", createResult.UnwrapErr())
 	}
 
+	// The values the daemon reads back after a restart: the commit a
+	// repository was built at and the hash of its files. Without them
+	// the daemon cannot tell whether anything changed.
+	repo.LastCommit = foundation.Some("abc123")
+	repo.DocFilesHash = foundation.Some("hash-abc123")
+	if updateResult := store.Repositories().Update(ctx, repo); updateResult.IsErr() {
+		t.Fatalf("Failed to update test repository: %v", updateResult.UnwrapErr())
+	}
+
 	// Close current store
 	closeResult := store.Close(ctx)
 	if closeResult.IsErr() {
@@ -242,6 +251,25 @@ func testPersistence(t *testing.T) {
 	repos := listResult.Unwrap()
 	if len(repos) < 1 {
 		t.Errorf("Expected at least 1 repository, got %d", len(repos))
+	}
+
+	// The values must be there after the restart: a value that is
+	// written but not read back is a value that is lost.
+	var found *Repository
+	for i := range repos {
+		if repos[i].Name == "persist-repo" {
+			found = &repos[i]
+			break
+		}
+	}
+	if found == nil {
+		t.Fatal("the repository was not persisted")
+	}
+	if found.LastCommit.IsNone() || found.LastCommit.Unwrap() != "abc123" {
+		t.Errorf("the commit was lost: %v", found.LastCommit)
+	}
+	if found.DocFilesHash.IsNone() || found.DocFilesHash.Unwrap() != "hash-abc123" {
+		t.Errorf("the doc-files hash was lost: %v", found.DocFilesHash)
 	}
 
 	// Check state file exists
