@@ -45,8 +45,15 @@ func (h *APIHandlers) HandleDocsStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The status is the status of the daemon: a monitor that polls this
+	// endpoint has to see that the daemon is stopped or failing.
+	daemonStatus := "ready"
+	if h.daemon != nil {
+		daemonStatus = h.daemon.GetStatus()
+	}
+
 	status := &responses.ServerStatusResponse{
-		Status:      "ready",
+		Status:      daemonStatus,
 		Title:       h.config.Hugo.Title,
 		Description: h.config.Hugo.Description,
 		Theme:       config.ThemeDocsy,
