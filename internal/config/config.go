@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"gopkg.in/yaml.v3"
@@ -463,38 +462,6 @@ func Init(configPath string, force bool) error {
 	}
 
 	return nil
-}
-
-// IsConfigVersion returns true if the config file version field in the given file starts with "2.".
-func IsConfigVersion(configPath string) (bool, error) {
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return false, errors.NewError(errors.CategoryConfig, "configuration file not found").
-			WithContext("path", configPath).
-			Build()
-	}
-
-	// #nosec G304 - configPath is from CLI argument, user-controlled
-	data, err := os.ReadFile(filepath.Clean(configPath))
-	if err != nil {
-		return false, errors.WrapError(err, errors.CategoryConfig, "failed to read config file").
-			WithContext("path", configPath).
-			Build()
-	}
-
-	// Expand environment variables
-	expandedData := expandEnv(string(data))
-
-	// Try to parse just the version field
-	var versionCheck struct {
-		Version string `yaml:"version"`
-	}
-
-	if err := yaml.Unmarshal([]byte(expandedData), &versionCheck); err != nil {
-		// If it fails to parse, assume v1
-		return false, nil //nolint:nilerr // intentionally swallow parse errors to detect non-v2 configs
-	}
-
-	return strings.HasPrefix(versionCheck.Version, "2."), nil
 }
 
 // Historical note: legacy alias names (V2Config, LoadV2, InitV2, IsV2Config) were removed during cleanup.

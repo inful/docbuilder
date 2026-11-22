@@ -15,13 +15,6 @@ type BuildObserver interface {
 	OnBuildComplete(report *BuildReport)
 }
 
-// NoopObserver is a no-op implementation.
-type NoopObserver struct{}
-
-func (NoopObserver) OnStageStart(_ StageName)                                    {}
-func (NoopObserver) OnStageComplete(_ StageName, _ time.Duration, _ StageResult) {}
-func (NoopObserver) OnBuildComplete(_ *BuildReport)                              {}
-
 // RecorderObserver adapts metrics.Recorder into a BuildObserver.
 type RecorderObserver struct{ Recorder metrics.Recorder }
 
