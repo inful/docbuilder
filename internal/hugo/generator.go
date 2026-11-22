@@ -519,6 +519,12 @@ func (g *Generator) ComputeConfigHashForPersistence() string { return g.ComputeC
 func (g *Generator) Config() *config.Config         { return g.config }
 func (g *Generator) ExistingSiteValidForSkip() bool { return g.existingSiteValidForSkip() }
 
+// SkipIfUnchanged reports whether a build may be skipped when nothing moved.
+// The configuration decides: with skip_if_unchanged off, every build runs.
+func (g *Generator) SkipIfUnchanged() bool {
+	return g.config != nil && g.config.Build.SkipIfUnchanged
+}
+
 func (g *Generator) OutputDir() string                            { return g.outputDir }
 func (g *Generator) StageDir() string                             { return g.stageDir }
 func (g *Generator) Recorder() metrics.Recorder                   { return g.recorder }

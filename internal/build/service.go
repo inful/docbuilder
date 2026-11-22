@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build/validation"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
@@ -43,12 +42,6 @@ type BuildRequest struct {
 	// translates to: install a persistent workspace factory AND set
 	// KeepWorkspace=true on the request.
 	KeepWorkspace bool
-
-	// SkipState optionally enables skip-evaluation by providing access to
-	// the persisted build state. nil disables skip-evaluation regardless
-	// of Options.SkipIfUnchanged. The daemon passes its state manager
-	// here; the CLI omits it.
-	SkipState validation.SkipStateAccess
 
 	// StateManager optionally persists the per-repository metadata the build
 	// discovers (document counts, document hashes, and the commit each
@@ -94,9 +87,6 @@ type DirectBuildRequest struct {
 type BuildOptions struct {
 	// Verbose enables detailed logging during the build.
 	Verbose bool
-
-	// SkipIfUnchanged enables skip evaluation when content hasn't changed.
-	SkipIfUnchanged bool
 }
 
 // BuildResult contains the outcome of a build execution.

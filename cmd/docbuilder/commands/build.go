@@ -110,7 +110,6 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 		OutputDir:     outputDir,
 		Incremental:   incrementalMode,
 		KeepWorkspace: keepWorkspace,
-		Options:       build.BuildOptions{SkipIfUnchanged: cfg.Build.SkipIfUnchanged},
 	})
 	if err != nil {
 		slog.Error("Build pipeline failed", "error", err)

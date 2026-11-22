@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build/validation"
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	dberrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
@@ -86,15 +85,6 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		return result, nil
 	}
 
-	// Stage 0: Skip evaluation (optional — only when both SkipIfUnchanged
-	// is requested and the caller supplied SkipState access).
-	if req.Options.SkipIfUnchanged && req.SkipState != nil {
-		skipResult := s.evaluateSkip(ctx, req, startTime)
-		if skipResult != nil {
-			return skipResult, nil
-		}
-	}
-
 	// Stage 1: Create workspace. The factory is responsible for choosing
 	// persistent vs ephemeral; BuildRequest.KeepWorkspace only signals
 	// "preserve staging dir on failure" to the generator.
@@ -157,6 +147,18 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 	result.FilesProcessed = report.Files
 	result.RepositoriesSkipped = report.FailedRepositories
 
+	// The pipeline skips the build itself when nothing moved: the
+	// repositories are unchanged, the configuration is the same and the
+	// previous output is still valid. Report that as a skip.
+	if report.SkipReason != "" {
+		result.Status = BuildStatusSkipped
+		result.Skipped = true
+		result.SkipReason = report.SkipReason
+		s.recorder.IncBuildOutcome(metrics.BuildOutcomeSkipped)
+		s.recorder.ObserveBuildDuration(result.Duration)
+		return result, nil
+	}
+
 	s.recorder.IncBuildOutcome(metrics.BuildOutcomeSuccess)
 	s.recorder.ObserveBuildDuration(result.Duration)
 
@@ -216,37 +218,4 @@ func (s *DefaultBuildService) RunDirect(ctx context.Context, req DirectBuildRequ
 	s.recorder.ObserveBuildDuration(result.Duration)
 
 	return result, nil
-}
-
-// evaluateSkip performs skip evaluation and returns a result if build should be skipped.
-// Returns nil if build should proceed.
-func (s *DefaultBuildService) evaluateSkip(ctx context.Context, req BuildRequest, startTime time.Time) *BuildResult {
-	stageStart := time.Now()
-	ctx = observability.WithStage(ctx, "skip_evaluation")
-	observability.InfoContext(ctx, "Evaluating if build can be skipped")
-
-	generator := newHugoGenerator(req.Config, req.OutputDir, req.StateManager)
-	evaluator := validation.NewSkipEvaluator(req.OutputDir, req.SkipState, generator)
-
-	skipReport, canSkip := evaluator.Evaluate(ctx, req.Config.Repositories)
-	s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
-
-	if !canSkip {
-		observability.InfoContext(ctx, "Skip evaluation complete - proceeding with build")
-		return nil
-	}
-
-	// Build should be skipped
-	observability.InfoContext(ctx, "Build skipped - no changes detected")
-	result := &BuildResult{
-		Status:     BuildStatusSkipped,
-		Skipped:    true,
-		SkipReason: "no_changes",
-		Report:     skipReport,
-		EndTime:    time.Now(),
-	}
-	result.Duration = result.EndTime.Sub(startTime)
-	s.recorder.IncBuildOutcome(metrics.BuildOutcomeSkipped)
-	s.recorder.ObserveBuildDuration(result.Duration)
-	return result
 }

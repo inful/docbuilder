@@ -12,6 +12,7 @@
 //     has already produced the doc-file list (e.g. preview mode, or
 //     `docbuilder build -d` against a local directory).
 //
-// Skip-evaluation is opt-in via BuildRequest.SkipState. The daemon passes
-// its state manager; the CLI omits it.
+// A build is skipped by the pipeline itself: after the repositories are
+// cloned, the pipeline compares their commits with the ones the last build
+// used, and skips the rest of the work when nothing moved.
 package build

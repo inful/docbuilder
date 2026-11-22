@@ -179,8 +179,9 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	}
 
 	// Enable skip evaluation by default in daemon mode for efficiency
-	// This prevents unnecessary rebuilds when nothing has changed
-	if !cfg.Build.SkipIfUnchanged {
+	// This prevents unnecessary rebuilds when nothing has changed. An
+	// explicit false in the configuration is left alone.
+	if !cfg.Build.skipIfUnchangedSpecified && !cfg.Build.SkipIfUnchanged {
 		cfg.Build.SkipIfUnchanged = true
 	}
 

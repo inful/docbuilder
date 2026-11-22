@@ -61,14 +61,20 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 
 	attemptUpdate := false
 	var preHead string
+	repoPath := filepath.Join(f.workspace, repo.Name)
 	switch strategy {
 	case config.CloneStrategyUpdate:
 		attemptUpdate = true
+		// The clone the last build used is still here. Its HEAD is what
+		// the update is compared against, so the pipeline can tell that
+		// nothing moved.
+		if h, herr := git.ReadRepoHead(repoPath); herr == nil {
+			preHead = h
+		}
 	case config.CloneStrategyAuto:
 		// Determine if repo exists already
 		// We replicate minimal logic; detailed head read happens after successful op.
 		// Use same path logic as client.
-		repoPath := filepath.Join(f.workspace, repo.Name)
 		if err := gitStatRepo(repoPath); err == nil {
 			attemptUpdate = true
 			if h, herr := git.ReadRepoHead(repoPath); herr == nil {

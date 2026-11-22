@@ -871,9 +871,9 @@ func (d *Daemon) Build(ctx context.Context, job *queue.BuildJob) (*models.BuildR
 // daemon-mode jobs honor cfg.Output.BaseDirectory), and the daemon's
 // per-build wiring:
 //
-//   - SkipState is set to the daemon's state manager so the canonical
-//     BuildService can run skip-evaluation when build.skip_if_unchanged
-//     is configured (previously wired via the HugoGeneratorFactory closure).
+//   - StateManager is set to the daemon's state manager, so the pipeline
+//     can record the commit each repository was built at and skip a build
+//     when nothing moved.
 //   - OnDocumentReady is set to the outbound dispatcher's Enqueue when
 //     ragabast ingest is enabled, so built documents are pushed to the
 //     external indexer as they are written.
@@ -910,11 +910,9 @@ func (d *Daemon) jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, err
 		cfg = &cfgCopy
 	}
 
-	// *state.ServiceAdapter implements validation.SkipStateAccess (all
-	// seven getters/setters that BuildService.Run's evaluateSkip path
-	// calls). See internal/state/service_adapter.go. The state and
-	// optional sub-structs are always populated by the constructor
-	// and the daemonForTest helper, so no nil-check is needed here.
+	// The state and optional sub-structs are always populated by the
+	// constructor and the daemonForTest helper, so no nil-check is needed
+	// here.
 	skipState := d.state.stateManager
 	var onDocReady func([]byte, string)
 	if d.optional.outboundDispatcher != nil {
@@ -925,12 +923,8 @@ func (d *Daemon) jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, err
 		Config:          cfg,
 		OutputDir:       resolveOutputDir(cfg),
 		Incremental:     true, // Daemon mode uses incremental updates to leverage remote HEAD cache
-		SkipState:       skipState,
 		StateManager:    skipState,
 		OnDocumentReady: onDocReady,
-		Options: build.BuildOptions{
-			SkipIfUnchanged: cfg.Build.SkipIfUnchanged,
-		},
 	}, nil
 }
 

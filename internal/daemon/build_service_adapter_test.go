@@ -68,16 +68,29 @@ func newDaemonForTest(t testingT, svc build.BuildService) *Daemon {
 }
 
 // fakeDaemonStateManager satisfies state.DaemonStateManager (the aggregate
-// interface the daemon stores in its stateManager field) and embeds the
-// validation.SkipStateAccess subset so we can also verify that the same
-// value is passed through to req.SkipState. All unused methods are
-// no-op stubs; tests that exercise them should add a more capable fake.
+// interface the daemon stores in its stateManager field). All unused
+// methods are no-op stubs; tests that exercise them should add a more
+// capable fake.
 type fakeDaemonStateManager struct {
-	*fakeSkipState
+	repoLastCommit map[string]string
 }
 
 func newFakeDaemonStateManager() *fakeDaemonStateManager {
-	return &fakeDaemonStateManager{fakeSkipState: newFakeSkipState()}
+	return &fakeDaemonStateManager{repoLastCommit: map[string]string{}}
+}
+
+func (f *fakeDaemonStateManager) GetRepoLastCommit(url string) string {
+	return f.repoLastCommit[url]
+}
+func (*fakeDaemonStateManager) GetLastConfigHash() string         { return "" }
+func (*fakeDaemonStateManager) SetLastConfigHash(string)          {}
+func (*fakeDaemonStateManager) GetLastReportChecksum() string     { return "" }
+func (*fakeDaemonStateManager) SetLastReportChecksum(string)      {}
+func (*fakeDaemonStateManager) GetRepoDocFilesHash(string) string { return "" }
+func (*fakeDaemonStateManager) GetLastGlobalDocFilesHash() string { return "" }
+func (*fakeDaemonStateManager) SetLastGlobalDocFilesHash(string)  {}
+func (f *fakeDaemonStateManager) SetRepoLastCommit(url, _, _, commit string) {
+	f.repoLastCommit[url] = commit
 }
 
 func (*fakeDaemonStateManager) Load() error           { return nil }
@@ -95,10 +108,7 @@ func (*fakeDaemonStateManager) GetRepoDocFilePaths(string) []string {
 func (*fakeDaemonStateManager) SetRepoDocFilePaths(string, []string) {
 }
 
-func (*fakeDaemonStateManager) SetRepoLastCommit(string, string, string, string) {
-}
 func (*fakeDaemonStateManager) IncrementRepoBuild(string, bool) {}
-func (*fakeDaemonStateManager) SetLastConfigHash(string)        {}
 func (*fakeDaemonStateManager) RecordDiscovery(string, int)     {}
 func (*fakeDaemonStateManager) GetRepository(string) *state.RepositoryState {
 	return nil
@@ -300,17 +310,15 @@ func TestJobToBuildRequest_PassesSkipIfUnchangedFromConfig(t *testing.T) {
 	}
 	req, err := d.jobToBuildRequest(job)
 	require.NoError(t, err)
-	require.True(t, req.Options.SkipIfUnchanged)
+	require.True(t, req.Config.Build.SkipIfUnchanged,
+		"the configuration decides whether a build may be skipped")
 }
 
-// TestJobToBuildRequest_SetsSkipStateFromStateManager verifies that the
+// TestJobToBuildRequest_SetsStateManagerFromStateManager verifies that the
 // daemon passes its state manager to the canonical BuildService via
-// req.SkipState, so build.skip_if_unchanged actually runs skip-evaluation
-// on the daemon path. Regression test for the build-service-unification
-// refactor: Phase 1 dropped the SkipEvaluatorFactory closure without
-// re-wiring the state manager, which silently disabled skip-evaluation
-// whenever a user had build.skip_if_unchanged: true in their config.
-func TestJobToBuildRequest_SetsSkipStateFromStateManager(t *testing.T) {
+// req.StateManager. The pipeline records the commit each repository was
+// built at there, and reads it back to see whether anything moved.
+func TestJobToBuildRequest_SetsStateManagerFromStateManager(t *testing.T) {
 	st := newFakeDaemonStateManager()
 	d := daemonForTest(t, daemonForTestOpts{
 		Config:       &config.Config{Daemon: &config.DaemonConfig{}},
@@ -325,9 +333,9 @@ func TestJobToBuildRequest_SetsSkipStateFromStateManager(t *testing.T) {
 	}
 	req, err := d.jobToBuildRequest(job)
 	require.NoError(t, err)
-	require.Same(t, any(st), any(req.SkipState),
-		"req.SkipState must be the daemon's state manager; otherwise skip-evaluation will not run")
-	require.True(t, req.Options.SkipIfUnchanged,
+	require.Same(t, any(st), any(req.StateManager),
+		"req.StateManager must be the daemon's state manager; otherwise the pipeline cannot tell whether a repository moved")
+	require.True(t, req.Config.Build.SkipIfUnchanged,
 		"sanity: SkipIfUnchanged from config must still be carried through")
 }
 
