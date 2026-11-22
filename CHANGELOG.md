@@ -9,7 +9,7 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
-## [0.32.0] - 2026-11-22
+## [0.33.0] - 2026-11-22
 
 ### Fixed
 - **A long query no longer ties up the search endpoint.** The query
@@ -46,7 +46,8 @@ commits; pin to a SHA for reproducibility per the README.
 - **The search results hold the words of the page, not the markup.**
   The page was indexed as it was written, so an excerpt showed the
   reader `**package manager**` and the fences of the code blocks. The
-  index now holds the text of the page.
+  index now holds the text of the page - the same text the theme's own
+  index holds, so a reader finds the same pages either way.
 
 - **A field filter on a hyphenated value finds the page again.**
   `categories:how-to` asked the index for a field named `to`, which
@@ -68,6 +69,21 @@ commits; pin to a SHA for reproducibility per the README.
 - **The search tip is only shown when it helps.** A reader who already
   writes `OR`, `NOT`, a phrase or a field filter does not need to be
   reminded of them on every keystroke.
+
+- **A field filter keeps its meaning.** The quoting of the value of a
+  field filter took the wildcard of the value with it, and a colon
+  inside a quoted phrase was read as a field filter. A wildcard stays
+  a wildcard and a phrase stays a phrase.
+
+- **A change of the search provider rebuilds the site.** The provider
+  decides what the site ships - the search client and the index - but
+  it was not part of the configuration the build compares. A site that
+  switched provider kept the old client until something else changed.
+
+- **A page that asks for an address of its own is searchable again.**
+  A page with `url` in the front matter is rendered at that address,
+  and the index looked for it under the name of its file. Such a page
+  could not be reached through the search.
 
 ## [0.31.0] - 2026-11-22
 

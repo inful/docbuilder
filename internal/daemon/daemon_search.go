@@ -78,7 +78,7 @@ func (d *Daemon) startIndexSearch(ctx context.Context, outputDir string) {
 	if d.optional.search == nil {
 		return
 	}
-	d.lifecycle.workers.Go(func() {
+	d.goWorker("search_index", func() {
 		d.indexSearch(ctx, outputDir)
 	})
 }

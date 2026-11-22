@@ -377,7 +377,22 @@ func withTrailingPrefix(query string) string {
 func quoteFieldValues(query string) string {
 	var out strings.Builder
 	runes := []rune(query)
+	inPhrase := false
 	for i := 0; i < len(runes); {
+		// A quote opens and closes a phrase. A colon inside a phrase is
+		// part of the words, not a field filter.
+		if runes[i] == '"' {
+			inPhrase = !inPhrase
+			out.WriteRune(runes[i])
+			i++
+			continue
+		}
+		if inPhrase {
+			out.WriteRune(runes[i])
+			i++
+			continue
+		}
+
 		// A field filter is a name, a colon and a value.
 		nameEnd := i
 		for nameEnd < len(runes) && isNameRune(runes[nameEnd]) {
@@ -407,6 +422,21 @@ func quoteFieldValues(query string) string {
 		// the index reads as it is: a plain word.
 		if value == "" || value[0] == '"' || isPlainWord(value) {
 			out.WriteString(value)
+			continue
+		}
+
+		// A value that ends in a wildcard keeps it: the wildcard
+		// stands for the words that follow, so it stays outside the
+		// quotes. "title:kuber*" asks for the titles that start with
+		// "kuber".
+		stem, hasWildcard := strings.CutSuffix(value, "*")
+		if hasWildcard && stem != "" {
+			// The value is quoted. A quote inside it is doubled, the
+			// way the index reads it.
+			out.WriteByte('"')
+			out.WriteString(strings.ReplaceAll(stem, `"`, `""`))
+			out.WriteByte('"')
+			out.WriteByte('*')
 			continue
 		}
 

@@ -52,14 +52,7 @@ func Collect(siteDir string) ([]Document, error) {
 		if relErr != nil {
 			return relErr
 		}
-		url, ok := urlForContentPath(rel, rendered)
-		if !ok {
-			// The page was not rendered. It is not reachable, so it is
-			// not searchable.
-			return nil
-		}
-
-		doc, skip, docErr := documentFor(path, url)
+		doc, skip, docErr := documentFor(path, rel, rendered)
 		if docErr != nil {
 			// One page that cannot be read must not empty the whole
 			// index. The page is left out and the build carries on.
@@ -120,7 +113,17 @@ func renderedURLs(publicDir string) (map[string]string, error) {
 
 // urlForContentPath returns the address of the page the content file
 // was rendered at, or false when it was not rendered.
-func urlForContentPath(rel string, rendered map[string]string) (string, bool) {
+//
+// A page can ask for an address of its own with "url" in the front
+// matter: it is then rendered there, and nowhere else.
+func urlForContentPath(rel string, fields map[string]any, rendered map[string]string) (string, bool) {
+	if own, ok := fields["url"].(string); ok && own != "" {
+		url, found := renderedURLForOwn(own, rendered)
+		if found {
+			return url, true
+		}
+	}
+
 	rel = filepath.ToSlash(rel)
 	base := strings.TrimSuffix(rel, ".md")
 	dir := path.Dir(base)
@@ -142,9 +145,37 @@ func urlForContentPath(rel string, rendered map[string]string) (string, bool) {
 	return "", false
 }
 
+// renderedURLForOwn returns the address of a page that asked for an
+// address of its own.
+//
+// The address is the one the page is served at, so it comes from the
+// rendered tree: the page is looked up under the name it was rendered
+// with.
+func renderedURLForOwn(own string, rendered map[string]string) (string, bool) {
+	own = strings.TrimSuffix(own, "/")
+	own = strings.TrimPrefix(own, "/")
+	if own == "" {
+		own = ""
+	}
+
+	candidates := []string{own + "/index.html", own + ".html"}
+	if own == "" {
+		candidates = []string{"index.html"}
+	}
+	for _, candidate := range candidates {
+		if url, ok := rendered[candidate]; ok {
+			return url, true
+		}
+	}
+	return "", false
+}
+
 // documentFor reads one content file into a document. It reports skip
 // when the page asks not to be searched.
-func documentFor(path, url string) (*Document, bool, error) {
+//
+// A page that was not rendered is left out: it cannot be reached, so it
+// must not turn up in a search result.
+func documentFor(path, rel string, rendered map[string]string) (*Document, bool, error) {
 	parsed, err := docmodel.ParseFile(path, docmodel.Options{})
 	if err != nil {
 		return nil, false, fmt.Errorf("search: read %s: %w", path, err)
@@ -155,6 +186,11 @@ func documentFor(path, url string) (*Document, bool, error) {
 		return nil, false, fmt.Errorf("search: read the front matter of %s: %w", path, err)
 	}
 	if excluded, ok := fields["exclude_search"].(bool); ok && excluded {
+		return nil, true, nil
+	}
+
+	url, ok := urlForContentPath(rel, fields, rendered)
+	if !ok {
 		return nil, true, nil
 	}
 

@@ -44,6 +44,11 @@ func (c *Config) Snapshot() string {
 	}
 	// Output
 	w("output.directory", c.Output.Directory)
+	// Search provider: it decides what the site ships - the search
+	// client and the index. A change must rebuild the site.
+	if c.Search != nil {
+		w("search.provider", c.Search.Provider)
+	}
 	// Daemon content policies (build-affecting when daemon config is present)
 	if c.Daemon != nil {
 		w("daemon.content.public_only", boolToString(c.Daemon.Content.PublicOnly))
