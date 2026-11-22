@@ -53,6 +53,9 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 	tasks := make(chan cloneTask)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
+	// The first failure is kept: it is the reason the build stops, and
+	// the operator has to see it.
+	var firstErr error
 	worker := func() {
 		defer wg.Done()
 		for task := range tasks {
@@ -70,6 +73,9 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 				recordCloneSuccess(bs, task.repo, res)
 			} else {
 				recordCloneFailure(bs, res)
+				if firstErr == nil {
+					firstErr = res.Err
+				}
 			}
 			mu.Unlock()
 			if bs.Generator != nil && bs.Generator.Recorder() != nil {
@@ -107,7 +113,11 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
 		// Not one repository could be cloned. The build must stop here:
 		// the site that would be built holds nothing, and publishing it
-		// would take the documentation of the portal offline.
+		// would take the documentation of the portal offline. The reason
+		// of the first failure is part of the error.
+		if firstErr != nil {
+			return models.NewFatalStageError(models.StageCloneRepos, fmt.Errorf("%w: all clones failed: %w", models.ErrClone, firstErr))
+		}
 		return models.NewFatalStageError(models.StageCloneRepos, fmt.Errorf("%w: all clones failed", models.ErrClone))
 	}
 	if bs.Report.FailedRepositories > 0 {
