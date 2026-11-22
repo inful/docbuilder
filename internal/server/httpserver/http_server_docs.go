@@ -355,9 +355,16 @@ func setCacheControlForPath(w http.ResponseWriter, path string) {
 
 // determineCacheControl returns the appropriate Cache-Control value for a path.
 func determineCacheControl(path string) string {
-	// CSS and JavaScript - cache for 1 year (Hugo typically uses content hashing)
+	// CSS and JavaScript - cache for 1 year when the URL is
+	// content-addressed, because then the URL changes with the content.
+	// A stable URL, like the theme's prism.css, has to be revalidated:
+	// an immutable year-long cache would keep the old file after a
+	// theme bump.
 	if strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".js") {
-		return "public, max-age=31536000, immutable"
+		if isContentAddressed(path) {
+			return "public, max-age=31536000, immutable"
+		}
+		return cacheControlFiveMinute
 	}
 
 	// Web fonts - cache for 1 year
@@ -398,6 +405,38 @@ func determineCacheControl(path string) string {
 
 	// For all other files, don't set Cache-Control (let browser use default behavior)
 	return ""
+}
+
+// isContentAddressed reports whether a path names a fingerprinted
+// asset, one whose URL carries a hash of its own content. Hugo writes
+// those as name.<hash>.ext, with the hash a long run of hex digits.
+// Only such a URL changes when the content does, so only such a URL
+// may be cached immutably.
+func isContentAddressed(path string) bool {
+	name := path
+	if i := strings.LastIndex(name, "/"); i >= 0 {
+		name = name[i+1:]
+	}
+	// The extension is the last segment; the hash is the one before it.
+	dot := strings.LastIndex(name, ".")
+	if dot < 0 {
+		return false
+	}
+	stem := name[:dot]
+	dot = strings.LastIndex(stem, ".")
+	if dot < 0 {
+		return false
+	}
+	hash := stem[dot+1:]
+	if len(hash) < 32 {
+		return false
+	}
+	for _, c := range hash {
+		if !strings.ContainsRune("0123456789abcdefABCDEF", c) {
+			return false
+		}
+	}
+	return true
 }
 
 // hasLiveReloadCookie reports whether the request carries the LiveReload
