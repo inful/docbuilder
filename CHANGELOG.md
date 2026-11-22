@@ -37,6 +37,12 @@ commits; pin to a SHA for reproducibility per the README.
   the content is copied. The stage is gone, a build no longer reports
   it, and the documentation lists the stages the code really runs.
 
+- **A CPU usage that was always zero.** The status snapshot carried a
+  `cpu_usage_percent` field that was never filled in, so it reported a
+  flat zero that read like a measurement. The Prometheus endpoint has
+  the real numbers (`process_cpu_seconds_total`), and the field is
+  gone.
+
 ## [0.28.1] - 2026-11-22
 
 ### Fixed
