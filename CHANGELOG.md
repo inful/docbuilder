@@ -9,6 +9,14 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Fixed
+- **A long query no longer ties up the search endpoint.** The query
+  was cut to 256 characters on one path but not on the other, so the
+  fallback read a query of any length. A 500 KB query cost 15 seconds
+  of one CPU core per request; the endpoint is public, so a handful
+  of them made the docs server unresponsive. The cut now happens
+  once, before either path reads the query.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added

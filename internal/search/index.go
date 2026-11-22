@@ -198,6 +198,11 @@ func (i *Index) Search(ctx context.Context, query string, limit int) ([]Result, 
 		limit = 10
 	}
 
+	// The query is cut short before it reaches either path. Both paths
+	// build one term per word, so a long query would cost the server
+	// seconds of work for one request.
+	query = cutQuery(query)
+
 	// The forgiving query holds every word of the query. When it is
 	// empty the query has no word to search for at all.
 	forgiving := buildMatch(query)
@@ -270,16 +275,33 @@ var operators = map[string]bool{
 // is cut short: a search box is for words, not for programs.
 const maxQueryLength = 256
 
+// cutQuery cuts a query short: a search box is for words, not for
+// programs.
+//
+// The cut happens on a rune boundary, so a multi-byte letter is not
+// cut in half.
+func cutQuery(query string) string {
+	query = strings.TrimSpace(query)
+	if len(query) > maxQueryLength {
+		query = query[:maxQueryLength]
+		// The cut can land in the middle of a letter. The half that
+		// is left is not a word, so it goes.
+		if !utf8.ValidString(query) {
+			query = strings.ToValidUTF8(query, "")
+		}
+	}
+	return strings.TrimSpace(query)
+}
+
 // strictMatch turns a query into an expression the index reads as it
 // is written.
+//
+// The query is expected to be cut short already (see cutQuery).
 //
 // The last term of the query may be a prefix, so "deploy kube" finds
 // "deployment/kubernetes" while the reader is still typing it.
 func strictMatch(query string) string {
 	query = strings.TrimSpace(query)
-	if len(query) > maxQueryLength {
-		query = strings.TrimSpace(query[:maxQueryLength])
-	}
 	if query == "" {
 		return ""
 	}

@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2026-11-22T00:00:00Z
-fingerprint: a8914a46104fe9b6e0095c38a04aa47a238b6f2d11f92eead3394ef3eb208738
+fingerprint: 9387056f1993b0d1bd1fabbb7fd4bd87fab23ec7fe2711f3badb0e0566f3e875
 lastmod: "2026-11-22"
 tags:
   - search
@@ -155,7 +155,8 @@ half a query still finds the pages it can.
 - The index holds the text of the pages, not their code blocks in
   their original form. The words of a code block are searchable, but
   not its punctuation.
-- A query is at most 256 characters long.
+- A query is at most 256 characters long. A longer one is cut short:
+  a search box is for words, not for programs.
 
 A stronger engine - one with fuzzy matching and facets - can replace the
 index behind the same endpoint. The endpoint, the client and the way the

@@ -4,7 +4,6 @@ import (
 	"context"
 	"slices"
 	"sort"
-	"strings"
 	"testing"
 )
 
@@ -125,15 +124,5 @@ func TestStrictMatch(t *testing.T) {
 				t.Fatalf("strictMatch(%q) = %q, want %q", tc.query, got, tc.want)
 			}
 		})
-	}
-}
-
-// A query that is too long is cut short: a search box is for words,
-// not for programs.
-func TestStrictMatchCutsALongQuery(t *testing.T) {
-	query := strings.Repeat("a ", 500)
-	got := strictMatch(query)
-	if len(got) > maxQueryLength+1 {
-		t.Fatalf("the query is %d characters long, want at most %d", len(got), maxQueryLength)
 	}
 }
