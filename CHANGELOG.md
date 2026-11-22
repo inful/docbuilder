@@ -9,6 +9,92 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.28.3] - 2026-11-22
+
+A third audit of the whole repository. Two of the findings broke a
+build; the rest were slow paths, drift and code that did nothing.
+
+### Fixed
+- **A repository that moved two commits was reported as diverged.** The
+  default clone keeps one commit of history, so the daemon could not
+  read the history it needed to tell a fast-forward from a divergence.
+  Every repository that moved two or more commits between two builds
+  took the destructive path, and `hard_reset_on_diverge: false` - the
+  setting that is supposed to be the safe one - failed the update
+  outright. The daemon deepens the history when it has to and asks
+  again now.
+
+- **The queue length on the status page was a number nobody could
+  trust.** Two counters wrote to it: one counted the jobs waiting, the
+  other counted every job that had ever been queued and was only
+  corrected every 30 seconds. The number on the status page, in the
+  build status endpoint and in the Prometheus gauge grew with every
+  build. The build queue is the only owner of that number now.
+
+- **Every markdown file was read twice per fix run.** The linter found
+  the broken links and the fixer looked for them again, parsing the
+  whole tree a second time. The interactive path parsed every file four
+  times. The fixer works from the findings of the lint run now.
+
+- **The link rate limit did not limit anything.** The delay was
+  applied between pages, not between requests, so a page with thirty
+  links sent all thirty at once. It also sat on the critical path, so
+  a site of 171 pages waited 17 seconds before the last page was even
+  looked at. The delay is in front of the request now.
+
+- **The preview showed one set of changes and another set was
+  applied.** The interactive fix ran the whole fixer twice, and the
+  second run read the tree again. If anything changed in between, the
+  applied fixes were not the ones the user had approved. Both runs
+  work from the same lint run now.
+
+- **A font that changed kept the old one in the browser.** Stylesheets
+  and scripts are cached for a year only when their name carries a hash
+  of their content. Fonts were cached that way whatever their name
+  was, so a theme that changed a font never reached a browser that had
+  it. Fonts follow the same rule now.
+
+- **The Prometheus gauges reported the wrong daemon.** They read a
+  package global, so a second daemon in the same process - a test, for
+  instance - made both report the numbers of the last one. The gauges
+  belong to their daemon now.
+
+- **The event log was scanned after every build.** The delete that
+  removes the old events ran after every build, even when nothing was
+  old enough to remove. It runs on a schedule now, and the rebuild at
+  startup reads the recent events instead of the whole log.
+
+### Changed
+- **The documentation check cache grew with every commit.** The cache
+  key held the timestamp it was supposed to be invalidated by, so every
+  commit left an entry behind that was never used again. The
+  repository keeps one entry now.
+
+- **The histogram shifted its whole buffer on every value.** A
+  histogram that holds a thousand values copied all thousand of them on
+  every new value. It overwrites the oldest value instead.
+
+- **The map of already uploaded documents grew forever.** The daemon
+  remembered every document it had ever sent to ragabast, and never
+  forgot one. The map is bounded now.
+
+### Removed
+- **A webhook endpoint that did nothing.** The daemon answered `POST
+  /webhook` with a cheerful acknowledgement and threw the payload
+  away: no signature was checked and no build was started. It is gone,
+  so a request to it gets a 404 instead of a misleading answer. The
+  webhook paths of the configured forges are unchanged.
+
+- **A copy of the reference lister without authentication.** The
+  version manager could lose the authentication of a private
+  repository without saying so. The parameter that carries it is typed
+  now, and the copy of the lister that had no authentication at all is
+  gone.
+
+- **A package that held one copied interface.** The package existed
+  for a single interface that repeated four methods another package
+  already had. The package is gone.
+
 ## [0.28.2] - 2026-11-22
 
 A second audit of the whole repository. Two of the findings were real
