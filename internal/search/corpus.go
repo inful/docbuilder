@@ -154,9 +154,6 @@ func urlForContentPath(rel string, fields map[string]any, rendered map[string]st
 func renderedURLForOwn(own string, rendered map[string]string) (string, bool) {
 	own = strings.TrimSuffix(own, "/")
 	own = strings.TrimPrefix(own, "/")
-	if own == "" {
-		own = ""
-	}
 
 	candidates := []string{own + "/index.html", own + ".html"}
 	if own == "" {
