@@ -102,6 +102,20 @@ func generateThemeAssets(ctx *GenerationContext) ([]*StaticAsset, error) {
 	)
 	assets = append(assets, docsyVendoredAssets()...)
 
+	// The theme fetches KaTeX from a CDN and mermaid from a CDN, and
+	// the build fails when the network does not answer (issue #129). The
+	// site serves its own copy of KaTeX, and the mermaid partial of the
+	// theme is replaced by one that does not fetch anything.
+	katexAssets, err := katexVendoredAssets()
+	if err != nil {
+		return nil, err
+	}
+	assets = append(assets, katexAssets...)
+	assets = append(assets,
+		&StaticAsset{Path: "layouts/_partials/scripts/katex.html", Content: []byte(katexPartial)},
+		&StaticAsset{Path: "layouts/_partials/scripts/plugins/mermaid.html", Content: []byte(mermaidPartial)},
+	)
+
 	if serverSideSearch(ctx) {
 		// The search runs on the server: the browser asks the daemon
 		// instead of downloading an index of the whole site. The theme's
