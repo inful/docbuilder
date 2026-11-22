@@ -128,6 +128,14 @@ func (g *Generator) finalizeStaging() error {
 			slog.String("from", g.stageDir),
 			slog.String("to", g.outputDir),
 			slog.String("error", err.Error()))
+		// Put the previous site back. Without it the daemon would serve
+		// nothing at all until the next build.
+		if restoreErr := os.Rename(prev, g.outputDir); restoreErr != nil {
+			slog.Error("Failed to restore the previous output directory",
+				slog.String("from", prev),
+				slog.String("to", g.outputDir),
+				slog.String("error", restoreErr.Error()))
+		}
 		return fmt.Errorf("promote staging: %w", err)
 	}
 	g.stageDir = ""
