@@ -75,6 +75,11 @@ commits; pin to a SHA for reproducibility per the README.
   inside a quoted phrase was read as a field filter. A wildcard stays
   a wildcard and a phrase stays a phrase.
 
+- **A change of the search provider rebuilds the site.** The provider
+  decides what the site ships - the search client and the index - but
+  it was not part of the configuration the build compares. A site that
+  switched provider kept the old client until something else changed.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added
