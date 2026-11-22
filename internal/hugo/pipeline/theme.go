@@ -40,6 +40,12 @@ var docsyFontSolid []byte
 //go:embed assets/docsy/VERSION
 var docsyVendoredVersion string
 
+//go:embed assets/docsy/head.html
+var docsyHeadHTML []byte
+
+//go:embed assets/docsy/lunr.min.js
+var docsyLunrJS []byte
+
 //go:embed assets/docsy-page-meta-links.html
 var docsyPageMetaLinks []byte
 
@@ -67,6 +73,7 @@ func docsyVendoredAssets() []*StaticAsset {
 	return []*StaticAsset{
 		{Path: "assets/css/docsy.css", Content: docsyStylesheet},
 		{Path: "assets/vendor/bootstrap/dist/js/bootstrap.bundle.js", Content: docsyBootstrapJS},
+		{Path: filepath.Join("assets", "vendor", "lunr", "lunr.min.js"), Content: docsyLunrJS},
 		{Path: filepath.Join("static", "webfonts", DocsyVersion, "fa-brands-400.woff2"), Content: docsyFontBrands},
 		{Path: filepath.Join("static", "webfonts", DocsyVersion, "fa-solid-900.woff2"), Content: docsyFontSolid},
 	}

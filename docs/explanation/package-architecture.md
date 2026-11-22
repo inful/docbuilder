@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: b220da48f0d296ca04a59f297824fbd2335054397a0de2daa9a8f17320234a1b
+fingerprint: 6dd16e8590c6e25014b8622c5521fb98a4ae063683c6891bc3e99f4ac25d7acb
 lastmod: "2026-11-22"
 tags:
   - architecture

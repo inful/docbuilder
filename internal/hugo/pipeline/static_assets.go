@@ -81,6 +81,9 @@ func generateThemeAssets(ctx *GenerationContext) ([]*StaticAsset, error) {
 		&StaticAsset{Path: "layouts/_partials/hooks/head-end.html", Content: content},
 		&StaticAsset{Path: "layouts/_partials/head-css.html", Content: []byte(docsyHeadCSS)},
 		&StaticAsset{Path: docsyPageMetaLinksPath, Content: docsyPageMetaLinks},
+		// The theme's own head partial, with the offline-search script
+		// pointed at the vendored copy instead of the unpkg CDN.
+		&StaticAsset{Path: "layouts/_partials/head.html", Content: docsyHeadHTML},
 	)
 	assets = append(assets, docsyVendoredAssets()...)
 

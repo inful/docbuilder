@@ -29,6 +29,11 @@ BOOTSTRAP_VERSION="5.3.8"
 FONTAWESOME_VERSION="7.3.1"
 SASS_VERSION="1.106.1"
 
+# The Docsy theme loads the offline-search library (lunr) from the
+# unpkg CDN. The site serves its own copy, so the version has to match
+# the one the theme pins.
+LUNR_VERSION="2.3.9"
+
 # Absolute: the script builds the theme in a temporary directory.
 TARGET="$(pwd)/internal/hugo/pipeline/assets/docsy"
 
@@ -74,7 +79,8 @@ npm init -y >/dev/null 2>&1
 npm install --no-audit --no-fund --save-exact \
     "bootstrap@${BOOTSTRAP_VERSION}" \
     "@fortawesome/fontawesome-free@${FONTAWESOME_VERSION}" \
-    "sass-embedded@${SASS_VERSION}" >/dev/null
+    "sass-embedded@${SASS_VERSION}" \
+    "lunr@${LUNR_VERSION}" >/dev/null
 
 # The theme compiles its stylesheet with the dartsass transpiler, which
 # Hugo looks up as "sass" on PATH. The npm package puts it there.
@@ -92,11 +98,51 @@ sed "s|\.\./webfonts/|../webfonts/${VERSION}/|g" "$CSS" > "$TARGET/docsy.css"
 cp node_modules/bootstrap/dist/js/bootstrap.bundle.js "$TARGET/bootstrap.bundle.js"
 cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-brands-400.woff2 "$TARGET/"
 cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2 "$TARGET/"
+cp node_modules/lunr/lunr.min.js "$TARGET/lunr.min.js"
+
+# The theme's head partial, with the offline-search script pointed at
+# the copy above instead of the unpkg CDN. The theme's own partial is
+# the single source for everything else in the head.
+"$HUGO_BIN" mod vendor >/dev/null
+THEME_HEAD="$(find _vendor -path '*docsy*/theme@*/layouts/_partials/head.html' | head -1)"
+if [ -z "$THEME_HEAD" ]; then
+    echo "cannot find the theme's head.html in _vendor" >&2
+    exit 1
+fi
+{
+  echo "{{- /* Vendored from the Docsy theme ${VERSION}: layouts/_partials/head.html."
+  echo "  Regenerate with scripts/vendor-docsy-assets.sh; do not edit by hand."
+  echo ""
+  echo "  The only change is the offline-search script: the theme loads lunr"
+  echo "  from the unpkg CDN, this site serves its own copy. */ -}}"
+} > "$TARGET/head.html"
+
+awk '
+  /^\{\{ if \.Site\.Params\.offlineSearch -\}\}$/ {
+    print "{{ if .Site.Params.offlineSearch -}}"
+    print "{{- $lunr := resources.Get \"vendor/lunr/lunr.min.js\" | fingerprint -}}"
+    print "<script defer"
+    print "  src=\"{{ $lunr.RelPermalink }}\""
+    print "  integrity=\"{{ $lunr.Data.Integrity }}\""
+    print "  crossorigin=\"anonymous\"></script>"
+    skipping = 1
+    next
+  }
+  skipping && /^\{\{ end -\}\}$/ { print; skipping = 0; next }
+  skipping { next }
+  { print }
+' "$THEME_HEAD" >> "$TARGET/head.html"
+
+if grep -q unpkg "$TARGET/head.html"; then
+    echo "the theme's head.html still points at the unpkg CDN" >&2
+    exit 1
+fi
 
 cat > "$TARGET/VERSION" <<EOF
 docsy ${VERSION}
 bootstrap ${BOOTSTRAP_VERSION}
 fontawesome ${FONTAWESOME_VERSION}
+lunr ${LUNR_VERSION}
 EOF
 
 echo "vendored:"
