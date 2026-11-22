@@ -88,6 +88,7 @@ type BuildQueue struct {
 	active      map[string]*BuildJob
 	history     []*BuildJob
 	historySize int
+	historyHead int // index of the oldest entry in the history ring
 	stopChan    chan struct{}
 	stopOnce    sync.Once
 	wg          sync.WaitGroup
@@ -375,11 +376,14 @@ func (bq *BuildQueue) emitBuildCompletedEvent(ctx context.Context, job *BuildJob
 }
 
 func (bq *BuildQueue) addToHistory(job *BuildJob) {
-	bq.history = append(bq.history, job)
-	if len(bq.history) > bq.historySize {
-		copy(bq.history, bq.history[len(bq.history)-bq.historySize:])
-		bq.history = bq.history[:bq.historySize]
+	if len(bq.history) < bq.historySize {
+		bq.history = append(bq.history, job)
+		return
 	}
+	// The history is full: overwrite the oldest entry instead of shifting
+	// every entry on every build.
+	bq.history[bq.historyHead] = job
+	bq.historyHead = (bq.historyHead + 1) % bq.historySize
 }
 
 func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
