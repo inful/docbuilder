@@ -320,7 +320,7 @@ func (d *Daemon) initHTTPServer(cfg *config.Config) {
 		LiveReloadHub:         d.optional.liveReload,
 		EnhancedHealthHandle:  d.EnhancedHealthHandler,
 		DetailedMetricsHandle: detailedMetrics,
-		PrometheusHandler:     prometheusOptionalHandler(),
+		PrometheusHandler:     prometheusOptionalHandler(d),
 		StatusHandle:          statusHandlers.HandleStatusPage,
 	})
 }
@@ -488,10 +488,6 @@ func (d *Daemon) initOutboundDispatcher(ragCfg *config.RagabastConfig) error {
 	return nil
 }
 
-// defaultDaemonInstance is used by optional Prometheus integration to pull metrics
-// into the Prometheus registry when the build tag is enabled.
-var defaultDaemonInstance *Daemon
-
 // Start starts the daemon and all its components.
 func (d *Daemon) Start(ctx context.Context) error {
 	d.lifecycle.mu.Lock()
@@ -507,8 +503,6 @@ func (d *Daemon) Start(ctx context.Context) error {
 	d.serve.metrics.IncrementCounter("daemon_starts")
 	d.serve.metrics.SetGauge("daemon_status", int64(1)) // 1 = starting
 
-	// Set global reference for metrics bridge (prometheus build only uses it).
-	defaultDaemonInstance = d
 	slog.Info("Starting DocBuilder daemon", slog.String("version", "2.0"))
 
 	// Load persistent state
