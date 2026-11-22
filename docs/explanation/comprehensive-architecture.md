@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: a958afc7380e32cfc157c1818a94eab924e6c64d0b2bf0fe9aef88a227b8ec08
-lastmod: "2026-11-21"
+fingerprint: edabc69f32d83abf287326bdf5a435e0f6529db504eb5d1c54774ed31c434244
+lastmod: "2026-11-22"
 tags:
   - architecture
   - design

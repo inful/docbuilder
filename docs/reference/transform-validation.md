@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: b3d843e5a7db062fe6abd245bdcb579918ef0644d79e3a0eb02deb9d6fde2926
-lastmod: "2026-11-19"
+fingerprint: 74ec55cf898acf3a34bf075f978279acf85b6c3db5cf51bcce68fe625d3e3066
+lastmod: "2026-11-22"
 tags:
   - validation
   - transforms
