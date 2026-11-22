@@ -508,8 +508,14 @@ type manualIssueOut struct {
 // computeManualRequired re-lints the docs tree after a fix and
 // returns issues whose rule isn't auto-fixable. It runs as a read-only
 // lint pass so the fixer's own output isn't re-fixed in a loop.
-func computeManualRequired(path string, _ *serverState) []manualIssueOut {
-	linter := lint.NewLinter(&lint.Config{Format: "text"})
+func computeManualRequired(path string, state *serverState) []manualIssueOut {
+	// The same excludes as the fix: the operator excluded the files,
+	// and the follow-up lint must not report issues in them.
+	var excludes []string
+	if state != nil {
+		excludes = lintExcludes(state.cfg)
+	}
+	linter := lint.NewLinter(&lint.Config{Format: "text", Excludes: excludes})
 	lintResult, err := linter.LintPath(path)
 	if err != nil {
 		// Lint failures are non-fatal here: the manual_required list

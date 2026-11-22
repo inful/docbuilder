@@ -41,8 +41,8 @@ Before reviewing documentation (e.g. when asked to audit or critique an existing
 Safety:
 - Every mutating tool requires confirm: true. The host will prompt the user.
 - create_doc / update_doc / create_from_template / read_doc refuse to operate outside --docs-dir; path-escape attempts return an error.
-- lint_docs / lint_fix accept any path; they only touch markdown files, so the practical risk is small, but treat them as unconfined.
-- Every response masks Auth.token / password / key_path as "***". Do not try to bypass.
+- lint_docs / lint_fix stay inside the docs directory, like read_doc and the writing tools.
+- Every response masks Auth.token / password / key_path / secret / api_key / ssh_key and the webhook secret as "***". Do not try to bypass.
 
 Pitfalls:
 - create_from_template already runs lint-fix on the result; do not call lint_fix again immediately afterward.
