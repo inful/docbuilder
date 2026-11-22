@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -84,52 +83,6 @@ func (h *WebhookHandlers) HandleForgeWebhook(w http.ResponseWriter, r *http.Requ
 		h.errorAdapter.WriteErrorResponse(w, r, err)
 		return
 	}
-}
-
-// HandleWebhook receives generic webhook payloads (e.g., GitHub/GitLab)
-// and returns a simple acknowledgement. Signature/secret validation can
-// be added in middleware or here in future passes.
-func (h *WebhookHandlers) HandleWebhook(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		err := errors.ValidationError("invalid HTTP method").
-			WithContext("method", r.Method).
-			WithContext("allowed_method", "POST").
-			Build()
-		h.errorAdapter.WriteErrorResponse(w, r, err)
-		return
-	}
-
-	// Read raw payload for logging or future signature checks
-	r.Body = http.MaxBytesReader(w, r.Body, MaxWebhookBodyBytes)
-	var payload any
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		derr := errors.ValidationError("invalid JSON payload").
-			WithContext("content_type", r.Header.Get("Content-Type")).
-			WithContext("error", err.Error()).
-			Build()
-		h.errorAdapter.WriteErrorResponse(w, r, derr)
-		return
-	}
-
-	// Minimal acknowledgment response
-	resp := map[string]any{
-		statusKey:   "received",
-		"timestamp": time.Now().UTC(),
-		"event":     r.Header.Get("X-GitHub-Event"),
-		"source":    r.Header.Get("User-Agent"),
-	}
-
-	if err := writeJSONPretty(w, r, http.StatusAccepted, resp); err != nil {
-		derr := errors.WrapError(err, errors.CategoryInternal, "failed to write webhook response").
-			Build()
-		h.errorAdapter.WriteErrorResponse(w, r, derr)
-		return
-	}
-}
-
-// HandleGenericWebhook handles a generic webhook endpoint.
-func (h *WebhookHandlers) HandleGenericWebhook(w http.ResponseWriter, r *http.Request) {
-	h.HandleWebhook(w, r)
 }
 
 // handleForgeWebhookWithValidation validates webhook signature and triggers builds.
