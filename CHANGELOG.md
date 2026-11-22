@@ -9,6 +9,23 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.34.1] - 2026-11-23
+
+### Fixed
+- **The build does not ask the network for the assets of the theme.**
+  The theme fetches the KaTeX stylesheet and its fonts from a CDN, and
+  the mermaid script from another one, with `resources.GetRemote`. A
+  build without a network died on it with "Could not retrieve KaTeX css
+  file from CDN" (issue #129).
+
+  The site serves its own copy of KaTeX, the way it already serves the
+  stylesheet, the Bootstrap JavaScript, the fonts and the search
+  library, and the mermaid partial of the theme is replaced by one that
+  does not fetch anything: the browser fetches the script anyway, so
+  the check that the version exists was the only thing that needed the
+  network.
+
+
 ## [0.34.0] - 2026-11-22
 
 ### Added
