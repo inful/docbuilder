@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -91,7 +92,7 @@ func (c *NATSClient) connectWithContext(ctx context.Context) error {
 		}),
 		//nolint:contextcheck // ReconnectHandler is a callback without parent context
 		nats.ReconnectHandler(func(nc *nats.Conn) {
-			slog.Info("NATS reconnected", "url", nc.ConnectedUrl())
+			slog.Info("NATS reconnected", "url", redactURL(nc.ConnectedUrl()))
 			c.reconnecting.Store(false)
 			// Reinitialize KV bucket after reconnect. The bucket is
 			// stored under the lock, because that is where the readers
@@ -175,7 +176,7 @@ func (c *NATSClient) ensureConnected(ctx context.Context) error {
 	}
 	defer c.reconnecting.Store(false)
 
-	slog.Info("Attempting to reconnect to NATS", "url", c.cfg.NATSURL)
+	slog.Info("Attempting to reconnect to NATS", "url", redactURL(c.cfg.NATSURL))
 	return c.connectWithContext(ctx)
 }
 
@@ -494,4 +495,16 @@ func (c *NATSClient) SetPageHash(ctx context.Context, pagePath, hash string) err
 	}
 
 	return nil
+}
+
+// redactURL takes the credentials off a URL. The URL of NATS holds a
+// password in the documentation, and a log line ends up in a log
+// collector.
+func redactURL(raw string) string {
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.User == nil {
+		return raw
+	}
+	parsed.User = nil
+	return parsed.String()
 }

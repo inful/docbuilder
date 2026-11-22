@@ -421,9 +421,13 @@ func (a *ServiceAdapter) RecordDiscovery(repoURL string, documentCount int) {
 			repo := opt.Unwrap()
 			now := time.Now()
 			repo.LastDiscovery = foundation.Some(now)
-			repo.DocumentCount = documentCount
 			repo.UpdatedAt = now
-			_ = repoStore.Update(ctx, repo)
+			// The number of documents is not written here: the
+			// discovery does not know it, and the build writes the real
+			// number. Writing the zero of the discovery emptied it.
+			if res := repoStore.Update(ctx, repo); res.IsErr() {
+				logStateError("the repository", res.UnwrapErr())
+			}
 		}
 	}
 }

@@ -22,6 +22,10 @@ type SQLiteStore struct {
 // Use ":memory:" for in-memory database, or a file path for persistent storage.
 func NewSQLiteStore(dbPath string) (*SQLiteStore, error) {
 	db, err := sql.Open("sqlite", dbPath)
+	// The in-memory database lives in the connection that opened it: a
+	// second connection of the pool opens a database of its own, and
+	// every statement on it fails with "no such table: events".
+	db.SetMaxOpenConns(1)
 	if err != nil {
 		return nil, errors.WrapError(err, errors.CategoryEventStore, "could not open event store database").
 			WithContext("path", dbPath).
