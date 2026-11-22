@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2026-11-22T00:00:00Z
-fingerprint: a8914a46104fe9b6e0095c38a04aa47a238b6f2d11f92eead3394ef3eb208738
+fingerprint: 7d1d445701a5ca46729802437b610b0a6ca4d88652f57208b3eeecb1f22db848
 lastmod: "2026-11-22"
 tags:
   - search
@@ -30,7 +30,7 @@ for the download, the parse and the index build.
 
 | Provider | Where the search runs | When to use it |
 |----------|-----------------------|----------------|
-| `server` | The daemon answers the query from its own index | The daemon serves the site. This is the default when a daemon is configured. |
+| `server` | The daemon answers the query from its own index | The daemon serves the site. |
 | `lunr` | The browser searches the index the theme ships | The site is served as a static tree - exported and handed to a web server - and has no server to ask. |
 
 ```yaml
@@ -47,6 +47,12 @@ daemon does.
   the memory on it either.
 - With `lunr`, the site ships the theme's client and the theme's index,
   and the daemon keeps no index.
+
+When the operator does not choose, the builder decides: the daemon
+serves the site it builds, so it chooses `server`; a plain
+`docbuilder build` produces a static tree with no server behind it, so
+it chooses `lunr`. The two never disagree, and the same configuration
+file works for both.
 
 ## How the index is built
 
@@ -103,6 +109,10 @@ $ curl 'http://localhost:8080/api/search?q=install&limit=10'
 | `results[].excerpt` | The passage of the page that matched. |
 | `results[].score` | How well the page matches. Bigger is better. |
 
+The query goes in `q`. The visitor may ask for fewer results than the
+configuration allows with `limit`; the limit of the configuration is the
+ceiling, and a visitor cannot ask for more than that.
+
 An empty query is answered with an empty list, not with an error.
 
 ## How the results are found
@@ -135,6 +145,10 @@ down.
 | `categories:how-to` | The term has to be in the category of the page. |
 | `kuber*` | The words that start with it. |
 
+A field filter takes one term. A term with a hyphen in it - a category
+like `how-to` - is read as one term too: the filter holds the whole
+value, not the part before the hyphen.
+
 The operators are the words of the index, so they are written in upper
 case: a lower case "and" is a word the pages have to hold.
 
@@ -152,10 +166,11 @@ half a query still finds the pages it can.
 - There is no typo tolerance beyond the prefix of a term.
 - There are no facets: the results cannot be filtered by category or
   repository.
-- The index holds the text of the pages, not their code blocks in
-  their original form. The words of a code block are searchable, but
-  not its punctuation.
-- A query is at most 256 characters long.
+- The index holds the text of the pages, not their markup: a bold word
+  is indexed as a word, a link as its text. The words of a code block
+  are searchable, but not the punctuation around them.
+- A query is at most 256 characters long. A longer one is cut short:
+  a search box is for words, not for programs.
 
 A stronger engine - one with fuzzy matching and facets - can replace the
 index behind the same endpoint. The endpoint, the client and the way the

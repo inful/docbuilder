@@ -126,12 +126,15 @@
 
       // The query language of the server is worth telling the reader
       // about: a search that cannot be narrowed is a search that
-      // returns too much.
-      const hint = document.createElement('p');
-      hint.classList.add('text-body-secondary', 'small', 'mt-3', 'mb-0');
-      hint.textContent =
-        'Tip: OR, NOT, "an exact phrase" and title: narrow the search.';
-      html.append(hint);
+      // returns too much. A reader who already writes the language
+      // does not need the reminder.
+      if (!usesQueryLanguage(query)) {
+        const hint = document.createElement('p');
+        hint.classList.add('text-body-secondary', 'small', 'mt-3', 'mb-0');
+        hint.textContent =
+          'Tip: OR, NOT, "an exact phrase" and title: narrow the search.';
+        html.append(hint);
+      }
 
       if (results.length === 0) {
         const noResults = document.createElement('p');
@@ -189,6 +192,22 @@
       if (existing !== null) {
         existing.dispose();
       }
+    };
+
+    //
+    // The query language
+    //
+
+    // A query that already uses the query language needs no reminder
+    // of it: the reader knows OR, NOT, a phrase and a field filter.
+    const usesQueryLanguage = (query) => {
+      if (query.includes('"')) {
+        return true;
+      }
+      if (/\b(AND|OR|NOT)\b/.test(query)) {
+        return true;
+      }
+      return /\b(title|body|tags|categories):/.test(query);
     };
 
     //

@@ -22,6 +22,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
+	"git.home.luguber.info/inful/docbuilder/internal/search"
 	"git.home.luguber.info/inful/docbuilder/internal/server/handlers"
 	"git.home.luguber.info/inful/docbuilder/internal/server/httpserver"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
@@ -725,6 +726,10 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	stateManager := d.state.stateManager
 	eventStore := d.state.eventStore
 	outboundDispatcher := d.optional.outboundDispatcher
+	var searchIndex *search.Index
+	if d.optional.search != nil {
+		searchIndex = d.optional.search.index
+	}
 	d.lifecycle.mu.Unlock()
 
 	// Cancel the run context to stop all background workers.
@@ -795,8 +800,19 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		}
 	}
 
+	// Stop the workers before the index goes: a worker may still be
+	// writing the index.
 	if err := d.lifecycle.workers.StopAndWait(ctx); err != nil {
 		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(err))
+	}
+
+	// Close the search index. The file handle on the state directory
+	// belongs to the daemon, and the write-ahead log is only folded
+	// back into the index when the last connection goes.
+	if searchIndex != nil {
+		if err := searchIndex.Close(); err != nil {
+			slog.Error("Failed to close the search index", logfields.Error(err))
+		}
 	}
 
 	d.lifecycle.mu.Lock()

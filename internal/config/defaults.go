@@ -175,14 +175,11 @@ func (s *SearchDefaultApplier) ApplyDefaults(cfg *Config) error {
 	case SearchProviderServer, SearchProviderLunr:
 		// The operator chose. Keep it.
 	case "":
-		// The daemon serves the site, so the search can run there. A
-		// site that is built without a daemon is a static tree: it has
-		// no server to ask, so the browser searches it.
-		if cfg.Daemon != nil {
-			cfg.Search.Provider = SearchProviderServer
-		} else {
-			cfg.Search.Provider = SearchProviderLunr
-		}
+		// Nobody chose yet. The provider follows who builds the site:
+		// the daemon serves the site it builds, so the search runs
+		// there; a plain build produces a static tree, and a static
+		// tree has no server to ask. The daemon and the plain build
+		// each decide for themselves - see daemon.initSearch.
 	default:
 		cfg.Search.Provider = SearchProviderLunr
 	}

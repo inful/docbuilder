@@ -17,9 +17,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"unicode"
 	"unicode/utf8"
 
@@ -62,6 +64,11 @@ const searchStatement = `SELECT url, title, snippet(pages, 4, '', '', '…', 20)
 // Index is the full-text index over the documentation.
 type Index struct {
 	db *sql.DB
+	// writeMu serializes the writes. Two builds that finish at the
+	// same time both rewrite the whole index, and SQLite lets only
+	// one writer at a time: the second one would fail with "database
+	// is locked" rather than wait. The lock makes it wait.
+	writeMu sync.Mutex
 }
 
 // Open opens the index in the given directory, creating it when it does
@@ -74,22 +81,35 @@ func Open(dir string) (*Index, error) {
 		return nil, fmt.Errorf("search: create index directory: %w", err)
 	}
 
-	path := filepath.Join(dir, "search.db")
-	db, err := sql.Open("sqlite", path)
-	if err != nil {
-		return nil, fmt.Errorf("search: open index: %w", err)
-	}
+	// The pragmas go into the DSN, not into a statement. A statement
+	// runs on one connection of the pool; the pool opens more when the
+	// load grows, and those connections would have the default of no
+	// wait at all. The DSN applies the pragmas to every connection the
+	// pool opens.
+	//
 	// The daemon serves search requests while a build writes to the
 	// index, so readers must not block the writer and vice versa.
-	for _, pragma := range []string{
-		"PRAGMA journal_mode=WAL",
-		"PRAGMA busy_timeout=5000",
-		"PRAGMA synchronous=NORMAL",
-	} {
-		if _, err := db.ExecContext(context.Background(), pragma); err != nil {
-			_ = db.Close()
-			return nil, fmt.Errorf("search: %s: %w", pragma, err)
-		}
+	//
+	// The transaction starts as "immediate": a transaction that starts
+	// as "deferred" takes the write lock on its first write, and SQLite
+	// does not wait for the lock on that step - it fails at once. Two
+	// builds finishing at the same time would then break each other.
+	//
+	// The wait is long because a write of a big site takes a while,
+	// and a second write must not give up while the first one runs.
+	path := filepath.Join(dir, "search.db")
+	dsn := "file:" + path + "?" + url.Values{
+		"_pragma": {
+			"busy_timeout(30000)",
+			"journal_mode(WAL)",
+			"synchronous(NORMAL)",
+		},
+		"_txlock": {"immediate"},
+	}.Encode()
+
+	db, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("search: open index: %w", err)
 	}
 
 	idx := &Index{db: db}
@@ -135,6 +155,11 @@ func (i *Index) Upsert(ctx context.Context, docs []Document) error {
 	if i == nil || i.db == nil {
 		return errors.New("search: index is not open")
 	}
+
+	// One write at a time: SQLite allows a single writer, and a
+	// second one fails rather than waits.
+	i.writeMu.Lock()
+	defer i.writeMu.Unlock()
 
 	tx, err := i.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -197,6 +222,11 @@ func (i *Index) Search(ctx context.Context, query string, limit int) ([]Result, 
 	if limit <= 0 {
 		limit = 10
 	}
+
+	// The query is cut short before it reaches either path. Both paths
+	// build one term per word, so a long query would cost the server
+	// seconds of work for one request.
+	query = cutQuery(query)
 
 	// The forgiving query holds every word of the query. When it is
 	// empty the query has no word to search for at all.
@@ -270,20 +300,37 @@ var operators = map[string]bool{
 // is cut short: a search box is for words, not for programs.
 const maxQueryLength = 256
 
+// cutQuery cuts a query short: a search box is for words, not for
+// programs.
+//
+// The cut happens on a rune boundary, so a multi-byte letter is not
+// cut in half.
+func cutQuery(query string) string {
+	query = strings.TrimSpace(query)
+	if len(query) > maxQueryLength {
+		query = query[:maxQueryLength]
+		// The cut can land in the middle of a letter. The half that
+		// is left is not a word, so it goes.
+		if !utf8.ValidString(query) {
+			query = strings.ToValidUTF8(query, "")
+		}
+	}
+	return strings.TrimSpace(query)
+}
+
 // strictMatch turns a query into an expression the index reads as it
 // is written.
+//
+// The query is expected to be cut short already (see cutQuery).
 //
 // The last term of the query may be a prefix, so "deploy kube" finds
 // "deployment/kubernetes" while the reader is still typing it.
 func strictMatch(query string) string {
 	query = strings.TrimSpace(query)
-	if len(query) > maxQueryLength {
-		query = strings.TrimSpace(query[:maxQueryLength])
-	}
 	if query == "" {
 		return ""
 	}
-	return withTrailingPrefix(query)
+	return withTrailingPrefix(quoteFieldValues(query))
 }
 
 // withTrailingPrefix adds the prefix wildcard to the last term of the
@@ -318,6 +365,74 @@ func withTrailingPrefix(query string) string {
 		return query
 	}
 	return query[:wordEnd] + "*" + query[wordEnd:]
+}
+
+// quoteFieldValues quotes the value of a field filter when the value
+// holds a character the index would read as syntax.
+//
+// "categories:how-to" asks for the category "how-to", but the index
+// reads the hyphen as the end of the field name: it looks for a field
+// named "to" and finds none, so the query finds nothing at all. The
+// value is quoted, so it means what the reader wrote: 'categories:"how-to"'.
+func quoteFieldValues(query string) string {
+	var out strings.Builder
+	runes := []rune(query)
+	for i := 0; i < len(runes); {
+		// A field filter is a name, a colon and a value.
+		nameEnd := i
+		for nameEnd < len(runes) && isNameRune(runes[nameEnd]) {
+			nameEnd++
+		}
+		if nameEnd == i || nameEnd >= len(runes) || runes[nameEnd] != ':' {
+			// Not a field filter. Copy the rune and move on.
+			out.WriteRune(runes[i])
+			i++
+			continue
+		}
+
+		// The name of the field, then the colon.
+		out.WriteString(string(runes[i:nameEnd]))
+		out.WriteRune(':')
+		i = nameEnd + 1
+
+		// The value of the field runs to the next space.
+		valueEnd := i
+		for valueEnd < len(runes) && !unicode.IsSpace(runes[valueEnd]) {
+			valueEnd++
+		}
+		value := string(runes[i:valueEnd])
+		i = valueEnd
+
+		// A value that is already quoted is left alone, and so is one
+		// the index reads as it is: a plain word.
+		if value == "" || value[0] == '"' || isPlainWord(value) {
+			out.WriteString(value)
+			continue
+		}
+
+		// The value is quoted. A quote inside it is doubled, the way
+		// the index reads it.
+		out.WriteByte('"')
+		out.WriteString(strings.ReplaceAll(value, `"`, `""`))
+		out.WriteByte('"')
+	}
+	return out.String()
+}
+
+// isNameRune reports whether the rune can be part of a field name.
+func isNameRune(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
+}
+
+// isPlainWord reports whether the value is a word the index reads as
+// it is: letters, digits and the underscore.
+func isPlainWord(value string) bool {
+	for _, r := range value {
+		if !isNameRune(r) {
+			return false
+		}
+	}
+	return value != ""
 }
 
 // buildMatch turns a user query into an FTS5 match expression.

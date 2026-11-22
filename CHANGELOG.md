@@ -9,6 +9,66 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-11-22
+
+### Fixed
+- **A long query no longer ties up the search endpoint.** The query
+  was cut to 256 characters on one path but not on the other, so the
+  fallback read a query of any length. A 500 KB query cost 15 seconds
+  of one CPU core per request; the endpoint is public, so a handful
+  of them made the docs server unresponsive. The cut now happens
+  once, before either path reads the query.
+
+- **Two builds finishing at the same time no longer break the search
+  index.** The wait for the lock was set through a statement, which
+  reaches only the one connection that ran it - every other connection
+  the pool opened had no wait at all. The index now waits for the lock
+  on every connection, takes the lock at the start of the transaction
+  instead of on its first write, and writes one build at a time.
+
+- **A static export ships a working search again.** The provider
+  followed the configuration file: a file with a `daemon:` block made
+  the `docbuilder build` command ship the search client that asks a
+  server, and no server was there to answer. The provider now follows
+  who builds the site: the daemon, which serves the site it builds,
+  chooses the server; a plain build, which produces a static tree,
+  chooses the browser-side index the theme ships.
+
+- **The daemon now releases the search index when it stops.** The index
+  kept its file handle on the state directory, and its write-ahead log
+  was only folded back into the index when the last connection went.
+
+- **A page under a non-ASCII address gets a readable title again.** The
+  title of a page without one of its own comes from its address, and
+  the first letter was upper-cased as a byte - which cut a multi-byte
+  letter in half and left a broken character in the search results.
+
+- **The search results hold the words of the page, not the markup.**
+  The page was indexed as it was written, so an excerpt showed the
+  reader `**package manager**` and the fences of the code blocks. The
+  index now holds the text of the page.
+
+- **A field filter on a hyphenated value finds the page again.**
+  `categories:how-to` asked the index for a field named `to`, which
+  does not exist, so the query found nothing at all. The value of a
+  field filter is now read as one term, so the filter means what the
+  reader wrote.
+
+- **The `limit` of the search request is honoured.** The client sent
+  the number of results it wanted and the server ignored it, so the
+  site's own limit had no effect. The visitor may now ask for fewer
+  results than the configuration allows; the limit of the configuration
+  stays the ceiling.
+
+- **The search index is written in the background.** The walk over
+  every page of the site took seconds in the middle of the build
+  queue, so the next build waited for it. The index is now written the
+  way the link verification runs.
+
+- **The search tip is only shown when it helps.** A reader who already
+  writes `OR`, `NOT`, a phrase or a field filter does not need to be
+  reminded of them on every keystroke.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added
