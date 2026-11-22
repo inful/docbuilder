@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 13d39b6a50b477ea9da1695c8b5975aed73a66afc14aef2fedd0805c400f6686
+fingerprint: f3e31cfaf002e912bba3bf25535e7fa6948d9373c81f47aa4193bdb1e0904111
 lastmod: "2026-11-22"
 tags:
   - configuration
@@ -27,6 +27,7 @@ hugo: {}            # Hugo site metadata & theme
 monitoring: {}      # Health/metrics endpoints & logging
 output: {}          # Output directory behavior
 lint: {}            # Linter excludes (optional)
+search: {}          # Where the search of the site runs (optional)
 ```
 
 ## Repositories
@@ -542,6 +543,34 @@ index pages.
 - In daemon mode, `daemon.storage.output_dir` must match `output.directory`. If not provided, it is derived from `output.directory`.
 - A validation check enforces this equality (after path normalization). Mismatches cause configuration loading to fail.
 - Recommendation: set only `output.directory`; avoid setting `daemon.storage.output_dir` unless absolutely necessary.
+
+## Search Section
+
+Configures where the search of the site runs.
+
+The daemon serves the site, so the search runs there by default: the
+daemon keeps an index of the rendered pages and answers the queries.
+The index never reaches the visitor, and the search stays fast however
+large the site is.
+
+A site that is served as a static tree - exported and handed to a web
+server - has no server to ask, so it uses the browser-side index the
+theme ships. That index holds the text of every page, so it grows with
+the site and every visitor downloads it.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `provider` | string | `server` with a daemon, `lunr` without | Where the search runs: `server` (the daemon's own index) or `lunr` (the browser-side index the theme ships). |
+| `max_results` | int | `10` | How many results a search returns. |
+
+```yaml
+search:
+  provider: server
+  max_results: 10
+```
+
+See [Server-side search](../explanation/server-side-search.md) for how
+the index is built and what each provider does.
 
 ## Lint Section
 

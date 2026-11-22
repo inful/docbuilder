@@ -85,4 +85,5 @@ type optionalStack struct {
 	liveReload         *LiveReloadHub
 	linkVerifier       *linkverify.VerificationService
 	outboundDispatcher *OutboundDispatcher
+	search             *SearchService
 }
