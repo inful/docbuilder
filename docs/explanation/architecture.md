@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: e6bff1e77d8cdebf3231136a947e0bc2740d0d6df10eea20b83b1d8246316525
+fingerprint: 177faf6249e6d05df34486262711028f6aa150387b328213a4b466150a784aae
 lastmod: "2026-11-22"
 tags:
   - architecture
@@ -95,7 +95,8 @@ Each markdown file passes through a fixed-order transform pipeline:
 8. **generateFromKeywords** - Create new documents from keywords (@glossary, etc.)
 9. **addRepositoryMetadata** - Inject repository/forge/commit metadata
 10. **addEditLink** - Generate editURL for source links
-11. **serializeDocument** - Output final YAML + markdown
+11. **addIssueLink** - Generate issueURL for the new-issue page of the forge
+12. **serializeDocument** - Output final YAML + markdown
 
 **Pipeline Features:**
 - Fixed execution order (explicit, no dependency resolution needed)

@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2026-01-01T00:00:00Z
-fingerprint: 76668e2f119fc2f6a6e62f07108c66bcc078c9680d2de35403c76ba8877e4c46
-lastmod: "2026-11-19"
+fingerprint: f5c30e14c0da821acb6bb93a991501188992fb82f8aece528cc01478822ca436
+lastmod: "2026-11-22"
 tags:
   - frontmatter
   - structure
@@ -112,7 +112,8 @@ These fields are added by docbuilder during the build — you should
 | `repository` | The repository slug the page came from. |
 | `forge` | The forge name (GitHub, GitLab, Forgejo, local). |
 | `section` | The Hugo content section the page was placed in. |
-| `edit_url` | URL to edit the page in the source forge (when `edit_url_base` is configured). |
+| `editURL` | URL to edit the page in the source forge (when `edit_url_base` is configured). |
+| `issueURL` | URL of the forge's new-issue page, with the title of the page filled in. The issue belongs to the repository the page came from, so a site that gathers several repositories sends the reader to the tracker of the one they are reading. |
 
 ## Body Rules
 

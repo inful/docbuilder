@@ -9,6 +9,21 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-11-22
+
+### Added
+- **A "Create documentation issue" link on every page.** The link
+  opens the new-issue page of the forge the page was written in, with
+  the title of the page filled in.
+
+  The issue belongs to the repository the page came from: a site that
+  gathers several repositories sends the reader to the tracker of the
+  one they are reading. GitHub, GitLab and Forgejo each name that page
+  differently, so the address is built per forge.
+
+  The link replaces the theme's own, which only worked for GitHub and
+  only for a single repository.
+
 ## [0.29.0] - 2026-11-22
 
 The search of the site now runs on the server.

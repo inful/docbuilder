@@ -217,9 +217,10 @@ func defaultTransforms(cfg *config.Config) []FileTransform {
 		rewriteImageLinks,                 // 9. Fix image paths
 		addRepositoryMetadata(cfg),        // 10. Add repo/commit/source metadata
 		addEditLink(cfg),                  // 11. Generate edit URL
-		injectPermalink(cfg.Hugo.BaseURL), // 12. Append stable permalink badge
-		serializeDocument,                 // 13. Serialize to final bytes (FM + content)
-		fingerprintContent,                // 14. Add content fingerprint (must be last)
+		addIssueLink(cfg),                 // 12. Generate the new-issue URL of the forge
+		injectPermalink(cfg.Hugo.BaseURL), // 13. Append stable permalink badge
+		serializeDocument,                 // 14. Serialize to final bytes (FM + content)
+		fingerprintContent,                // 15. Add content fingerprint (must be last)
 	}
 }
 

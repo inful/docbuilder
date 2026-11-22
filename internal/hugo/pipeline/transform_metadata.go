@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 
@@ -88,6 +89,44 @@ func addEditLink(cfg *config.Config) FileTransform {
 	}
 }
 
+// forgeBase returns the web address of the repository a document comes
+// from and the forge that hosts it.
+//
+// The address is the clone URL of the repository without its ".git"
+// suffix, unless the operator overrode it. An empty address means the
+// document has no repository behind it - a local build, or a page that
+// DocBuilder generated itself.
+func forgeBase(doc *Document) (string, config.ForgeType) {
+	var baseURL string
+	switch {
+	case doc.EditURLBase != "":
+		// CLI override provided
+		baseURL = strings.TrimSuffix(doc.EditURLBase, ".git")
+	case doc.SourceURL != "" && isForgeURL(doc.SourceURL):
+		// Use SourceURL if it's a real forge URL
+		baseURL = strings.TrimSuffix(doc.SourceURL, ".git")
+	default:
+		// No valid base URL for links to the forge
+		return "", ""
+	}
+	baseURL = webURL(baseURL)
+	return baseURL, detectForgeType(doc.Forge, baseURL)
+}
+
+// webURL turns an SSH address into the web address of the same
+// repository: "git@github.com:org/repo" is
+// "https://github.com/org/repo". A link has to open in a browser.
+func webURL(rawURL string) string {
+	if !strings.HasPrefix(rawURL, "git@") {
+		return rawURL
+	}
+	parts := strings.SplitN(strings.TrimPrefix(rawURL, "git@"), ":", 2)
+	if len(parts) != 2 {
+		return rawURL
+	}
+	return "https://" + parts[0] + "/" + parts[1]
+}
+
 // generateEditURL creates a forge-appropriate edit URL for a document.
 // Only generates URLs for documents with repository metadata.
 // For preview mode in VS Code, VS Code edit URLs are handled separately.
@@ -100,17 +139,8 @@ func generateEditURL(doc *Document) string {
 	}
 
 	// Production builds: generate forge-specific edit URLs
-	// Use EditURLBase override if provided, otherwise use SourceURL
-	var baseURL string
-	switch {
-	case doc.EditURLBase != "":
-		// CLI override provided
-		baseURL = strings.TrimSuffix(doc.EditURLBase, ".git")
-	case doc.SourceURL != "" && isForgeURL(doc.SourceURL):
-		// Use SourceURL if it's a real forge URL
-		baseURL = strings.TrimSuffix(doc.SourceURL, ".git")
-	default:
-		// No valid base URL for edit links
+	baseURL, forgeType := forgeBase(doc)
+	if baseURL == "" {
 		return ""
 	}
 
@@ -128,9 +158,6 @@ func generateEditURL(doc *Document) string {
 		filePath = doc.DocsBase + "/" + filePath
 	}
 
-	// Determine forge type from the Forge field or URL patterns
-	forgeType := detectForgeType(doc.Forge, baseURL)
-
 	// Generate URL based on forge type
 	switch forgeType {
 	case config.ForgeGitHub:
@@ -147,6 +174,90 @@ func generateEditURL(doc *Document) string {
 		// Fallback to GitHub-style for unknown forges
 		return fmt.Sprintf("%s/edit/%s/%s", baseURL, branch, filePath)
 	}
+}
+
+// addIssueLink generates the address of the new-issue page of the
+// forge a document comes from.
+//
+// The issue belongs to the repository the page was written in: a site
+// that gathers several repositories sends the reader to the tracker of
+// the one they are reading.
+func addIssueLink(cfg *config.Config) FileTransform {
+	return func(doc *Document) ([]*Document, error) {
+		// In daemon public-only mode, do not emit links to the forge.
+		// Rationale: the same as for the edit links.
+		if cfg != nil && cfg.IsDaemonPublicOnlyEnabled() {
+			return nil, nil
+		}
+
+		// Skip if the issue URL already exists
+		if _, exists := doc.FrontMatter["issueURL"]; exists {
+			return nil, nil
+		}
+
+		// Skip generated documents
+		if doc.Generated {
+			return nil, nil
+		}
+
+		if issueURL := generateIssueURL(doc); issueURL != "" {
+			doc.FrontMatter["issueURL"] = issueURL
+		}
+
+		return nil, nil
+	}
+}
+
+// generateIssueURL creates the address of the forge's new-issue page
+// for a document.
+//
+// Every forge names that page differently and takes the title of the
+// issue under a different parameter, so the address is built per
+// forge.
+func generateIssueURL(doc *Document) string {
+	// A local repository has no tracker to file an issue in. The forge
+	// of the document says so directly: the detection by address would
+	// mistake it for a self-hosted forge.
+	if strings.EqualFold(doc.Forge, string(config.ForgeLocal)) {
+		return ""
+	}
+
+	baseURL, forgeType := forgeBase(doc)
+	if baseURL == "" {
+		return ""
+	}
+
+	title := issueTitle(doc)
+	if title == "" {
+		return ""
+	}
+
+	baseURL = strings.TrimSuffix(baseURL, "/")
+	switch forgeType {
+	case config.ForgeGitHub, config.ForgeForgejo:
+		// GitHub and Forgejo both take the title as "title".
+		return baseURL + "/issues/new?" + url.Values{"title": {title}}.Encode()
+	case config.ForgeGitLab:
+		// GitLab names its issue parameters after the issue fields.
+		return baseURL + "/-/issues/new?" + url.Values{"issue[title]": {title}}.Encode()
+	case config.ForgeLocal:
+		// A local repository has no tracker to file an issue in.
+		return ""
+	default:
+		// An unknown forge has no known tracker.
+		return ""
+	}
+}
+
+// issueTitle is the title the new issue carries: the title of the
+// page, or its file name when the page has none.
+func issueTitle(doc *Document) string {
+	if title, ok := doc.FrontMatter["title"].(string); ok {
+		if title = strings.TrimSpace(title); title != "" {
+			return title
+		}
+	}
+	return strings.TrimSpace(doc.Name)
 }
 
 // detectForgeType determines the forge type from metadata or URL patterns.
