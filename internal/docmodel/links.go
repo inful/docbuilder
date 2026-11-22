@@ -43,7 +43,7 @@ func (d *ParsedDoc) LinkRefs() ([]LinkRef, error) {
 		dest := link.Destination
 		needleKey := string(link.Kind) + "\x00" + dest
 
-		bodyLine := d.FindNextLineContaining(dest, searchStartLineByNeedle[needleKey])
+		bodyLine := d.FindLinkLine(dest, searchStartLineByNeedle[needleKey])
 		searchStartLineByNeedle[needleKey] = bodyLine + 1
 
 		refs = append(refs, LinkRef{

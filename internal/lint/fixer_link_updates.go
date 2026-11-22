@@ -62,9 +62,11 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			}
 
 			line := content[lineStart:lineEnd]
-			// Use the last occurrence on the line to avoid accidentally
-			// rewriting link labels or other earlier occurrences (e.g. inline code).
-			idx := bytes.LastIndex(line, []byte(oldLinkText))
+			// The target is rewritten where it is the target of a link.
+			// A file that is mentioned in the prose of the same line is
+			// not the target of the link, and rewriting it would change
+			// the words of the page.
+			idx := linkTargetIndex(line, oldLinkText)
 			if idx == -1 {
 				continue
 			}
@@ -123,6 +125,26 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 	}
 
 	return updates, nil
+}
+
+// linkTargetIndex returns the offset of the target of a link on the
+// line, or -1 when the line holds no link to it.
+//
+// The target is looked for inside the link: "](target)" and
+// "](<target>)" for an inline link, "]: target" for a reference. The
+// last link on the line is the one that is rewritten, so a label that
+// holds the same text is not touched.
+func linkTargetIndex(line []byte, target string) int {
+	if idx := bytes.LastIndex(line, []byte("]("+target)); idx != -1 {
+		return idx + 2
+	}
+	if idx := bytes.LastIndex(line, []byte("](<"+target+">)")); idx != -1 {
+		return idx + 3
+	}
+	if idx := bytes.LastIndex(line, []byte("]: "+target)); idx != -1 {
+		return idx + 3
+	}
+	return -1
 }
 
 func findLineByteRange(content []byte, lineNumber int) (int, int, bool) {

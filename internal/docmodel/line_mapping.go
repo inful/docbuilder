@@ -67,6 +67,52 @@ func (d *ParsedDoc) FindNextLineContaining(target string, startLine int) int {
 	return 1
 }
 
+// FindLinkLine returns the 1-based body line of the link that points at
+// the given destination, starting at startLine (1-based).
+//
+// The link is found by its syntax - "](target)", "](<target>)" or
+// "]: target" - and not by the text of the destination: a document that
+// mentions a file in its prose and links to it would otherwise point at
+// the prose, and the fixer would rewrite the words of the page.
+//
+// It skips fenced code blocks (``` and ~~~), indented code blocks, and
+// matches inside inline code spans.
+func (d *ParsedDoc) FindLinkLine(destination string, startLine int) int {
+	body := string(d.body)
+	if body == "" || destination == "" {
+		return 1
+	}
+
+	lines := strings.Split(body, "\n")
+	skippable := computeSkippableLines(lines)
+
+	if startLine < 1 {
+		startLine = 1
+	}
+	if startLine > len(lines) {
+		startLine = len(lines)
+	}
+
+	needles := []string{
+		"](" + destination,
+		"](" + "<" + destination + ">",
+		"]: " + destination,
+	}
+
+	for i := startLine - 1; i < len(lines); i++ {
+		if i >= 0 && i < len(skippable) && skippable[i] {
+			continue
+		}
+		for _, needle := range needles {
+			if idx := strings.Index(lines[i], needle); idx != -1 && !isInsideInlineCode(lines[i], idx) {
+				return i + 1
+			}
+		}
+	}
+
+	return 1
+}
+
 func computeSkippableLines(lines []string) []bool {
 	skippable := make([]bool, len(lines))
 	inCodeBlock := false
