@@ -123,7 +123,8 @@ func (l *liveReloadInjector) Write(data []byte) (int, error) {
 			l.headerWritten = true
 			// The bytes are the file the request asked for, not data the
 			// request carries, so there is nothing to escape.
-			return l.ResponseWriter.Write(data) // codeql[go/reflected-xss]
+			// codeql[go/reflected-xss]
+			return l.ResponseWriter.Write(data)
 		}
 
 		l.buffer = make([]byte, 0, 64*1024) // Start with 64KB
@@ -132,7 +133,8 @@ func (l *liveReloadInjector) Write(data []byte) (int, error) {
 	if l.passthrough {
 		// The bytes are the file the request asked for, not data the
 		// request carries, so there is nothing to escape.
-		return l.ResponseWriter.Write(data) // codeql[go/reflected-xss]
+		// codeql[go/reflected-xss]
+		return l.ResponseWriter.Write(data)
 	}
 
 	// Check if buffering would exceed limit
@@ -150,7 +152,8 @@ func (l *liveReloadInjector) Write(data []byte) (int, error) {
 		}
 		// The bytes are the file the request asked for, not data the
 		// request carries, so there is nothing to escape.
-		return l.ResponseWriter.Write(data) // codeql[go/reflected-xss]
+		// codeql[go/reflected-xss]
+		return l.ResponseWriter.Write(data)
 	}
 
 	// Buffer the data
