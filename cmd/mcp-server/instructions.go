@@ -24,7 +24,13 @@ Workflow for editing an existing doc:
 Workflow for a from-scratch doc (no template):
   1. create_doc {path, content, frontmatter?, overwrite?, lint_after?, confirm: true}
 
-Read-only discovery tools (no confirm needed): get_config, list_templates, describe_template, resolve_template_inputs, lint_docs, read_doc.
+Read-only discovery tools (no confirm needed): get_config, list_templates, describe_template, resolve_template_inputs, lint_docs, read_doc, search_site, list_site_pages.
+
+Workflow for finding related or duplicated documentation on the published site:
+  1. search_site {query, limit?} — search the site the daemon serves, with the query language of the site search
+  2. list_site_pages {prefix?} — the inventory of the published pages, with their URLs and titles
+
+Both read the published site, so they cover every repository the daemon aggregated - use them before writing a page, to see whether it already exists. They show the last published build, so a page you just wrote locally is not in them yet. They need the site URL: --base-url, DOCBUILDER_TEMPLATE_BASE_URL, or hugo.base_url in config.yaml. The daemon that serves the site answers them; a local preview server does not.
 
 Before create_doc / create_from_template / update_doc, read the structure://doc-page resource for the canonical schema (required + optional frontmatter, body rules, filename conventions, worked example). Do not invent your own frontmatter shape.
 
@@ -35,8 +41,8 @@ Before reviewing documentation (e.g. when asked to audit or critique an existing
 Safety:
 - Every mutating tool requires confirm: true. The host will prompt the user.
 - create_doc / update_doc / create_from_template / read_doc refuse to operate outside --docs-dir; path-escape attempts return an error.
-- lint_docs / lint_fix accept any path; they only touch markdown files, so the practical risk is small, but treat them as unconfined.
-- Every response masks Auth.token / password / key_path as "***". Do not try to bypass.
+- lint_docs / lint_fix stay inside the docs directory, like read_doc and the writing tools.
+- Every response masks Auth.token / password / key_path / secret / api_key / ssh_key and the webhook secret as "***". Do not try to bypass.
 
 Pitfalls:
 - create_from_template already runs lint-fix on the result; do not call lint_fix again immediately afterward.

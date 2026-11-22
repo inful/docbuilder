@@ -60,6 +60,33 @@ const docsyHeadCSS = `{{- $css := resources.Get "css/docsy.css" | minify | finge
 // the Hugo project. It shadows the theme's partial of the same name.
 const docsyPageMetaLinksPath = "layouts/_partials/page-meta-links.html"
 
+// docsyChildrenShortcodePath is where the children shortcode lands in
+// the Hugo project.
+const docsyChildrenShortcodePath = "layouts/_shortcodes/children.html"
+
+// docsyChildrenShortcode lists the pages below the current one.
+//
+// The documentation of the repositories was written for a theme that
+// had this shortcode. The theme does not have it, and a page that uses
+// a shortcode without a template fails the whole build of the site with
+// "template for shortcode \"children\" not found".
+// The list is markdown and not HTML: a page that is not written with
+// raw HTML enabled drops the HTML of a shortcode.
+const docsyChildrenShortcode = `{{- $page := .Page -}}
+{{- $description := false -}}
+{{- range $name, $value := .Params -}}
+  {{- if eq $name "description" -}}
+    {{- $description = eq (printf "%v" $value) "true" -}}
+  {{- end -}}
+{{- end -}}
+{{- range $page.Sections }}
+- [{{ .LinkTitle }}]({{ .RelPermalink }}){{ if and $description .Description }}: {{ .Description }}{{ end }}
+{{- end }}
+{{- range $page.Pages }}
+- [{{ .LinkTitle }}]({{ .RelPermalink }}){{ if and $description .Description }}: {{ .Description }}{{ end }}
+{{- end }}
+`
+
 // docsyVendoredAssets returns the vendored Docsy files as static
 // assets, keyed by their path relative to the Hugo project root.
 //

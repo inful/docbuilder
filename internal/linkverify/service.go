@@ -82,6 +82,16 @@ type VerificationService struct {
 	rateDelay  time.Duration // Delay between link verification requests
 }
 
+// maxConcurrent returns how many links are verified at the same time.
+// A configuration that asks for none, or for a negative number, would
+// stop the daemon: a channel of a negative size is a panic.
+func maxConcurrent(configured int) int {
+	if configured < 1 {
+		return 1
+	}
+	return configured
+}
+
 // NewVerificationService creates a new link verification service.
 func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationService, error) {
 	if cfg == nil || !cfg.Enabled {
@@ -131,7 +141,7 @@ func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationSe
 		cfg:        cfg,
 		nats:       natsClient,
 		httpClient: httpClient,
-		semaphore:  make(chan struct{}, cfg.MaxConcurrent),
+		semaphore:  make(chan struct{}, maxConcurrent(cfg.MaxConcurrent)),
 		rateDelay:  rateDelay,
 	}, nil
 }

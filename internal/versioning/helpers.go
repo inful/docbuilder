@@ -3,6 +3,7 @@ package versioning
 import (
 	"fmt"
 	"log/slog"
+	"maps"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
@@ -76,7 +77,11 @@ func ExpandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) (
 			// Update name to include version for uniqueness
 			versionedRepo.Name = fmt.Sprintf("%s-%s", repo.Name, version.DisplayName)
 
-			// Add version metadata to tags
+			// Add version metadata to tags. The map is copied: the base
+			// repository and every version would otherwise share it, and
+			// the version of the last one would be the version of all of
+			// them.
+			versionedRepo.Tags = maps.Clone(repo.Tags)
 			if versionedRepo.Tags == nil {
 				versionedRepo.Tags = make(map[string]string)
 			}

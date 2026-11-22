@@ -5,16 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
 	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
@@ -35,6 +40,8 @@ func registerTools(srv *server.MCPServer, state *serverState) {
 	srv.AddTool(toolResolveTemplateInputs(), stateMiddleware(state)(handleResolveTemplateInputs))
 	srv.AddTool(toolLintDocs(), stateMiddleware(state)(handleLintDocs))
 	srv.AddTool(toolReadDoc(), stateMiddleware(state)(handleReadDoc))
+	srv.AddTool(toolSearchSite(), stateMiddleware(state)(handleSearchSite))
+	srv.AddTool(toolListSitePages(), stateMiddleware(state)(handleListSitePages))
 
 	// Mutating tools -------------------------------------------------------
 	srv.AddTool(toolCreateFromTemplate(), stateMiddleware(state)(handleCreateFromTemplate))
@@ -102,6 +109,33 @@ func toolReadDoc() mcp.Tool {
 		mcp.WithDescription("Read a documentation file and return its parsed frontmatter and body. "+
 			"Path must be inside the configured docs directory."),
 		mcp.WithString("path", mcp.Required(), mcp.Description("Path relative to the docs dir, or absolute path inside it.")),
+		mcp.WithReadOnlyHintAnnotation(true),
+	)
+}
+
+func toolSearchSite() mcp.Tool {
+	return mcp.NewTool("search_site",
+		mcp.WithDescription("Search the published documentation site and return the pages that match, "+
+			"with their URL, title and a matching excerpt. The site is the one the daemon serves, so the "+
+			"results cover every repository it aggregated - use this to find related or duplicated "+
+			"documentation before writing a new page. The index is the one of the last published build, "+
+			"so a page you just wrote locally is not in it yet."),
+		mcp.WithString("query", mcp.Required(), mcp.Description("The query. The query language of the site works: "+
+			"AND, OR and NOT combine the terms, \"a phrase\" has to appear as written, and title:, body:, "+
+			"tags: and categories: restrict a term to a field.")),
+		mcp.WithNumber("limit", mcp.Description("How many results to ask for. The site caps it at the maximum of its configuration.")),
+		mcp.WithReadOnlyHintAnnotation(true),
+	)
+}
+
+func toolListSitePages() mcp.Tool {
+	return mcp.NewTool("list_site_pages",
+		mcp.WithDescription("List the pages published on the documentation site, with their URL and title. "+
+			"The list covers every repository the daemon aggregated - use it to check whether a page already "+
+			"exists before writing one. It is the last published build, so a page you just wrote locally is "+
+			"not in it yet."),
+		mcp.WithString("prefix", mcp.Description("Keep only the pages whose URL starts with this, e.g. \"/myforge/myrepo/\". "+
+			"Empty means every page - narrow it on a large site.")),
 		mcp.WithReadOnlyHintAnnotation(true),
 	)
 }
@@ -474,8 +508,14 @@ type manualIssueOut struct {
 // computeManualRequired re-lints the docs tree after a fix and
 // returns issues whose rule isn't auto-fixable. It runs as a read-only
 // lint pass so the fixer's own output isn't re-fixed in a loop.
-func computeManualRequired(path string, _ *serverState) []manualIssueOut {
-	linter := lint.NewLinter(&lint.Config{Format: "text"})
+func computeManualRequired(path string, state *serverState) []manualIssueOut {
+	// The same excludes as the fix: the operator excluded the files,
+	// and the follow-up lint must not report issues in them.
+	var excludes []string
+	if state != nil {
+		excludes = lintExcludes(state.cfg)
+	}
+	linter := lint.NewLinter(&lint.Config{Format: "text", Excludes: excludes})
 	lintResult, err := linter.LintPath(path)
 	if err != nil {
 		// Lint failures are non-fatal here: the manual_required list
@@ -544,6 +584,97 @@ func handleReadDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	return mcp.NewToolResultText(string(b)), nil
 }
 
+// handleSearchSite answers a query with the pages of the published site
+// that match it.
+func handleSearchSite(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	state := stateFromContext(ctx)
+	query, err := req.RequireString("query")
+	if err != nil {
+		return toolErrMsg("missing required argument: query")
+	}
+	if strings.TrimSpace(query) == "" {
+		return toolErrMsg("query must not be empty")
+	}
+
+	values := url.Values{"q": {query}}
+	if limit := req.GetInt("limit", 0); limit > 0 {
+		values.Set("limit", strconv.Itoa(limit))
+	}
+
+	body, err := fetchSiteJSON(ctx, state, "/api/search", values)
+	if err != nil {
+		return toolErr("search the published site", err)
+	}
+	return mcp.NewToolResultText(body), nil
+}
+
+// handleListSitePages answers with the pages of the published site.
+func handleListSitePages(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	state := stateFromContext(ctx)
+
+	values := url.Values{}
+	if prefix := strings.TrimSpace(req.GetString("prefix", "")); prefix != "" {
+		values.Set("prefix", prefix)
+	}
+
+	body, err := fetchSiteJSON(ctx, state, "/api/pages", values)
+	if err != nil {
+		return toolErr("list the pages of the published site", err)
+	}
+	return mcp.NewToolResultText(body), nil
+}
+
+// siteClient asks the published site for its answers. The timeout is
+// short: the site is a local server, and a tool that waits blocks the
+// host.
+var siteClient = &http.Client{Timeout: 5 * time.Second}
+
+// maxSiteResponse is the largest answer the site tools read. A bigger
+// one is not returned to the model: the list of every page of a large
+// site would fill the context of the host.
+const maxSiteResponse = 4 << 20
+
+// fetchSiteJSON asks the published site for an answer and returns its
+// body.
+//
+// The site is the one the daemon serves. When it does not answer - a
+// daemon that is not running, a site that does not serve the endpoint -
+// the error says so, so an empty answer is never read as "nothing is
+// there".
+func fetchSiteJSON(ctx context.Context, state *serverState, path string, values url.Values) (string, error) {
+	if state.baseURL == "" {
+		return "", errors.New("no site URL configured; pass --base-url or DOCBUILDER_TEMPLATE_BASE_URL, or set hugo.base_url in config.yaml")
+	}
+
+	endpoint := strings.TrimSuffix(state.baseURL, "/") + path
+	if len(values) > 0 {
+		endpoint += "?" + values.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return "", fmt.Errorf("build the request for %s: %w", endpoint, err)
+	}
+	resp, err := siteClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("the published site at %s is not reachable: %w", state.baseURL, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxSiteResponse+1))
+	if err != nil {
+		return "", fmt.Errorf("read the answer of %s: %w", endpoint, err)
+	}
+	if len(body) > maxSiteResponse {
+		return "", fmt.Errorf("the answer of %s is larger than %d bytes; narrow the request", endpoint, maxSiteResponse)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("the published site at %s answered %s: %s",
+			state.baseURL, resp.Status, strings.TrimSpace(string(body)))
+	}
+	return string(body), nil
+}
+
 func handleCreateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	state := stateFromContext(ctx)
 	if !req.GetBool("confirm", false) {
@@ -573,15 +704,24 @@ func handleCreateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	}
 
 	fm := mapFromArgs(req.GetArguments(), "frontmatter")
-	full := composeDoc(fm, content)
-	if writeErr := os.WriteFile(abs, full, 0o600); writeErr != nil { // #nosec G304
+	full, composeErr := composeDoc(fm, content)
+	if composeErr != nil {
+		return toolErr("write the frontmatter", composeErr)
+	}
+	if writeErr := foundation.WriteFileAtomic(abs, full, 0o600); writeErr != nil { // #nosec G304
 		return toolErr("write file", writeErr)
 	}
 
 	out := map[string]any{"path": abs, "wrote": true}
 	if lintAfter {
 		//nolint:contextcheck // lint fixer uses context.Background() internally; fix is local
-		out["lint_result"] = runLintFixOn(abs)
+		result := runLintFixOn(abs)
+		out["lint_result"] = result
+		// The fixer may have renamed the file: the path the caller holds
+		// is the old one, and the file is at the new one.
+		if newPath, ok := result["path"].(string); ok {
+			out["path"] = newPath
+		}
 	}
 	b, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
@@ -627,29 +767,48 @@ func handleUpdateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	var newFM []byte
 	switch strategy {
 	case "replace":
-		newFM = marshalYAML(patch, writeStyle)
+		yaml, yerr := marshalYAML(patch, writeStyle)
+		if yerr != nil {
+			return toolErr("write the frontmatter", yerr)
+		}
+		newFM = yaml
 	case "merge", "":
 		existingFM := map[string]any{}
 		if had {
-			if parsed, perr := frontmatter.ParseYAML(oldFM); perr == nil {
-				existingFM = parsed
+			parsed, perr := frontmatter.ParseYAML(oldFM)
+			if perr != nil {
+				// The frontmatter of the file cannot be read. Writing the
+				// body alone would drop the title, the uid and the
+				// aliases of the page, so the write is refused.
+				return toolErrMsg(fmt.Sprintf("the frontmatter of %s cannot be parsed, so it was not changed: %v", relPath, perr))
 			}
+			existingFM = parsed
 		}
 		maps.Copy(existingFM, patch)
-		newFM = marshalYAML(existingFM, writeStyle)
+		yaml, yerr := marshalYAML(existingFM, writeStyle)
+		if yerr != nil {
+			return toolErr("write the frontmatter", yerr)
+		}
+		newFM = yaml
 	default:
 		return toolErrMsg("merge_strategy must be 'merge' or 'replace'")
 	}
 
 	full := frontmatter.Join(newFM, []byte(newBody), len(newFM) > 0, style)
-	if writeErr := os.WriteFile(abs, full, 0o600); writeErr != nil { // #nosec G304,G703 -- path resolved + contained inside docsDir via resolveInDocs
+	if writeErr := foundation.WriteFileAtomic(abs, full, 0o600); writeErr != nil { // #nosec G304,G703 -- path resolved + contained inside docsDir via resolveInDocs
 		return toolErr("write file", writeErr)
 	}
 
 	out := map[string]any{"path": abs, "wrote": true, "merge_strategy": strategy}
 	if req.GetBool("lint_after", false) {
 		//nolint:contextcheck // lint fixer uses context.Background() internally; fix is local
-		out["lint_result"] = runLintFixOn(abs)
+		result := runLintFixOn(abs)
+		out["lint_result"] = result
+		// The fixer may have renamed the file: the path the caller holds
+		// is the old one, and the file is at the new one.
+		if newPath, ok := result["path"].(string); ok {
+			out["path"] = newPath
+		}
 	}
 	b, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
@@ -746,13 +905,20 @@ func runLintFixOn(path string) map[string]any {
 	if err != nil {
 		return map[string]any{"error": err.Error()}
 	}
-	return map[string]any{
+	out := map[string]any{
 		"renames":       len(res.FilesRenamed),
 		"links_updated": len(res.LinksUpdated),
 		"fingerprints":  len(res.Fingerprints),
 		"has_errors":    res.HasErrors(),
 		"summary":       res.Summary(),
 	}
+	// The fixer renames a file whose name does not follow the
+	// conventions. The path the caller holds is the old one, and the
+	// file is at the new one.
+	if len(res.FilesRenamed) > 0 && res.FilesRenamed[0].Success {
+		out["path"] = res.FilesRenamed[0].NewPath
+	}
+	return out
 }
 
 // lintExcludes extracts the lint exclude patterns from a server config,
@@ -767,6 +933,10 @@ func lintExcludes(cfg *config.Config) []string {
 
 // resolveInDocs turns a relative or absolute path into one guaranteed to be
 // inside docsDir. Returns a clear error otherwise.
+//
+// The check follows symlinks: a link inside the docs directory that points
+// outside it would let a caller read or rewrite a file anywhere on the
+// machine.
 func resolveInDocs(docsDir, requested string) (string, error) {
 	cleanDocs := filepath.Clean(docsDir)
 	candidate := requested
@@ -777,12 +947,54 @@ func resolveInDocs(docsDir, requested string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("resolve path: %w", err)
 	}
+
+	// The docs directory is resolved the same way as the path: a path
+	// that runs through a symlinked parent - a temporary directory, for
+	// one - would otherwise look like it is outside.
+	resolvedDocs, err := filepath.EvalSymlinks(cleanDocs)
+	if err != nil {
+		resolvedDocs = cleanDocs
+	}
+	resolved, err := resolveExisting(abs)
+	if err != nil {
+		return "", err
+	}
+
 	// Containment check: prefix with trailing separator so /docs-evil
 	// doesn't match /docs.
-	if !strings.HasPrefix(abs, cleanDocs+string(filepath.Separator)) && abs != cleanDocs {
+	if !strings.HasPrefix(resolved, resolvedDocs+string(filepath.Separator)) && resolved != resolvedDocs {
 		return "", fmt.Errorf("path %q is outside docs directory %q", requested, docsDir)
 	}
 	return abs, nil
+}
+
+// resolveExisting resolves the symlinks of the deepest part of the path
+// that exists and keeps the rest of the path as it is.
+//
+// The file itself may not exist yet - a doc is written from nothing - so
+// the walk stops at the deepest directory that does exist.
+func resolveExisting(path string) (string, error) {
+	current := path
+	rest := ""
+	for {
+		resolved, err := filepath.EvalSymlinks(current)
+		if err == nil {
+			if rest == "" {
+				return resolved, nil
+			}
+			return filepath.Join(resolved, rest), nil
+		}
+		if !os.IsNotExist(err) {
+			return "", fmt.Errorf("resolve path %q: %w", path, err)
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			// Nothing of the path exists; there is no symlink to follow.
+			return path, nil
+		}
+		rest = filepath.Join(filepath.Base(current), rest)
+		current = parent
+	}
 }
 
 // lintResultToJSON formats a lint.Result into a small, LLM-friendly JSON
@@ -866,27 +1078,27 @@ func mapFromArgs(args map[string]any, key string) map[string]any {
 // composeDoc writes frontmatter + body into a single file body. We round-trip
 // through frontmatter.Join so YAML quoting and style detection match the
 // rest of the codebase.
-func composeDoc(fm map[string]any, content string) []byte {
+func composeDoc(fm map[string]any, content string) ([]byte, error) {
 	if len(fm) == 0 {
-		return []byte(content)
+		return []byte(content), nil
 	}
 	style := frontmatter.Style{Newline: "\n", HasTrailingNewline: true}
-	return frontmatter.Join(marshalYAML(fm, style), []byte(content), true, style)
+	yaml, err := marshalYAML(fm, style)
+	if err != nil {
+		return nil, err
+	}
+	return frontmatter.Join(yaml, []byte(content), true, style), nil
 }
 
-// marshalYAML is a thin wrapper over frontmatter.SerializeYAML that swallows
-// the error and returns empty bytes — callers that hit a marshal failure are
-// usually about to write something they constructed themselves; the error
-// surfaces at the next step.
-func marshalYAML(fm map[string]any, style frontmatter.Style) []byte {
+// marshalYAML writes a frontmatter map as YAML.
+//
+// The error is not swallowed: a frontmatter that cannot be written must
+// not turn into a file without frontmatter.
+func marshalYAML(fm map[string]any, style frontmatter.Style) ([]byte, error) {
 	if len(fm) == 0 {
-		return nil
+		return nil, nil
 	}
-	out, err := frontmatter.SerializeYAML(fm, style)
-	if err != nil {
-		return nil
-	}
-	return out
+	return frontmatter.SerializeYAML(fm, style)
 }
 
 // toolErr is a small wrapper so handlers can return a single line on error.

@@ -74,7 +74,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 	rebuildReq, trigger := setupRebuildDebouncer()
 	startRebuildWorker(ctx, cfg, absDocs, previewDaemon, buildStat, rebuildReq)
 
-	return runPreviewLoop(ctx, watcher, trigger, rebuildReq, httpServer, tempOutputDir)
+	return runPreviewLoop(ctx, watcher, trigger, httpServer, tempOutputDir)
 }
 
 // validateAndResolveDocsDir validates and resolves the absolute path of the docs directory.
@@ -293,11 +293,11 @@ func ensureVSCodeMarkdownSnippetSettings(settingsPath string) error {
 }
 
 // runPreviewLoop handles filesystem events and graceful shutdown.
-func runPreviewLoop(ctx context.Context, watcher *fsnotify.Watcher, trigger func(), rebuildReq chan struct{}, httpServer *httpserver.Server, tempOutputDir string) error {
+func runPreviewLoop(ctx context.Context, watcher *fsnotify.Watcher, trigger func(), httpServer *httpserver.Server, tempOutputDir string) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return handleShutdown(ctx, httpServer, rebuildReq, tempOutputDir)
+			return handleShutdown(ctx, httpServer, tempOutputDir)
 		case ev, ok := <-watcher.Events:
 			if !ok {
 				return nil
@@ -313,7 +313,7 @@ func runPreviewLoop(ctx context.Context, watcher *fsnotify.Watcher, trigger func
 }
 
 // handleShutdown performs graceful shutdown cleanup.
-func handleShutdown(ctx context.Context, httpServer *httpserver.Server, rebuildReq chan struct{}, tempOutputDir string) error {
+func handleShutdown(ctx context.Context, httpServer *httpserver.Server, tempOutputDir string) error {
 	slog.Info("Shutting down preview server...")
 
 	// Create a timeout context for graceful shutdown
@@ -325,8 +325,10 @@ func handleShutdown(ctx context.Context, httpServer *httpserver.Server, rebuildR
 		slog.Warn("HTTP server shutdown error", "error", err)
 	}
 
-	// Close rebuild channel to stop worker goroutine
-	close(rebuildReq)
+	// The channel is not closed: the debounce timer and the worker may
+	// still write to it, and a write to a closed channel stops the
+	// process with a panic. The worker stops with the context, and a
+	// write that nobody reads is dropped by the buffer.
 
 	// Clean up temp directory if needed
 	if tempOutputDir != "" {

@@ -39,6 +39,19 @@ type Repository struct {
 	Topics          []string          `json:"topics"`       // Repository topics/tags
 	Language        string            `json:"language"`     // Primary programming language
 	Metadata        map[string]string `json:"metadata"`     // Additional forge-specific metadata
+	// RequiredPaths are the paths that hold the documentation. The
+	// operator names them in the configuration; the "docs" folder is
+	// only the default.
+	RequiredPaths []string `json:"required_paths"`
+}
+
+// docPaths returns the paths that hold the documentation of the
+// repository.
+func (r *Repository) docPaths() []string {
+	if len(r.RequiredPaths) == 0 {
+		return []string{docsToken}
+	}
+	return r.RequiredPaths
 }
 
 // Organization represents an organization/group on a forge.
@@ -173,7 +186,7 @@ func (r *Repository) ToConfigRepository(auth *config.AuthConfig) config.Reposito
 		Name:   r.Name,
 		Branch: r.DefaultBranch,
 		Auth:   auth,
-		Paths:  []string{"docs"}, // Default paths
+		Paths:  r.docPaths(),
 		Tags: map[string]string{
 			"forge_id":     r.ID,
 			"full_name":    r.FullName,

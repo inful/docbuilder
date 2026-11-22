@@ -3,7 +3,6 @@ package pipeline
 import (
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -66,15 +65,7 @@ func addEditLink(cfg *config.Config) FileTransform {
 		// For VS Code preview mode, generate edit URL even without SourceURL
 		if doc.VSCodeEditLinks && doc.IsSingleRepo && doc.RelativePath != "" {
 			doc.FrontMatter["editURL"] = fmt.Sprintf("/_edit/%s", doc.RelativePath)
-			fmt.Fprintf(os.Stderr, "DEBUG: Generated VS Code edit URL: /_edit/%s (VSCodeEditLinks=%v, IsSingleRepo=%v, RelativePath=%q)\n",
-				doc.RelativePath, doc.VSCodeEditLinks, doc.IsSingleRepo, doc.RelativePath)
 			return nil, nil
-		}
-
-		// Debug: Log why VS Code edit URL was not generated
-		if doc.RelativePath != "" && !doc.Generated {
-			fmt.Fprintf(os.Stderr, "DEBUG: VS Code edit URL NOT generated for %s: VSCodeEditLinks=%v, IsSingleRepo=%v, RelativePath=%q\n",
-				doc.RelativePath, doc.VSCodeEditLinks, doc.IsSingleRepo, doc.RelativePath)
 		}
 
 		// Generate forge edit URL if we have repository URL and relative path

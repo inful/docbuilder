@@ -1,7 +1,10 @@
 // Package logfields provides canonical log field names and helpers for structured logging in DocBuilder.
 package logfields
 
-import "log/slog"
+import (
+	"log/slog"
+	"net/url"
+)
 
 // Canonical log field name constants to avoid drift across packages.
 // These are used for structured logging with slog.
@@ -68,7 +71,23 @@ func ContentLength(cl int64) slog.Attr { return slog.Int64(KeyContentLen, cl) }
 func Name(n string) slog.Attr { return slog.String(KeyName, n) }
 
 // URL returns a slog.Attr for a URL field.
-func URL(u string) slog.Attr { return slog.String(KeyURL, u) }
+// URL returns a slog.Attr for a URL.
+//
+// The credentials of the URL are removed: a repository URL is the one
+// field where an operator puts a token, and a log line ends up in a log
+// collector and in the answer of the MCP server.
+func URL(u string) slog.Attr { return slog.String(KeyURL, RedactURL(u)) }
+
+// RedactURL removes the credentials of a URL. A URL that cannot be
+// parsed is returned as it is.
+func RedactURL(u string) string {
+	parsed, err := url.Parse(u)
+	if err != nil || parsed.User == nil {
+		return u
+	}
+	parsed.User = nil
+	return parsed.String()
+}
 
 // Error returns a slog.Attr for an error, or an empty string if nil.
 func Error(err error) slog.Attr {

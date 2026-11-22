@@ -158,6 +158,25 @@ func (js *JSONStore) Health(_ context.Context) foundation.Result[StoreHealth, er
 	return foundation.Ok[StoreHealth, error](health)
 }
 
+// Flush writes the state to disk.
+//
+// The store writes on every change, so a flush is only needed when the
+// caller wants to be sure: the state reached the disk and the write
+// worked.
+func (js *JSONStore) Flush(_ context.Context) foundation.Result[struct{}, error] {
+	js.mu.Lock()
+	defer js.mu.Unlock()
+
+	if err := js.saveToDiskUnsafe(); err != nil {
+		return foundation.Err[struct{}, error](
+			errors.InternalError("failed to flush state").
+				WithCause(err).
+				Build(),
+		)
+	}
+	return foundation.Ok[struct{}, error](struct{}{})
+}
+
 // Close gracefully shuts down the store.
 func (js *JSONStore) Close(_ context.Context) foundation.Result[struct{}, error] {
 	js.mu.Lock()
@@ -212,12 +231,36 @@ func (js *JSONStore) saveToDiskUnsafe() error {
 
 	// Atomic write using temporary file
 	// #nosec G306 -- state file needs to be readable by the process, 0644 is acceptable
-	if err := os.WriteFile(tempPath, data, 0o644); err != nil {
+	// #nosec G304 -- the path is the state file of the data directory
+	//nolint:gosec // the state file is read by the process, 0644 is acceptable
+	file, err := os.OpenFile(tempPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		return fmt.Errorf("failed to open temporary state file: %w", err)
+	}
+	if _, err := file.Write(data); err != nil {
+		_ = file.Close()
 		return fmt.Errorf("failed to write temporary state file: %w", err)
+	}
+	// The data is on the disk before the file is put in place: a crash
+	// after the rename but before the data reached the disk would leave
+	// a state file that is empty or half written.
+	if err := file.Sync(); err != nil {
+		_ = file.Close()
+		return fmt.Errorf("failed to sync temporary state file: %w", err)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("failed to close temporary state file: %w", err)
 	}
 
 	if err := os.Rename(tempPath, statePath); err != nil {
 		return fmt.Errorf("failed to replace state file: %w", err)
+	}
+
+	// The directory is synced as well: the rename itself has to reach
+	// the disk, or a crash brings the old file back.
+	if dir, err := os.Open(filepath.Dir(statePath)); err == nil {
+		_ = dir.Sync()
+		_ = dir.Close()
 	}
 
 	js.lastSaved = &now

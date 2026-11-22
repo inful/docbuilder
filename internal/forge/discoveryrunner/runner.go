@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync/atomic"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
@@ -89,7 +90,10 @@ type Runner struct {
 	now      func() time.Time
 	newJobID func() string
 
-	lastDiscovery *time.Time
+	// lastDiscovery is written by the discovery goroutine and read by
+	// the handlers of the status page: an atomic pointer keeps the two
+	// apart.
+	lastDiscovery atomic.Pointer[time.Time]
 }
 
 // New creates a new Runner.
@@ -118,7 +122,6 @@ func New(cfg Config) *Runner {
 		config:         cfg.Config,
 		now:            now,
 		newJobID:       newJobID,
-		lastDiscovery:  nil,
 	}
 }
 
@@ -171,7 +174,7 @@ func (r *Runner) Run(ctx context.Context) error {
 	}
 
 	now := r.now()
-	r.lastDiscovery = &now
+	r.lastDiscovery.Store(&now)
 
 	if r.discoveryCache != nil {
 		r.discoveryCache.Update(result)
@@ -270,7 +273,7 @@ func (r *Runner) triggerBuildForDiscoveredRepos(ctx context.Context, result *for
 // It returns the discovery error (nil on success) so callers can decide
 // whether to retry — the daemon retries a failed *initial* discovery
 // instead of waiting for the next cron tick.
-func (r *Runner) SafeRun(ctx context.Context, shouldRun func() bool) error {
+func (r *Runner) SafeRun(ctx context.Context, shouldRun func() bool) (err error) {
 	if r.discovery == nil {
 		return nil
 	}
@@ -284,6 +287,9 @@ func (r *Runner) SafeRun(ctx context.Context, shouldRun func() bool) error {
 	defer func() {
 		if rec := recover(); rec != nil {
 			slog.Error("Recovered from panic in SafeRun", "panic", rec)
+			// The discovery did not run. The caller has to see the
+			// failure and retry, and not wait for the next tick.
+			err = fmt.Errorf("discovery panicked: %v", rec)
 		}
 	}()
 
@@ -322,5 +328,5 @@ func (r *Runner) TriggerManual(shouldRun func() bool) string {
 
 // GetLastDiscovery returns the time of the last successful discovery.
 func (r *Runner) GetLastDiscovery() *time.Time {
-	return r.lastDiscovery
+	return r.lastDiscovery.Load()
 }

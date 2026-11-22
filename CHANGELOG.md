@@ -9,6 +9,163 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-11-22
+
+### Added
+- **The MCP server can read the published site.** Two tools,
+  `search_site` and `list_site_pages`, ask the documentation site the
+  daemon serves. An agent that writes documentation can see what the
+  site already holds - across every repository the daemon aggregated -
+  before it writes a page, so it neither duplicates a page nor misses
+  the one that covers the topic.
+
+- **The docs server answers with the inventory of the site.** The new
+  endpoint `/api/pages` lists the pages of the last published build
+  with their addresses and their titles.
+
+### Fixed
+- **A build that lost a repository does not take the site down.** A
+  clone that failed was only a warning: the build went on, published a
+  site without the pages of that repository, and reported success. When
+  every clone failed it published a site with nothing in it but the
+  home page. A build that lost a repository now fails, and the site of
+  the last build stays published.
+
+- **A repository that was added to the configuration is published.** The
+  check that decides whether anything moved only looked at the
+  repositories that had a head before, so a new one did not count and
+  the build was skipped. The site kept serving the old content.
+
+- **The site keeps its shape when a clone fails.** The count of the
+  repositories that could be cloned decided whether the site was a
+  single-repository site, so every page of the other repositories moved
+  to another address. The count of the configured repositories decides
+  it now.
+
+- **A page without a date carries the date of its commit.** The date
+  was fetched and thrown away, so every such page carried the same old
+  date and every list page sorted by it was in the wrong order.
+
+- **The links point at the addresses the pages are published at.** The
+  content path is lowercased when it is written, but three of the link
+  rewrites kept the case of the repository, the forge and the file. A
+  link that goes up with `../` was resolved without the directory of
+  the document, so it pointed at the root of the repository instead of
+  the section of the page.
+
+- **The versioned repositories are part of the build.** The metadata of
+  the repositories was built from the configured ones, and the
+  versioned pages looked their metadata up by their own name: they were
+  published without an edit link and without the landing page of their
+  repository.
+
+- **Every second build was a full build.** The report of a build that
+  was skipped holds no files, and the next build reads that report to
+  decide whether it may skip: a report without files is read as "the
+  site is empty". The report of a skipped build keeps the numbers of
+  the last build that ran.
+
+- **The site carries the children shortcode.** The documentation of the
+  repositories was written for a theme that had the shortcode, and a
+  shortcode without a template fails the build of the whole site
+  (issue #126).
+
+- **The fixer rewrites the link and not the prose.** The line of a link
+  was found by searching the body for the text of its target, so a page
+  that mentioned a file in its prose and linked to it had its prose
+  rewritten and its link left pointing at a file that was renamed.
+
+- **A link to the root of the repository is found.** The lint looked for
+  the file in a directory named "content", a layout that only exists in
+  a built site, and reported every such link as broken: a valid doc
+  failed the lint and the CI.
+
+- **The values of the state survive a restart.** The fields of an
+  Option are unexported and the type had no JSON methods, so the
+  encoder wrote `{}` for every Option and the decoder read them back as
+  empty: the daemon lost the commit of every repository, the time of
+  its last build, its last error and its doc-files hash on every save.
+
+- **The state file survives a crash.** It was renamed into place
+  without being synced, so a crash left a file that was empty or half
+  written and the daemon continued with an empty state.
+
+- **A state write that fails is not silent.** Every setter threw the
+  result of the write away, so a state directory that could not be
+  written left the daemon carrying on with a state that never reached
+  the disk.
+
+- **Two builds in the same second do not share a workspace.** The
+  workspace was named after the second it was made in, so the first
+  build to finish deleted the workspace of the other while it was
+  cloning: the build published a site without pages.
+
+- **A repository that is versioned by a tag survives the build.** The
+  update path fetched a branch, and a tag is not one: the pages of the
+  tag vanished from the site after the first build.
+
+- **The paths of the documentation are the configured ones.** The forge
+  clients looked for a folder named "docs" and nothing else, so an
+  operator whose repositories keep their documentation elsewhere had
+  every repository dropped and the site came out empty.
+
+- **The `.env.local` file is loaded as well.** The loader returned
+  after the first file it found, so an operator who kept the live token
+  in `.env.local` ran the daemon with the old one, and every call to
+  the forge failed with a 401 that pointed at nothing.
+
+- **The credentials of a repository URL stay out of the logs.** The
+  repository URL is the one field where an operator puts a token, and it
+  was logged as it is and put into every git error.
+
+- **The daemon does not stop on a race or a panic.** The number of live
+  reload clients was read outside the lock, the time of the last
+  discovery was written by one goroutine and read by another, a
+  discovery that panicked was reported as a discovery that succeeded,
+  the error of the health and the metrics endpoints was written with a
+  missing request, a configuration with a negative number of link
+  verifications stopped the daemon at startup, and the preview server
+  stopped with a panic when a file was saved and the preview was
+  stopped within 300 milliseconds.
+
+- **The base directory holds the output everywhere.** The docs root
+  joined the base directory with the output directory and the other
+  places did not: a deployment with a base directory never showed the
+  status page and served an empty tree instead.
+
+- **The taxonomies of the site are not read on every request.** Every
+  request to `/api/taxonomies.json` walked the content of the site and
+  parsed the front matter of every file. The answer is kept until the
+  content directory changes.
+
+- **The admin API refuses the requests of another origin.** Any page
+  the operator visited could post a form to the admin port and have the
+  portal rebuilt.
+
+- **The MCP server stays inside the docs directory.** The check that a
+  path is inside the docs directory compared the path as it was
+  written, so a symlink inside the directory that pointed outside it
+  let the tools read and rewrite a file anywhere on the machine.
+
+- **The MCP server does not throw a frontmatter away.** The update read
+  the frontmatter of the file and, when it could not be parsed, wrote
+  the body alone: the title, the uid and the aliases of the page were
+  gone and the tool answered that it had written the file.
+
+
+### Added
+- **The MCP server can read the published site.** Two tools,
+  `search_site` and `list_site_pages`, ask the documentation site the
+  daemon serves. An agent that writes documentation can see what the
+  site already holds - across every repository the daemon aggregated -
+  before it writes a page, so it neither duplicates a page nor misses
+  the one that covers the topic.
+
+- **The docs server answers with the inventory of the site.** The new
+  endpoint `/api/pages` lists the pages of the last published build
+  with their addresses and their titles. A `prefix` keeps only the
+  pages whose address starts with it.
+
 ## [0.33.1] - 2026-11-22
 
 ### Fixed

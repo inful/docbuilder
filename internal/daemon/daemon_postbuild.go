@@ -45,6 +45,13 @@ func (d *Daemon) updateStateAfterBuild(report *models.BuildReport) {
 	if err := d.state.stateManager.Save(); err != nil {
 		slog.Warn("Failed to save state after build", "error", err)
 	}
+
+	// The time of the last build is shown on the status page. Without
+	// it the operator cannot tell when the site was built.
+	d.lifecycle.mu.Lock()
+	now := time.Now()
+	d.lifecycle.lastBuild = &now
+	d.lifecycle.mu.Unlock()
 }
 
 // verifyLinksAfterBuild runs link verification in the background after a successful build.

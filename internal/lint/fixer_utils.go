@@ -53,16 +53,18 @@ func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
 
 	// Handle absolute paths (e.g., /local/docs/api-guide)
 	// These are Hugo site-absolute paths that need to be resolved relative to content root
-	if strings.HasPrefix(targetPath, "/") {
-		// Find the content root by walking up from source file
-		contentRoot := findContentRoot(sourceFile)
-		if contentRoot != "" {
-			// Strip leading slash and join with content root
-			targetPath = strings.TrimPrefix(targetPath, "/")
-			resolvedPath = filepath.Join(contentRoot, targetPath)
+	if root, ok := strings.CutPrefix(targetPath, "/"); ok {
+		// The link points at the root of the repository of the
+		// documentation, so the file is looked for in the directory of
+		// the source file and in the directories above it.
+		if found, foundOK := resolveRepositoryRootPath(sourceFile, root); foundOK {
+			resolvedPath = found
+		} else if contentRoot := findContentRoot(sourceFile); contentRoot != "" {
+			// Join with the content root
+			resolvedPath = filepath.Join(contentRoot, root)
 		} else {
 			// Fallback: treat as filesystem absolute path
-			resolvedPath = targetPath
+			resolvedPath = "/" + root
 		}
 	} else {
 		// Relative path - resolve relative to source file directory
@@ -93,6 +95,34 @@ func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
 	}
 
 	return absPath, nil
+}
+
+// resolveRepositoryRootPath finds the file a repository-root-relative
+// link points at.
+//
+// The link points at the root of the repository of the documentation, so
+// the file is looked for in the directory of the source file and in the
+// directories above it. The first one that holds the file is the one
+// the link points at.
+//
+// The walk stops at the root of the repository: a file above it is not
+// part of the documentation.
+func resolveRepositoryRootPath(sourceFile, target string) (string, bool) {
+	dir := filepath.Dir(sourceFile)
+	for {
+		candidate := filepath.Join(dir, filepath.FromSlash(strings.TrimPrefix(target, "/")))
+		if fileExists(candidate) || fileExists(candidate+".md") || fileExists(candidate+".markdown") {
+			return candidate, true
+		}
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return "", false
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", false
+		}
+		dir = parent
+	}
 }
 
 // findContentRoot finds the content directory by walking up from the source file.

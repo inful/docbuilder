@@ -76,19 +76,27 @@ func parseLogLevel(verbose bool) slog.Level {
 	return slog.LevelInfo
 }
 
-// LoadEnvFile loads environment variables from .env or .env.local file.
-// Returns nil if successful; returns error if file doesn't exist but doesn't fail the command.
+// LoadEnvFile loads environment variables from the .env files.
+// Returns nil if successful; returns error if no file exists but doesn't fail the command.
+//
+// The local file is loaded first, so it wins over the shared one, and
+// the environment of the process wins over both: a value that is
+// already set is not overwritten.
 func LoadEnvFile() error {
-	envPaths := []string{".env", ".env.local"}
-	for _, p := range envPaths {
-		if _, err := os.Stat(p); err == nil {
-			if err := godotenv.Load(p); err != nil {
-				return fmt.Errorf("failed loading %s: %w", p, err)
-			}
-			return nil
+	loaded := false
+	for _, p := range []string{".env.local", ".env"} {
+		if _, err := os.Stat(p); err != nil {
+			continue
 		}
+		if err := godotenv.Load(p); err != nil {
+			return fmt.Errorf("failed loading %s: %w", p, err)
+		}
+		loaded = true
 	}
-	return errors.New("no .env file found")
+	if !loaded {
+		return errors.New("no .env file found")
+	}
+	return nil
 }
 
 // ResolveOutputDir determines the final output directory based on CLI flag, config, and base_directory.
@@ -224,32 +232,22 @@ func ApplyAutoDiscovery(ctx context.Context, cfg *config.Config) error {
 
 // AutoDiscoverRepositories builds a forge manager from v2 config and returns converted repositories.
 func AutoDiscoverRepositories(ctx context.Context, v2cfg *config.Config) ([]config.Repository, error) {
-	manager := forge.NewForgeManager()
-
-	// Instantiate forge clients
+	// The local forge has no remote API, so it takes no part in the
+	// discovery.
+	remote := make([]*forge.Config, 0, len(v2cfg.Forges))
 	for _, f := range v2cfg.Forges {
-		var client forge.Client
-		var err error
-		switch f.Type {
-		case config.ForgeForgejo:
-			client, err = forge.NewForgejoClient(f)
-		case config.ForgeGitHub:
-			client, err = forge.NewGitHubClient(f)
-		case config.ForgeGitLab:
-			client, err = forge.NewGitLabClient(f)
-		case config.ForgeLocal:
-			// Local forges don't support auto-discovery (no remote API)
+		if f.Type == config.ForgeLocal {
 			slog.Warn("Local forge type does not support auto-discovery (skipping)", "name", f.Name)
 			continue
-		default:
-			slog.Warn("Unsupported forge type for auto-discovery (skipping)", "type", f.Type, "name", f.Name)
-			continue
 		}
-		if err != nil {
-			slog.Error("Failed to create forge client", "forge", f.Name, "error", err)
-			continue
-		}
-		manager.AddForge(f, client)
+		remote = append(remote, f)
+	}
+
+	// A forge that cannot be built is an error: a site without the forge
+	// of the operator looks like a site without repositories.
+	manager, err := forge.CreateForgeManager(remote)
+	if err != nil {
+		return nil, fmt.Errorf("build the forge manager: %w", err)
 	}
 
 	filtering := v2cfg.Filtering

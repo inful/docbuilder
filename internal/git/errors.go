@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // GitError simplifies creating a git-scoped ClassifiedError.
@@ -28,7 +29,9 @@ func ClassifyGitError(err error, op string, url string) error {
 	builder := GitError("git operation failed").
 		WithCause(err).
 		WithContext("op", op).
-		WithContext("url", url)
+		// The error ends up in the build report and in the answer of the
+		// MCP server, so the credentials of the URL are removed.
+		WithContext("url", logfields.RedactURL(url))
 
 	switch {
 	case strings.Contains(l, "authentication failed") || strings.Contains(l, "not authorized") || strings.Contains(l, "could not read username") || strings.Contains(l, "invalid credentials"):

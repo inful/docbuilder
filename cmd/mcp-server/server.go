@@ -34,7 +34,7 @@ type serverConfig struct {
 type serverState struct {
 	cfg     *config.Config // nil if config failed to load or no path given
 	cfgPath string         // original --config value, for resource reporting
-	baseURL string         // resolved template base URL
+	baseURL string         // address of the documentation site; empty means use env / config
 	docsDir string         // absolute, resolved docs directory
 	version string
 }
@@ -98,7 +98,9 @@ func buildServerState(cfg serverConfig) (*serverState, error) {
 		st.loadConfigFromPath(cfg)
 	}
 
-	// Resolve template base URL using CLI precedence: flag > env > config.
+	// Resolve the address of the documentation site using CLI precedence:
+	// flag > env > config. The templates are fetched from it, and the
+	// site tools ask it what the published site holds.
 	st.baseURL = cfg.BaseURL
 	if st.baseURL == "" {
 		st.baseURL = os.Getenv("DOCBUILDER_TEMPLATE_BASE_URL")

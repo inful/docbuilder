@@ -22,7 +22,7 @@ import (
 //  2. Spawns it with stdin/stdout piped.
 //  3. Sends an `initialize` request, waits for the response.
 //  4. Sends `initialized` notification, then `tools/list`.
-//  5. Asserts the server returned our 10 tools.
+//  5. Asserts the server returned our 12 tools.
 //
 // We intentionally keep this test offline (no template base URL, no git
 // activity) — the goal is protocol correctness, not functional coverage.
@@ -131,6 +131,8 @@ func TestIntegration_InitializeAndToolsList(t *testing.T) {
 		"resolve_template_inputs",
 		"lint_docs",
 		"read_doc",
+		"search_site",
+		"list_site_pages",
 		"create_from_template",
 		"lint_fix",
 		"create_doc",

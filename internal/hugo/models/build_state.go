@@ -66,6 +66,14 @@ func (gs *GitState) AllReposUnchangedComputed() bool {
 	if len(gs.PreHeads) == 0 {
 		return false
 	}
+	// A repository that was not there before has no previous head: it
+	// was added to the configuration, and its pages are not in the site
+	// yet.
+	for repo := range gs.PostHeads {
+		if _, existed := gs.PreHeads[repo]; !existed {
+			return false
+		}
+	}
 	for repo, preHead := range gs.PreHeads {
 		if postHead, exists := gs.PostHeads[repo]; !exists || preHead != postHead {
 			return false

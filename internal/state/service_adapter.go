@@ -57,20 +57,28 @@ func (a *ServiceAdapter) Load() error {
 // Save persists state to the underlying store.
 func (a *ServiceAdapter) Save() error {
 	ctx := context.Background()
-	// The typed JSON store auto-saves, but we trigger a close/reopen cycle
-	// for explicit save semantics, or just mark save time.
-	// For now, just update the save timestamp since JSONStore auto-persists.
+	res := a.service.Store().Flush(ctx)
+	if res.IsErr() {
+		return res.UnwrapErr()
+	}
+
 	a.mu.Lock()
 	now := time.Now()
 	a.lastSaved = &now
 	a.mu.Unlock()
-
-	// Optionally flush by checking health (which internally persists)
-	health := a.service.Store().Health(ctx)
-	if health.IsErr() {
-		return health.UnwrapErr()
-	}
 	return nil
+}
+
+// logStateError logs a state write that failed.
+//
+// The narrow interfaces the daemon uses cannot return an error, so a
+// write that fails would be invisible: the daemon would carry on with
+// a state that never reached the disk, and the next build would
+// decide with stale data.
+func logStateError(what string, err error) {
+	slog.Warn("Failed to write the state",
+		slog.String("value", what),
+		slog.Any("error", err))
 }
 
 // IsLoaded returns whether the state has been loaded.
@@ -119,7 +127,9 @@ func (a *ServiceAdapter) EnsureRepositoryState(url, name, branch string) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	_ = store.Create(ctx, repo) // Ignore error for interface compatibility
+	if res := store.Create(ctx, repo); res.IsErr() {
+		logStateError("the repository", res.UnwrapErr())
+	}
 }
 
 // RemoveRepositoryState removes a repository entry from persistent state.
@@ -147,7 +157,9 @@ func (a *ServiceAdapter) SetRepoDocumentCount(url string, count int) {
 	}
 	ctx := context.Background()
 	store := a.service.GetRepositoryStore()
-	_ = store.SetDocumentCount(ctx, url, count)
+	if res := store.SetDocumentCount(ctx, url, count); res.IsErr() {
+		logStateError("the document count", res.UnwrapErr())
+	}
 }
 
 // SetRepoDocFilesHash sets the document files hash for a repository.
@@ -157,7 +169,9 @@ func (a *ServiceAdapter) SetRepoDocFilesHash(url, hash string) {
 	}
 	ctx := context.Background()
 	store := a.service.GetRepositoryStore()
-	_ = store.SetDocFilesHash(ctx, url, hash)
+	if res := store.SetDocFilesHash(ctx, url, hash); res.IsErr() {
+		logStateError("the doc-files hash", res.UnwrapErr())
+	}
 }
 
 // --- RepositoryMetadataReader interface ---
@@ -218,7 +232,9 @@ func (a *ServiceAdapter) SetRepoDocFilePaths(url string, paths []string) {
 	}
 	ctx := context.Background()
 	store := a.service.GetRepositoryStore()
-	_ = store.SetDocFilePaths(ctx, url, paths)
+	if res := store.SetDocFilePaths(ctx, url, paths); res.IsErr() {
+		logStateError("the doc-file paths", res.UnwrapErr())
+	}
 }
 
 // --- RepositoryCommitTracker interface ---
@@ -250,7 +266,9 @@ func (a *ServiceAdapter) SetRepoLastCommit(url, name, branch, commit string) {
 	repo := result.Unwrap().Unwrap()
 	repo.LastCommit = foundation.Some(commit)
 	repo.UpdatedAt = time.Now()
-	_ = store.Update(ctx, repo)
+	if res := store.Update(ctx, repo); res.IsErr() {
+		logStateError("the repository", res.UnwrapErr())
+	}
 }
 
 // GetRepoLastCommit returns the last commit hash for a repository.
@@ -284,7 +302,9 @@ func (a *ServiceAdapter) IncrementRepoBuild(url string, success bool) {
 	}
 	ctx := context.Background()
 	store := a.service.GetRepositoryStore()
-	_ = store.IncrementBuildCount(ctx, url, success)
+	if res := store.IncrementBuildCount(ctx, url, success); res.IsErr() {
+		logStateError("the build counters", res.UnwrapErr())
+	}
 }
 
 // --- ConfigurationStateStore interface ---
@@ -296,7 +316,9 @@ func (a *ServiceAdapter) SetLastConfigHash(hash string) {
 	}
 	ctx := context.Background()
 	store := a.service.GetConfigurationStore()
-	_ = store.Set(ctx, "last_config_hash", hash)
+	if res := store.Set(ctx, "last_config_hash", hash); res.IsErr() {
+		logStateError("the config hash", res.UnwrapErr())
+	}
 }
 
 // GetLastConfigHash returns the last config hash.
@@ -324,7 +346,9 @@ func (a *ServiceAdapter) SetLastReportChecksum(sum string) {
 	}
 	ctx := context.Background()
 	store := a.service.GetConfigurationStore()
-	_ = store.Set(ctx, "last_report_checksum", sum)
+	if res := store.Set(ctx, "last_report_checksum", sum); res.IsErr() {
+		logStateError("the report checksum", res.UnwrapErr())
+	}
 }
 
 // GetLastReportChecksum returns the last report checksum.
@@ -352,7 +376,9 @@ func (a *ServiceAdapter) SetLastGlobalDocFilesHash(hash string) {
 	}
 	ctx := context.Background()
 	store := a.service.GetConfigurationStore()
-	_ = store.Set(ctx, "last_global_doc_files_hash", hash)
+	if res := store.Set(ctx, "last_global_doc_files_hash", hash); res.IsErr() {
+		logStateError("the global doc-files hash", res.UnwrapErr())
+	}
 }
 
 // GetLastGlobalDocFilesHash returns the global doc files hash.

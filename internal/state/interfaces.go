@@ -126,6 +126,7 @@ type Store interface {
 
 	// Health and lifecycle
 	Health(ctx context.Context) foundation.Result[StoreHealth, error]
+	Flush(ctx context.Context) foundation.Result[struct{}, error]
 	Close(ctx context.Context) foundation.Result[struct{}, error]
 }
 

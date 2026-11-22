@@ -22,14 +22,13 @@ func (f *Fixer) findLinksToFile(targetPath, rootPath string) ([]LinkReference, e
 		return nil, fmt.Errorf("failed to get absolute path for target: %w", err)
 	}
 
-	// Ensure rootPath is a directory
-	rootInfo, err := os.Stat(rootPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to stat root path: %w", err)
-	}
-
+	// The root is a directory, or the file the fixer works on. The file
+	// can be one that was renamed a moment ago - the fixer renames a
+	// file and then looks for the links to it - so the directory around
+	// it is the root when the root is not there any more.
 	searchRoot := rootPath
-	if !rootInfo.IsDir() {
+	rootInfo, statErr := os.Stat(rootPath)
+	if statErr != nil || !rootInfo.IsDir() {
 		searchRoot = filepath.Dir(rootPath)
 	}
 

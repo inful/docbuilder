@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -53,8 +54,31 @@ func (s *Server) startAdminServerWithListener(_ context.Context, ln net.Listener
 		mux.HandleFunc("/status", s.opts.StatusHandle)
 	}
 
-	s.adminServer = &http.Server{Handler: s.mchain(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
+	// A page in the browser of the operator can post a form to the admin
+	// port: the answer is unreadable, but the side effect happens. The
+	// requests that come from another origin are refused.
+	adminMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if origin := r.Header.Get("Origin"); origin != "" && !isLoopbackOrigin(origin) {
+			http.Error(w, "cross-origin request refused", http.StatusForbidden)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	})
+
+	s.adminServer = &http.Server{Handler: s.mchain(adminMux), ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
 	return s.startServerWithListener("admin", s.adminServer, ln)
+}
+
+// isLoopbackOrigin reports whether an origin is the machine itself. The
+// admin API is bound to the loopback interface by default, and a request
+// from the browser of the operator comes from another origin.
+func isLoopbackOrigin(origin string) bool {
+	parsed, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	host := parsed.Hostname()
+	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
 // daemonStatusRunning mirrors internal/daemon.StatusRunning. This package

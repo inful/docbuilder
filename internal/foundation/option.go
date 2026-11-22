@@ -1,6 +1,10 @@
 package foundation
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
 
 // Option represents a value that may or may not be present.
 // This replaces nullable pointers and provides explicit handling of missing values.
@@ -82,4 +86,36 @@ func (o Option[T]) String() string {
 		return fmt.Sprintf("Some(%v)", o.value)
 	}
 	return "None"
+}
+
+// MarshalJSON writes the value of the Option, or null when it is empty.
+//
+// Without this the JSON encoder would write "{}": the fields of the
+// Option are unexported, so the encoder skips them. Every value the
+// daemon keeps in its state file - the commit of a repository, the time
+// of its last build - would be lost the moment the file was written.
+func (o Option[T]) MarshalJSON() ([]byte, error) {
+	if !o.present {
+		return []byte("null"), nil
+	}
+	return json.Marshal(o.value)
+}
+
+// UnmarshalJSON reads a value into the Option.
+//
+// An empty value leaves the Option empty: null, and the "{}" the state
+// files written before this method existed hold for every Option.
+func (o *Option[T]) UnmarshalJSON(data []byte) error {
+	switch strings.TrimSpace(string(data)) {
+	case "", "null", "{}":
+		*o = None[T]()
+		return nil
+	}
+
+	var value T
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*o = Some(value)
+	return nil
 }
