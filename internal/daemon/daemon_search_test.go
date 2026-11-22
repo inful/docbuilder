@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/search"
@@ -80,5 +81,11 @@ func TestSearchServiceHandlesAnEmptyQuery(t *testing.T) {
 	}
 	if len(response.Results) != 0 {
 		t.Fatalf("got %d results, want none", len(response.Results))
+	}
+	// The answer holds a list of results even when there are none: a
+	// reader of the answer should not have to care about the difference
+	// between an empty list and nothing.
+	if !strings.Contains(rec.Body.String(), `"results":[]`) {
+		t.Fatalf("the answer does not hold an empty list: %s", rec.Body.String())
 	}
 }

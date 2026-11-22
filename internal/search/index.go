@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	_ "modernc.org/sqlite"
 )
@@ -178,10 +179,17 @@ func (i *Index) Count(ctx context.Context) (int, error) {
 
 // Search returns the pages that match the query, best match first.
 //
-// Every word of the query has to appear somewhere in the page. The last
-// word may be a prefix, so "deploy kube" finds "deployment/kubernetes"
-// while the user is still typing. The words are stemmed the same way
-// the index is, so "deploying" finds "deploy".
+// The query is read as it is written, so the query language of the
+// index works: "AND", "OR" and "NOT" combine the terms, a phrase in
+// quotes has to appear as it is written, and "title:", "body:",
+// "tags:" and "categories:" restrict a term to a field. The words are
+// stemmed the same way the index is, so "deploying" finds "deploy",
+// and the last term of a query may be a prefix, so "deploy kube"
+// finds "deployment/kubernetes" while the reader is still typing.
+//
+// A query the index cannot read - a half-typed one, most of the time -
+// is searched the forgiving way: every word of the query has to
+// appear somewhere in the page.
 func (i *Index) Search(ctx context.Context, query string, limit int) ([]Result, error) {
 	if i == nil || i.db == nil {
 		return nil, errors.New("search: index is not open")
@@ -190,18 +198,47 @@ func (i *Index) Search(ctx context.Context, query string, limit int) ([]Result, 
 		limit = 10
 	}
 
-	match := buildMatch(query)
-	if match == "" {
-		return nil, nil
+	// The forgiving query holds every word of the query. When it is
+	// empty the query has no word to search for at all.
+	forgiving := buildMatch(query)
+	if forgiving == "" {
+		return []Result{}, nil
 	}
 
+	// The query as it is written comes first, so the operators work.
+	// The forgiving query is the fallback for a query the index cannot
+	// read.
+	matches := make([]string, 0, 2)
+	if strict := strictMatch(query); strict != "" {
+		matches = append(matches, strict)
+	}
+	matches = append(matches, forgiving)
+
+	var lastErr error
+	for _, match := range matches {
+		results, err := i.query(ctx, match, limit)
+		if err == nil {
+			return results, nil
+		}
+		lastErr = err
+	}
+	if lastErr != nil {
+		return nil, lastErr
+	}
+	return []Result{}, nil
+}
+
+// query runs one match expression and returns the pages that match it.
+func (i *Index) query(ctx context.Context, match string, limit int) ([]Result, error) {
 	rows, err := i.db.QueryContext(ctx, searchStatement, match, limit)
 	if err != nil {
-		return nil, fmt.Errorf("search: query %q: %w", query, err)
+		return nil, fmt.Errorf("search: query %q: %w", match, err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	var results []Result
+	// An empty list, not a nil one: the answer of the endpoint holds a
+	// list of results even when there are none.
+	results := []Result{}
 	for rows.Next() {
 		var r Result
 		if err := rows.Scan(&r.URL, &r.Title, &r.Excerpt, &r.Score); err != nil {
@@ -219,13 +256,86 @@ func (i *Index) Search(ctx context.Context, query string, limit int) ([]Result, 
 	return results, nil
 }
 
+// operators are the words the query language of the index uses to
+// combine the terms of a query. They are the words of the engine: in
+// upper case. A lower case "and" is a word the pages have to hold.
+var operators = map[string]bool{
+	"AND":  true,
+	"OR":   true,
+	"NOT":  true,
+	"NEAR": true,
+}
+
+// maxQueryLength is the longest query the index reads. A longer one
+// is cut short: a search box is for words, not for programs.
+const maxQueryLength = 256
+
+// strictMatch turns a query into an expression the index reads as it
+// is written.
+//
+// The last term of the query may be a prefix, so "deploy kube" finds
+// "deployment/kubernetes" while the reader is still typing it.
+func strictMatch(query string) string {
+	query = strings.TrimSpace(query)
+	if len(query) > maxQueryLength {
+		query = strings.TrimSpace(query[:maxQueryLength])
+	}
+	if query == "" {
+		return ""
+	}
+	return withTrailingPrefix(query)
+}
+
+// withTrailingPrefix adds the prefix wildcard to the last term of the
+// query, when that term is a word outside a phrase.
+//
+// A term that already ends in a wildcard keeps it, and a query that
+// ends in an operator is left alone: the operator is not a term, and
+// the query is not finished.
+func withTrailingPrefix(query string) string {
+	inPhrase := false
+	wordStart, wordEnd := -1, -1
+	for i, r := range query {
+		switch {
+		case r == '"':
+			inPhrase = !inPhrase
+			wordStart, wordEnd = -1, -1
+		case inPhrase:
+			// A word inside a phrase is part of the phrase.
+		case unicode.IsLetter(r) || unicode.IsDigit(r):
+			if wordStart < 0 {
+				wordStart = i
+			}
+			wordEnd = i + utf8.RuneLen(r)
+		default:
+			wordStart, wordEnd = -1, -1
+		}
+	}
+	if wordStart < 0 {
+		return query
+	}
+	if operators[query[wordStart:wordEnd]] {
+		return query
+	}
+	return query[:wordEnd] + "*" + query[wordEnd:]
+}
+
 // buildMatch turns a user query into an FTS5 match expression.
 //
 // The words are quoted, so that a word with a character FTS5 treats as
 // syntax cannot break the query. The last word gets a prefix wildcard:
 // the user is usually still typing it.
+//
+// This is the forgiving way to search: every word of the query has to
+// appear somewhere in the page. It is what a query the index cannot
+// read falls back to.
 func buildMatch(query string) string {
 	words := queryWords(query)
+	// A query that ends in an operator is not finished. The operator
+	// is not a word the pages have to hold, so it is left out.
+	if len(words) > 0 && operators[strings.ToUpper(words[len(words)-1])] {
+		words = words[:len(words)-1]
+	}
 	if len(words) == 0 {
 		return ""
 	}

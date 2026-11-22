@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2026-11-22T00:00:00Z
-fingerprint: 40ddba99a68052f1ae474e29ea2c9917a2be36ab452142d62fe0694ec3468b7c
+fingerprint: a8914a46104fe9b6e0095c38a04aa47a238b6f2d11f92eead3394ef3eb208738
 lastmod: "2026-11-22"
 tags:
   - search
@@ -117,15 +117,46 @@ binary, so the search costs no extra dependency.
 - A hit in the title counts more than a hit in the body. The ranking is
   BM25, the same measure the search engines use.
 
+## The query language
+
+A query is read as it is written, so the reader can narrow the search
+down.
+
+| Written | Means |
+|---------|-------|
+| `daemon kubernetes` | Both terms have to be in the page. |
+| `daemon AND kubernetes` | The same, written out. |
+| `daemon OR kubernetes` | Either term is enough. |
+| `daemon NOT kubernetes` | The first term, without the second. |
+| `"package manager"` | The words, in that order, next to each other. |
+| `title:kubernetes` | The term has to be in the title. |
+| `body:kubernetes` | The term has to be in the text of the page. |
+| `tags:adr` | The term has to be in the tags of the page. |
+| `categories:how-to` | The term has to be in the category of the page. |
+| `kuber*` | The words that start with it. |
+
+The operators are the words of the index, so they are written in upper
+case: a lower case "and" is a word the pages have to hold.
+
+The words are stemmed, and any term may be a prefix - the last term of
+a query gets one on its own, so the reader finds the pages while they
+are still typing.
+
+A query the index cannot read - a half-written one, most of the time -
+is searched the forgiving way: every word of the query has to appear
+somewhere in the page. A search box holds half-written queries, and
+half a query still finds the pages it can.
+
 ## The limits
 
-- There is no typo tolerance beyond the prefix of the last word.
+- There is no typo tolerance beyond the prefix of a term.
 - There are no facets: the results cannot be filtered by category or
   repository.
 - The index holds the text of the pages, not their code blocks in
   their original form. The words of a code block are searchable, but
   not its punctuation.
+- A query is at most 256 characters long.
 
-A stronger engine - one with fuzzy matching, phrase queries and facets
-- can replace the index behind the same endpoint. The endpoint, the
-client and the way the index is built do not change.
+A stronger engine - one with fuzzy matching and facets - can replace the
+index behind the same endpoint. The endpoint, the client and the way the
+index is built do not change.
