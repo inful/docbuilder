@@ -195,6 +195,11 @@ type StorageConfig struct {
 	StateFile    string `yaml:"state_file"`     // Path to state file
 	RepoCacheDir string `yaml:"repo_cache_dir"` // Directory for cached repositories
 	OutputDir    string `yaml:"output_dir"`     // Output directory for generated site
+	// StateDir is where the daemon keeps its state: the state file, the
+	// event log and the remote-head cache. It is separate from the
+	// repository cache so that a cache wipe does not take the state with
+	// it, and so that walking the cache never walks the state.
+	StateDir string `yaml:"state_dir,omitempty"`
 	// EventRetention is how long build events are kept in the event store.
 	// "0" keeps everything; otherwise the store prunes events older than
 	// this duration, so the log cannot grow without bound.

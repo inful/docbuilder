@@ -15,4 +15,12 @@ const (
 	// defaultEventRetention is how long build events are kept in the event
 	// store. Without it the event log grows without bound.
 	defaultEventRetention = "720h" // 30 days
+
+	// defaultStateDir is where the daemon keeps its state. It is separate
+	// from the repository cache so the two do not share a directory.
+	defaultStateDir = "./daemon-data"
 )
+
+// DefaultStateDir is where the daemon keeps its state when the config does
+// not say where.
+const DefaultStateDir = defaultStateDir

@@ -206,6 +206,9 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Daemon.Storage.OutputDir == "" {
 		cfg.Daemon.Storage.OutputDir = cfg.Output.Directory
 	}
+	if cfg.Daemon.Storage.StateDir == "" {
+		cfg.Daemon.Storage.StateDir = defaultStateDir
+	}
 	if cfg.Daemon.Storage.EventRetention == "" {
 		cfg.Daemon.Storage.EventRetention = defaultEventRetention
 	}

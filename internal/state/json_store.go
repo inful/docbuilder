@@ -151,13 +151,6 @@ func (js *JSONStore) Health(_ context.Context) foundation.Result[StoreHealth, er
 		health.Message = fmt.Sprintf("cannot access data directory: %v", err)
 	}
 
-	// Add storage size if we can calculate it
-	if health.Status == healthyStatus {
-		if size, err := js.calculateStorageSize(); err == nil {
-			health.StorageSize = &size
-		}
-	}
-
 	if js.lastSaved != nil {
 		health.LastBackup = js.lastSaved
 	}
@@ -292,21 +285,4 @@ func (js *JSONStore) snapshot() stateSnapshot {
 		Statistics:    js.statistics,
 		Configuration: js.configuration,
 	}
-}
-
-// calculateStorageSize calculates the total storage size used by the store.
-func (js *JSONStore) calculateStorageSize() (int64, error) {
-	var totalSize int64
-
-	err := filepath.Walk(js.dataDir, func(_ string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			totalSize += info.Size()
-		}
-		return nil
-	})
-
-	return totalSize, err
 }

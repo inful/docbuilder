@@ -228,10 +228,11 @@ DocBuilder uses three distinct path roles when running the daemon:
 | Path | Source Setting | Purpose |
 |------|----------------|---------|
 | Output Directory | `output.directory` (or `daemon.storage.output_dir`) | Generated Hugo site + `public/` render (if Hugo run). Cleaned when `output.clean: true`. |
-| Repo Cache Directory | `daemon.storage.repo_cache_dir` | Persistent daemon state (`daemon-state.json`) and (for incremental strategies) parent for the working clone directory. |
+| Repo Cache Directory | `daemon.storage.repo_cache_dir` | Parent for the working clone directory. |
+| State Directory | `daemon.storage.state_dir` | Persistent daemon state (`daemon-state.json`), the event log (`events.db`) and the remote-head cache. |
 | Workspace Directory | `build.workspace_dir` or derived | Actual working checkouts used by the build pipeline (clone/update, doc discovery). |
 
-If `daemon-state.json` in the repo cache directory cannot be read (corrupt JSON, or a `format_version` this build does not understand), the daemon moves it aside to `daemon-state.json.corrupt-<timestamp>` and continues with empty state instead of failing startup. The log line names the quarantine path; the original file is left untouched.
+If `daemon-state.json` in the state directory cannot be read (corrupt JSON, or a `format_version` this build does not understand), the daemon moves it aside to `daemon-state.json.corrupt-<timestamp>` and continues with empty state instead of failing startup. The log line names the quarantine path; the original file is left untouched.
 
 Workspace selection logic (effective when `build.workspace_dir` is NOT explicitly set):
 

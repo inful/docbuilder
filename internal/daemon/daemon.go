@@ -222,9 +222,11 @@ func (d *Daemon) initScheduler() error {
 // append-only log, the projection is the read-side view, and the
 // emitter translates daemon events into the store.
 func (d *Daemon) initStateStack(cfg *config.Config) error {
-	stateDir := cfg.Daemon.Storage.RepoCacheDir
+	// The state lives in its own directory, not in the repository cache:
+	// sharing one directory meant every state save walked every clone.
+	stateDir := cfg.Daemon.Storage.StateDir
 	if stateDir == "" {
-		stateDir = "./daemon-data" // Default data directory
+		stateDir = config.DefaultStateDir // Default data directory
 	}
 
 	stateServiceResult := state.NewService(stateDir)
@@ -398,7 +400,13 @@ func (d *Daemon) initBuildDebouncer(cfg *config.Config) error {
 // in-memory and a warning is logged — repo-updates keep working, just
 // without persistence across restarts.
 func (d *Daemon) initRepoUpdater(cfg *config.Config) {
-	remoteCache, cacheErr := git.NewRemoteHeadCache(cfg.Daemon.Storage.RepoCacheDir)
+	// The remote-head cache is daemon state, not a clone: it belongs in the
+	// state directory, not with the repositories.
+	stateDir := cfg.Daemon.Storage.StateDir
+	if stateDir == "" {
+		stateDir = config.DefaultStateDir
+	}
+	remoteCache, cacheErr := git.NewRemoteHeadCache(stateDir)
 	if cacheErr != nil {
 		slog.Warn("Failed to initialize remote HEAD cache; disabling persistence", logfields.Error(cacheErr))
 		remoteCache, _ = git.NewRemoteHeadCache("")
