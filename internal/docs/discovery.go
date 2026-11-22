@@ -63,8 +63,12 @@ func NewDiscovery(repositories []config.Repository, buildCfg *config.BuildConfig
 func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error) {
 	d.docFiles = make([]DocFile, 0)
 
-	// Determine if this is a single-repository build
-	d.isSingleRepo = len(repoPaths) == 1
+	// Determine if this is a single-repository build. The count is the
+	// count of the configured repositories, not the count of the ones
+	// that could be cloned: a clone that failed would otherwise turn
+	// the site into a single-repository site and move every page of the
+	// other repositories.
+	d.isSingleRepo = len(d.repositories) == 1
 
 	// Determine forge namespacing policy using global build config.
 	mode := config.NamespacingAuto

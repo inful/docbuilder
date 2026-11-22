@@ -177,6 +177,14 @@ func recordCloneSuccess(bs *models.BuildState, repo config.Repository, res RepoF
 	if res.PreHead != "" {
 		bs.Git.SetPreHead(repo.Name, res.PreHead)
 	}
+	// The date of the commit is the date of the page when the page has
+	// none of its own. Without it every page carries the same date.
+	if !res.CommitDate.IsZero() {
+		if bs.Git.CommitDates == nil {
+			bs.Git.CommitDates = make(map[string]time.Time)
+		}
+		bs.Git.CommitDates[repo.Name] = res.CommitDate
+	}
 }
 
 // recordCloneFailure updates build state after a failed repository clone.
