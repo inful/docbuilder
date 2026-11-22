@@ -80,6 +80,11 @@ commits; pin to a SHA for reproducibility per the README.
   it was not part of the configuration the build compares. A site that
   switched provider kept the old client until something else changed.
 
+- **A page that asks for an address of its own is searchable again.**
+  A page with `url` in the front matter is rendered at that address,
+  and the index looked for it under the name of its file. Such a page
+  could not be reached through the search.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added
