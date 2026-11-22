@@ -697,7 +697,10 @@ func handleCreateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	}
 
 	fm := mapFromArgs(req.GetArguments(), "frontmatter")
-	full := composeDoc(fm, content)
+	full, composeErr := composeDoc(fm, content)
+	if composeErr != nil {
+		return toolErr("write the frontmatter", composeErr)
+	}
 	if writeErr := os.WriteFile(abs, full, 0o600); writeErr != nil { // #nosec G304
 		return toolErr("write file", writeErr)
 	}
@@ -751,16 +754,29 @@ func handleUpdateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	var newFM []byte
 	switch strategy {
 	case "replace":
-		newFM = marshalYAML(patch, writeStyle)
+		yaml, yerr := marshalYAML(patch, writeStyle)
+		if yerr != nil {
+			return toolErr("write the frontmatter", yerr)
+		}
+		newFM = yaml
 	case "merge", "":
 		existingFM := map[string]any{}
 		if had {
-			if parsed, perr := frontmatter.ParseYAML(oldFM); perr == nil {
-				existingFM = parsed
+			parsed, perr := frontmatter.ParseYAML(oldFM)
+			if perr != nil {
+				// The frontmatter of the file cannot be read. Writing the
+				// body alone would drop the title, the uid and the
+				// aliases of the page, so the write is refused.
+				return toolErrMsg(fmt.Sprintf("the frontmatter of %s cannot be parsed, so it was not changed: %v", relPath, perr))
 			}
+			existingFM = parsed
 		}
 		maps.Copy(existingFM, patch)
-		newFM = marshalYAML(existingFM, writeStyle)
+		yaml, yerr := marshalYAML(existingFM, writeStyle)
+		if yerr != nil {
+			return toolErr("write the frontmatter", yerr)
+		}
+		newFM = yaml
 	default:
 		return toolErrMsg("merge_strategy must be 'merge' or 'replace'")
 	}
@@ -1036,27 +1052,27 @@ func mapFromArgs(args map[string]any, key string) map[string]any {
 // composeDoc writes frontmatter + body into a single file body. We round-trip
 // through frontmatter.Join so YAML quoting and style detection match the
 // rest of the codebase.
-func composeDoc(fm map[string]any, content string) []byte {
+func composeDoc(fm map[string]any, content string) ([]byte, error) {
 	if len(fm) == 0 {
-		return []byte(content)
+		return []byte(content), nil
 	}
 	style := frontmatter.Style{Newline: "\n", HasTrailingNewline: true}
-	return frontmatter.Join(marshalYAML(fm, style), []byte(content), true, style)
+	yaml, err := marshalYAML(fm, style)
+	if err != nil {
+		return nil, err
+	}
+	return frontmatter.Join(yaml, []byte(content), true, style), nil
 }
 
-// marshalYAML is a thin wrapper over frontmatter.SerializeYAML that swallows
-// the error and returns empty bytes — callers that hit a marshal failure are
-// usually about to write something they constructed themselves; the error
-// surfaces at the next step.
-func marshalYAML(fm map[string]any, style frontmatter.Style) []byte {
+// marshalYAML writes a frontmatter map as YAML.
+//
+// The error is not swallowed: a frontmatter that cannot be written must
+// not turn into a file without frontmatter.
+func marshalYAML(fm map[string]any, style frontmatter.Style) ([]byte, error) {
 	if len(fm) == 0 {
-		return nil
+		return nil, nil
 	}
-	out, err := frontmatter.SerializeYAML(fm, style)
-	if err != nil {
-		return nil
-	}
-	return out
+	return frontmatter.SerializeYAML(fm, style)
 }
 
 // toolErr is a small wrapper so handlers can return a single line on error.
