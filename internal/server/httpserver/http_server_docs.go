@@ -367,11 +367,16 @@ func determineCacheControl(path string) string {
 		return cacheControlFiveMinute
 	}
 
-	// Web fonts - cache for 1 year
+	// Web fonts - cache for 1 year when the URL is content-addressed, for
+	// the same reason as CSS and JavaScript: a stable URL has to be
+	// revalidated, or a theme bump keeps the old font in the browser.
 	if strings.HasSuffix(path, ".woff") || strings.HasSuffix(path, ".woff2") ||
 		strings.HasSuffix(path, ".ttf") || strings.HasSuffix(path, ".eot") ||
 		strings.HasSuffix(path, ".otf") {
-		return "public, max-age=31536000, immutable"
+		if isContentAddressed(path) {
+			return "public, max-age=31536000, immutable"
+		}
+		return cacheControlFiveMinute
 	}
 
 	// Images - cache for 1 week
