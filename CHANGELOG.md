@@ -63,6 +63,10 @@ commits; pin to a SHA for reproducibility per the README.
   queue, so the next build waited for it. The index is now written the
   way the link verification runs.
 
+- **The search tip is only shown when it helps.** A reader who already
+  writes `OR`, `NOT`, a phrase or a field filter does not need to be
+  reminded of them on every keystroke.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added
