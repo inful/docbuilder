@@ -9,6 +9,104 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-11-22
+
+A repository audit turned up twenty findings. All of them are fixed here.
+
+### Security
+- **The MCP `get_config` tool returned the forge webhook secret.** The
+  secret was masked along with the other credentials, but the forge
+  block carried a second copy of it that was not masked. The forge
+  webhook secrets are masked now.
+
+- **A webhook without a verifiable signature was accepted.** The
+  handler skipped the signature check when the configuration had no
+  secret, when the forge was unknown, or when the client could not be
+  reached. All three cases are refused now: a webhook that cannot be
+  verified is not a webhook.
+
+### Fixed
+- **The daemon never skipped an unchanged build.** The per-repository
+  state the skip check reads was never written: the generator recorded
+  the commit it built, but nothing persisted it, so the check always
+  found nothing to compare against. The state is persisted now, and a
+  build whose repositories did not change is skipped.
+
+- **The configuration parser expanded every `$` in a value.** A dollar
+  sign in a password or a command was treated as the start of an
+  environment variable and removed. `${VAR}` is still expanded; a bare
+  `$` is only expanded when the variable is set.
+
+- **A configuration key nobody read was silently ignored.** A typo in
+  a key - `hugo.transform` instead of `hugo.transforms`, say - was
+  accepted and had no effect. Unknown keys are refused now, with the
+  name of the offending key.
+
+- **The example configurations did not load.** The shipped examples
+  were missing the `version` field and used keys that no longer
+  exist, so a user copying one got a configuration error. The examples
+  load now, and a test keeps them that way.
+
+- **The build event log grew without bound.** The events are kept
+  forever. They are pruned now, after thirty days by default.
+
+- **The daemon state lived in the repository cache.** The state file,
+  the event log and the remote-head cache shared a directory with the
+  cloned repositories, so saving the state walked every file of every
+  clone. The state has a directory of its own now.
+
+- **The link verifier read every page's front matter on every build.**
+  The front matter describes a broken link, so it was read for every
+  rendered page although it is needed only when a link is broken. It
+  is read when the link breaks now.
+
+- **The site fetched its search library from a CDN.** The theme loads
+  lunr from unpkg, so every published page made a request to a third
+  party. The library is vendored and served from the site.
+
+- **An unfingerprinted stylesheet was cached for a year.** The server
+  gave every CSS and JavaScript file an immutable one-year cache, but
+  only the files Hugo fingerprints change name when their content
+  changes. The rest are revalidated now.
+
+- **The "active jobs" counter counted the wrong thing.** It counted
+  the discovery runs, and every surface that reported it - the
+  Prometheus gauge, the status page, the health endpoint - called it
+  the number of running builds. It counts the running builds now.
+
+### Changed
+- **The lint fixer re-read the tree for every run.** The parsed links
+  of a file were thrown away at the start of every run, and the links
+  of a file were sorted with a quadratic sort. The cache now outlives
+  a run, and the sort is not quadratic.
+
+- **The uid helpers were in two places.** The lint fixer had its own
+  copies of the helpers that `frontmatterops` owns, and the alias path
+  was built in three packages. They live in one place now.
+
+- **The documentation described the old theme.** The README, the
+  example configurations and the CI script still described Relearn,
+  and the CI script wrote a configuration that no longer loads. They
+  describe Docsy now.
+
+### Removed
+- **The build report promised fields nothing wrote.** The report
+  carried `delta_decision`, `delta_changed_repos` and
+  `delta_repo_reasons`, and the delta analyzer that was supposed to
+  fill them was never wired into a build. The fields are gone.
+
+- **The `hugo.transforms` configuration key.** It was documented at
+  length and read by nothing. The key is refused now, and the guide
+  that described it describes the pipeline that actually runs.
+
+- **The unused transform registry and the delta analyzer.** Both were
+  dead code: nothing outside their own tests imported them. Four
+  thousand lines go with them.
+
+- **Four exported symbols nothing called.** The no-op build
+  observer, two discovery accessors and the configuration version
+  probe had no caller.
+
 ## [0.27.0] - 2026-11-21
 
 ### Changed
