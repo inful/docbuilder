@@ -292,8 +292,12 @@ type LinkVerificationConfig struct {
 	RateLimitDelay     string `yaml:"rate_limit_delay"`     // Delay between requests
 	VerifyExternalOnly bool   `yaml:"verify_external_only"` // Only verify external links
 	SkipEditLinks      bool   `yaml:"skip_edit_links"`      // Skip edit links (require auth, default: true)
-	FollowRedirects    bool   `yaml:"follow_redirects"`     // Follow HTTP redirects
-	MaxRedirects       int    `yaml:"max_redirects"`        // Maximum redirects to follow
+	// FollowRedirects is a pointer: "not set" means that the redirects
+	// are followed, and an explicit false means that they are not. A
+	// plain bool cannot tell the two apart, and the default turned
+	// every false into a true.
+	FollowRedirects *bool `yaml:"follow_redirects"` // Follow HTTP redirects
+	MaxRedirects    int   `yaml:"max_redirects"`    // Maximum redirects to follow
 }
 
 // LoadResult contains the outcome of a Load operation, including warnings.
@@ -415,7 +419,7 @@ func Init(configPath string, force bool) error {
 				RateLimitDelay:     "100ms",
 				VerifyExternalOnly: false,
 				SkipEditLinks:      true,
-				FollowRedirects:    true,
+				FollowRedirects:    new(true),
 				MaxRedirects:       3,
 			},
 		},

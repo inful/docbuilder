@@ -285,8 +285,8 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if !lv.SkipEditLinks {
 		lv.SkipEditLinks = true // Default enabled
 	}
-	if !lv.FollowRedirects {
-		lv.FollowRedirects = true // Default enabled
+	if lv.FollowRedirects == nil {
+		lv.FollowRedirects = new(true) // Default enabled
 	}
 	if lv.MaxRedirects == 0 {
 		lv.MaxRedirects = 3

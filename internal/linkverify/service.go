@@ -125,7 +125,7 @@ func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationSe
 		Timeout:   timeout,
 		Transport: transport,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if !cfg.FollowRedirects {
+			if cfg.FollowRedirects != nil && !*cfg.FollowRedirects {
 				return http.ErrUseLastResponse
 			}
 			// len(via) is the number of previous requests already made.
