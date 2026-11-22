@@ -66,3 +66,37 @@ func TestCollectSkipsAPageThatWasNotRendered(t *testing.T) {
 		t.Fatalf("got %d docs, want none", len(docs))
 	}
 }
+
+// A page that asks for an address of its own is found under that
+// address, in the shapes Hugo accepts.
+func TestRenderedURLForOwn(t *testing.T) {
+	rendered := map[string]string{
+		"custom/place/index.html": "/custom/place/",
+		"index.html":              "/",
+	}
+
+	cases := []struct {
+		own  string
+		want string
+	}{
+		{"/custom/place/", "/custom/place/"},
+		{"/custom/place", "/custom/place/"},
+		{"custom/place", "/custom/place/"},
+		{"/", "/"},
+	}
+	for _, tc := range cases {
+		got, ok := renderedURLForOwn(tc.own, rendered)
+		if !ok || got != tc.want {
+			t.Fatalf("renderedURLForOwn(%q) = %q, %v; want %q, true", tc.own, got, ok, tc.want)
+		}
+	}
+}
+
+// A page that asks for an address that was not rendered cannot be
+// reached, so it must not turn up in a search result.
+func TestRenderedURLForOwnNotRendered(t *testing.T) {
+	rendered := map[string]string{"custom/place/index.html": "/custom/place/"}
+	if _, ok := renderedURLForOwn("/nowhere/", rendered); ok {
+		t.Fatal("a page that was not rendered must not be found")
+	}
+}
