@@ -12,7 +12,7 @@ import (
 
 // TriggerDiscovery manually triggers repository discovery.
 func (d *Daemon) TriggerDiscovery() string {
-	return d.discover.discoveryRunner.TriggerManual(func() bool { return d.GetStatus() == StatusRunning }, &d.activeJobs)
+	return d.discover.discoveryRunner.TriggerManual(func() bool { return d.GetStatus() == StatusRunning })
 }
 
 // TriggerBuild manually triggers a site build.

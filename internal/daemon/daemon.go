@@ -60,13 +60,13 @@ const (
 //   - serve:      runtime services (HTTP server, scheduler, event bus, metrics)
 //   - optional:   opt-in features (livereload, link verifier, outbound dispatcher)
 //
-// The shared counters `activeJobs` and `queueLength` stay on the
-// façade because they are read from multiple sub-systems and would
-// have to be back-referenced from the sub-structs otherwise.
+// The shared counter `queueLength` stays on the façade because it is
+// read from multiple sub-systems and would have to be back-referenced
+// from the sub-structs otherwise. The number of running builds comes
+// from the build queue itself.
 type Daemon struct {
 	config         *config.Config
 	configFilePath string
-	activeJobs     int32
 	queueLength    atomic.Int32
 
 	lifecycle lifecycleStack
@@ -810,9 +810,12 @@ func (d *Daemon) GetStatus() Status {
 	return status
 }
 
-// GetActiveJobs returns the number of active build jobs.
+// GetActiveJobs returns the number of build jobs currently running.
 func (d *Daemon) GetActiveJobs() int {
-	return int(atomic.LoadInt32(&d.activeJobs))
+	if d.build.buildQueue == nil {
+		return 0
+	}
+	return d.build.buildQueue.ActiveCount()
 }
 
 // GetQueueLength returns the current build queue length.

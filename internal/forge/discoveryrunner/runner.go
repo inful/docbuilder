@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync/atomic"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
@@ -298,7 +297,7 @@ func (r *Runner) SafeRun(ctx context.Context, shouldRun func() bool) error {
 
 // TriggerManual triggers a manual discovery run in a separate goroutine.
 // Returns the job ID for tracking.
-func (r *Runner) TriggerManual(shouldRun func() bool, activeJobs *int32) string {
+func (r *Runner) TriggerManual(shouldRun func() bool) string {
 	if shouldRun != nil && !shouldRun() {
 		return ""
 	}
@@ -306,11 +305,6 @@ func (r *Runner) TriggerManual(shouldRun func() bool, activeJobs *int32) string 
 	jobID := fmt.Sprintf("discovery-%d", time.Now().Unix())
 
 	go func() {
-		if activeJobs != nil {
-			atomic.AddInt32(activeJobs, 1)
-			defer atomic.AddInt32(activeJobs, -1)
-		}
-
 		slog.Info("Manual discovery triggered", logfields.JobID(jobID))
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)

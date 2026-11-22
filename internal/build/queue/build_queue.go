@@ -196,6 +196,15 @@ func (bq *BuildQueue) GetActiveJobs() []*BuildJob {
 	return active
 }
 
+// ActiveCount returns how many jobs are currently running. It is the
+// count a caller wants when it reports concurrency; GetActiveJobs
+// copies the jobs themselves.
+func (bq *BuildQueue) ActiveCount() int {
+	bq.mu.RLock()
+	defer bq.mu.RUnlock()
+	return len(bq.active)
+}
+
 // Enqueue adds a new build job to the queue.
 func (bq *BuildQueue) Enqueue(job *BuildJob) error {
 	if job == nil {
