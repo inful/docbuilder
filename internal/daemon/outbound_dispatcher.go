@@ -28,6 +28,10 @@ const (
 	ragabastPreflightPath = "/api/documents/%s/fingerprint"
 )
 
+// maxUploadedEntries bounds how many documents the dispatcher remembers.
+// The oldest entries are dropped when the limit is reached.
+const maxUploadedEntries = 10000
+
 // OutboundDispatcher forwards per-document content to an external ragabast
 // ingest endpoint. Documents are pushed asynchronously after docbuilder writes
 // them to disk; ragabast is expected to handle its own persistent job queue
@@ -70,8 +74,12 @@ type OutboundDispatcher struct {
 
 	// uploaded remembers the fingerprint this dispatcher last uploaded
 	// for a document uid. A document whose fingerprint did not change
-	// needs no request at all.
-	uploaded sync.Map
+	// needs no request at all. The map is bounded: the oldest entries are
+	// dropped when it is full, because a forgotten entry only costs one
+	// extra upload.
+	uploadedMu    sync.Mutex
+	uploaded      map[string]string
+	uploadedOrder []string
 
 	wg sync.WaitGroup
 
@@ -360,7 +368,7 @@ func (d *OutboundDispatcher) worker(ctx context.Context) {
 func (d *OutboundDispatcher) send(ctx context.Context, job ingestJob) {
 	uid, fp := parseUIDAndFingerprint(job.content)
 	if uid != "" && fp != "" {
-		if uploaded, ok := d.uploaded.Load(uid); ok && uploaded == fp {
+		if uploaded, ok := d.uploadedFingerprint(uid); ok && uploaded == fp {
 			d.unchangedTotal.Add(1)
 			return
 		}
@@ -386,7 +394,28 @@ func (d *OutboundDispatcher) rememberUploaded(uid, fingerprint string) {
 	if uid == "" || fingerprint == "" {
 		return
 	}
-	d.uploaded.Store(uid, fingerprint)
+	d.uploadedMu.Lock()
+	defer d.uploadedMu.Unlock()
+	if d.uploaded == nil {
+		d.uploaded = make(map[string]string)
+	}
+	if _, known := d.uploaded[uid]; !known {
+		d.uploadedOrder = append(d.uploadedOrder, uid)
+	}
+	d.uploaded[uid] = fingerprint
+	for len(d.uploadedOrder) > maxUploadedEntries {
+		delete(d.uploaded, d.uploadedOrder[0])
+		d.uploadedOrder = d.uploadedOrder[1:]
+	}
+}
+
+// uploadedFingerprint returns the fingerprint this dispatcher last
+// uploaded for a document uid.
+func (d *OutboundDispatcher) uploadedFingerprint(uid string) (string, bool) {
+	d.uploadedMu.Lock()
+	defer d.uploadedMu.Unlock()
+	fingerprint, ok := d.uploaded[uid]
+	return fingerprint, ok
 }
 
 // upload POSTs the document to ragabast's ingest endpoint as
