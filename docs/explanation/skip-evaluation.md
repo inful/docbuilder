@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 1a16cf4b1fdad840378696a26bb22c8c3d05126dd4f412fbb4869b3c9cb30c60
-lastmod: "2026-11-19"
+fingerprint: d8089658e48627b2eb3ea78470c69f0cd879f367cfa187fdef322a0796558cd2
+lastmod: "2026-11-22"
 tags:
   - optimization
   - performance
@@ -43,71 +43,59 @@ A **full rebuild** will occur when **any** of these conditions are detected:
 
 ## Architecture
 
-### Components
+### Where the decision is made
+
+The decision is made by the build pipeline itself, right after the
+repositories have been cloned. The pipeline knows the commit each
+repository was at before the clone and the commit it is at now, so it
+can tell whether anything moved. It does not need a second, separate
+evaluation pass in front of the build: a check that runs before the
+clone cannot know what the repositories look like now, and a check that
+cannot know that must never say "nothing changed".
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│                    BuildService                        │
+│                    Build pipeline                      │
 │  ┌──────────────────────────────────────────────────┐  │
-│  │     evaluateSkip()                               │  │
-│  │  Builds validation.SkipEvaluator when             │  │
-│  │  BuildRequest.SkipState is non-nil, then calls   │  │
-│  │  Evaluate(). SkipState nil disables skip         │  │
-│  │  evaluation entirely.                            │  │
+│  │  Stage: clone                                     │  │
+│  │  Reads the commit of each clone before the update  │  │
+│  │  and after it. Both are in the build state.        │  │
 │  └──────────────────────────────────────────────────┘  │
 │                           │                            │
 │                           ▼                            │
 │  ┌──────────────────────────────────────────────────┐  │
-│  │       validation.SkipEvaluator (core logic)      │  │
-│  │  Executes validation rule chain. Concrete type;   │  │
-│  │  no interface required (single implementation).   │  │
+│  │  All repositories unchanged?                      │  │
+│  │  → the previous output is still valid?            │  │
+│  │  → the configuration is unchanged?                │  │
+│  │  → the versions are unchanged?                    │  │
+│  │  → skip the rest of the pipeline                  │  │
 │  └──────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────┘
 ```
 
-### Validation Rules
+### The checks
 
-Rules are executed in order, with early exit on first failure:
+The pipeline skips the remaining stages when all of these hold:
 
-```go
-// Phase 1: Basic prerequisites
-BasicPrerequisitesRule    // State manager, generator, repos exist
-ConfigHashRule           // Configuration unchanged
-PublicDirectoryRule      // Previous build artifacts exist
+1. **The repositories did not move.** Every repository's commit after the
+   clone is the commit it had before.
+2. **The configuration is unchanged.** The configuration hash of the
+   current configuration matches the one the last build stored.
+3. **The versions are unchanged.** The build report of the last build
+   was written by the same DocBuilder and Hugo versions.
+4. **The previous output is still usable.** The last build was not a
+   failure, it found documentation files, and the output directory holds
+   a rendered `public/index.html` and markdown content.
 
-// Phase 2: Previous build validation
-PreviousReportRule       // build-report.json exists and valid
+Anything else - a moved repository, a changed configuration, a new
+version, a broken output directory - means the build runs.
 
-// Phase 3: Change detection
-VersionMismatchRule      // DocBuilder + Hugo versions match
-ContentIntegrityRule     // File tree structure unchanged
-GlobalDocHashRule        // Overall content hash unchanged
-PerRepoDocHashRule       // Per-repository content hashes match
-CommitMetadataRule       // All repository commits match
-```
+### What the state holds
 
-### Rule Validation Pattern
-
-Each rule implements this interface:
-
-```go
-type Rule interface {
-    Name() string
-    Validate(ctx Context) Result
-}
-
-type Result struct {
-    Passed bool
-    Reason string  // Why validation failed
-}
-```
-
-Rules have access to:
-- **Context.State**: Persisted commit/config metadata
-- **Context.Generator**: Current Hugo configuration
-- **Context.Repos**: Current repository list
-- **Context.OutDir**: Output directory path
-- **Context.PrevReport**: Previous build report (loaded by PreviousReportRule)
+The daemon's state file records the commit each repository was built at,
+the configuration hash of that build, and the hashes of the document
+files. The pipeline writes them after a build and reads them back to
+make the decision.
 
 ## Configuration
 
@@ -136,25 +124,28 @@ Changes to **any** of these trigger a rebuild.
 
 ## State Persistence
 
-The skip evaluator relies on the **StateManager** to track:
+The daemon's state manager keeps what the pipeline needs to decide:
 
 ```go
 type DaemonStateManager interface {
     // Configuration tracking
     GetLastConfigHash() string
-    SaveConfigHash(hash string) error
-    
+    SetLastConfigHash(hash string)
+
     // Repository tracking
-    GetLastCommit(repoName string) string
-    SaveCommit(repoName, commitSHA string) error
-    
+    GetRepoLastCommit(repoURL string) string
+    SetRepoLastCommit(repoURL, name, branch, commit string)
+
     // Document hashing
-    GetLastDocHash(repoName string) string
-    SaveDocHash(repoName, hash string) error
+    GetRepoDocFilesHash(repoURL string) string
+    SetRepoDocFilesHash(repoURL, hash string)
+    GetLastGlobalDocFilesHash() string
+    SetLastGlobalDocFilesHash(hash string)
 }
 ```
 
-State is persisted in `/data/state/daemon-state.json` and survives daemon restarts.
+State is persisted in the daemon's state directory and survives daemon
+restarts.
 
 ## Build Report
 
@@ -182,20 +173,21 @@ The caller cannot distinguish a skipped build from a successful build - this is 
 
 ### Wiring
 
-The daemon passes its state manager directly via `BuildRequest.SkipState`:
+The daemon passes its state manager directly via `BuildRequest.StateManager`:
 
 ```go
 req := build.BuildRequest{
-    Config:     cfg,
-    OutputDir:  outDir,
-    SkipState:  daemon.stateManager,  // enables skip evaluation
-    Options:    build.BuildOptions{SkipIfUnchanged: cfg.Build.SkipIfUnchanged},
+    Config:       cfg,
+    OutputDir:    outDir,
+    StateManager: daemon.stateManager,  // where the commits are recorded
+    Options:      build.BuildOptions{SkipIfUnchanged: cfg.Build.SkipIfUnchanged},
 }
 ```
 
-`BuildService.Run` constructs the validator directly when `SkipState` is
-non-nil and `Options.SkipIfUnchanged` is true. The CLI omits `SkipState`,
-which disables skip evaluation regardless of the option flag.
+The pipeline writes the commit each repository was built at into that
+state manager, and reads it back on the next build. The configuration
+decides whether a build may be skipped at all: with
+`skip_if_unchanged` off, every build runs.
 
 There is no factory, no wrapper, and no adapter layer between the daemon and
 `BuildService` — the state manager is the only seam.
@@ -204,55 +196,46 @@ There is no factory, no wrapper, and no adapter layer between the daemon and
 
 ### Unit Tests
 
-Validation rules are tested in isolation:
+The pipeline's decision is tested where it is made:
 
 ```go
-func TestVersionMismatchRule(t *testing.T) {
-    ctx := Context{
-        State: &mockState{
-            lastVersion: "1.0.0",
-            lastHugoVersion: "0.120.0",
-        },
-    }
-    
-    // Current version differs
-    version.SetVersion("1.0.1")
-    
-    result := VersionMismatchRule{}.Validate(ctx)
-    assert.False(t, result.Passed)
-    assert.Contains(t, result.Reason, "version mismatch")
+func TestBuild_SkipsUnchangedRepository(t *testing.T) {
+    // First build - runs fully
+    first, err := svc.Run(ctx, req)
+    require.NoError(t, err)
+    require.False(t, first.Skipped)
+
+    // Second build - same repositories, nothing moved
+    second, err := svc.Run(ctx, req)
+    require.NoError(t, err)
+    require.True(t, second.Skipped)
 }
 ```
 
-### Integration Tests
+### The other half
 
-End-to-end skip behavior is tested in daemon integration tests:
+A build after a change must **not** be skipped. This is the test that
+keeps the site honest:
 
 ```go
-func TestDaemon_SkipUnchangedBuilds(t *testing.T) {
-    // First build - should run fully
-    result1 := daemon.Build(ctx, req)
-    assert.Equal(t, BuildStatusSuccess, result1.Status)
-    
-    // Second build - same repos, should skip
-    result2 := daemon.Build(ctx, req)
-    assert.Equal(t, BuildStatusSuccess, result2.Status)
-    assert.True(t, result2.Skipped)  // Build was skipped
+func TestBuild_AfterChangeIsNotSkipped(t *testing.T) {
+    // First build, then the repository gets a new document
+    addDocToRepo(t, repoDir, "b.md", "# B\n")
+
+    second, err := svc.Run(ctx, req)
+    require.NoError(t, err)
+    require.False(t, second.Skipped)
 }
 ```
 
 ## Performance Impact
 
-Skip evaluation adds minimal overhead:
+The decision costs a clone of the repositories (which the daemon already
+does) and a few reads of the state file. Everything the pipeline would
+do afterwards - discovery, transformation, Hugo - is skipped.
 
-1. **Config hash computation**: ~5ms (YAML marshaling + SHA256)
-2. **File tree scan**: ~10-50ms (depends on content size)
-3. **State manager lookups**: ~1ms (in-memory with disk cache)
-4. **Rule validation**: ~20-100ms total
-
-**Total overhead**: ~50-200ms vs. **full rebuild**: 5-30 seconds
-
-The cost of skip validation is negligible compared to git operations and Hugo rendering.
+**Total overhead**: a few milliseconds against a **full rebuild** of
+5-30 seconds.
 
 ## Logging
 
@@ -284,9 +267,9 @@ INFO Build required - configuration changed
 
 **Diagnosis**:
 1. Check `skip_if_unchanged` is enabled in config
-2. Verify state manager is initialized (`/data/state/daemon-state.json` exists)
-3. Check logs for skip validation failures
-4. Ensure `public/` directory and `build-report.json` exist from previous build
+2. Verify the state manager is initialized (the daemon's state file exists)
+3. Check the logs for `No repository head changes detected`
+4. Ensure `public/index.html` and `build-report.json` exist from the previous build
 
 **Common Causes**:
 - Configuration changes not reflected in config hash
