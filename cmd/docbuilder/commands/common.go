@@ -76,19 +76,27 @@ func parseLogLevel(verbose bool) slog.Level {
 	return slog.LevelInfo
 }
 
-// LoadEnvFile loads environment variables from .env or .env.local file.
-// Returns nil if successful; returns error if file doesn't exist but doesn't fail the command.
+// LoadEnvFile loads environment variables from the .env files.
+// Returns nil if successful; returns error if no file exists but doesn't fail the command.
+//
+// The local file is loaded first, so it wins over the shared one, and
+// the environment of the process wins over both: a value that is
+// already set is not overwritten.
 func LoadEnvFile() error {
-	envPaths := []string{".env", ".env.local"}
-	for _, p := range envPaths {
-		if _, err := os.Stat(p); err == nil {
-			if err := godotenv.Load(p); err != nil {
-				return fmt.Errorf("failed loading %s: %w", p, err)
-			}
-			return nil
+	loaded := false
+	for _, p := range []string{".env.local", ".env"} {
+		if _, err := os.Stat(p); err != nil {
+			continue
 		}
+		if err := godotenv.Load(p); err != nil {
+			return fmt.Errorf("failed loading %s: %w", p, err)
+		}
+		loaded = true
 	}
-	return errors.New("no .env file found")
+	if !loaded {
+		return errors.New("no .env file found")
+	}
+	return nil
 }
 
 // ResolveOutputDir determines the final output directory based on CLI flag, config, and base_directory.
