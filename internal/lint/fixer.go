@@ -142,16 +142,10 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 		return nil, fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
-	// Detect broken links before applying fixes.
-	// This is also the worklist for ADR-012 healing.
-	brokenLinksWorklist, err := detectBrokenLinks(path)
-	if err != nil {
-		// Non-fatal: log but continue with fixes
-		fixResult.Errors = append(fixResult.Errors,
-			fmt.Errorf("failed to detect broken links: %w", err))
-	} else {
-		fixResult.BrokenLinks = brokenLinksWorklist
-	}
+	// The lint run already found the broken links, and they are the
+	// worklist for ADR-012 healing. Scanning the tree again here would
+	// parse every markdown file twice.
+	fixResult.BrokenLinks = result.brokenLinks
 
 	// Group issues by file and track uid/fingerprint fix targets.
 	// IMPORTANT: fingerprint regeneration must always run as the final fix step,
@@ -237,7 +231,7 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 
 	// Phase 3.5: heal broken links caused by Git renames/moves.
 	// (No-op when not in a git repository or when no broken links are found.)
-	f.healBrokenLinksFromGitRenames(rootPath, brokenLinksWorklist, fixResult, fingerprintTargets)
+	f.healBrokenLinksFromGitRenames(rootPath, fixResult.BrokenLinks, fixResult, fingerprintTargets)
 
 	// Phase 3.7: rename files in sequence-numbered directories.
 	// Renames also need link-rewrite passes, which are handled

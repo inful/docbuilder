@@ -48,6 +48,10 @@ type Issue struct {
 type Result struct {
 	Issues     []Issue
 	FilesTotal int // Total files scanned
+
+	// brokenLinks are the broken links the lint run found. The fixer uses
+	// them as its worklist instead of scanning the tree a second time.
+	brokenLinks []BrokenLink
 }
 
 // HasErrors returns true if any error-level issues exist.

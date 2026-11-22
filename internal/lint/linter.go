@@ -81,6 +81,7 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 	if blErr != nil {
 		return nil, blErr
 	}
+	result.brokenLinks = brokenLinks
 	for _, bl := range brokenLinks {
 		result.Issues = append(result.Issues, Issue{
 			FilePath: bl.SourceFile,
