@@ -53,7 +53,7 @@ func TestValidateWebhookSignature_FailsClosed(t *testing.T) {
 				webhookConfig: tc.webhookConfigs,
 				forgeClients:  tc.forgeClients,
 			}
-			r := httptest.NewRequest(http.MethodPost, "/webhooks/github", strings.NewReader("{}"))
+			r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/webhooks/github", strings.NewReader("{}"))
 			err := h.validateWebhookSignature(forgeName, "X-Hub-Signature-256", []byte("{}"), r)
 			if err == nil {
 				t.Fatal("expected the webhook to be rejected, got no error")
@@ -76,7 +76,7 @@ func TestValidateWebhookSignature_AcceptsValidSignature(t *testing.T) {
 	}
 
 	body := []byte(`{"action":"opened"}`)
-	r := httptest.NewRequest(http.MethodPost, "/webhooks/github", strings.NewReader(string(body)))
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/webhooks/github", strings.NewReader(string(body)))
 	r.Header.Set("X-Hub-Signature-256", "sha256=valid-signature")
 
 	if err := h.validateWebhookSignature(forgeName, "X-Hub-Signature-256", body, r); err != nil {

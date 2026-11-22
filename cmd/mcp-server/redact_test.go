@@ -125,7 +125,7 @@ func TestRedactConfig_MasksWebhookSecret(t *testing.T) {
 		Forges: []*config.ForgeConfig{{
 			Name: "github",
 			Auth: &config.AuthConfig{Type: config.AuthTypeToken, Token: "ghp_supersecret"},
-			Webhook: &config.WebhookConfig{
+			Webhook: &config.WebhookConfig{ //nolint:gosec // test-only secret value
 				Secret: "webhook-super-secret",
 				Path:   "/webhooks/github",
 			},
@@ -157,7 +157,7 @@ func TestRedactConfig_JSONOmitsWebhookSecret(t *testing.T) {
 	cfg := &config.Config{
 		Forges: []*config.ForgeConfig{{
 			Name:    "github",
-			Webhook: &config.WebhookConfig{Secret: "webhook-super-secret"},
+			Webhook: &config.WebhookConfig{Secret: "webhook-super-secret"}, //nolint:gosec // test-only secret value
 		}},
 	}
 	b, err := json.Marshal(redactConfig(cfg))

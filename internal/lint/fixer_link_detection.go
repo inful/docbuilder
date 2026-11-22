@@ -80,12 +80,8 @@ type resolvedLink struct {
 // longer matches the file is read again, so a file that changed since
 // the last read never yields stale links.
 func (f *Fixer) parsedLinks(sourceFile string) ([]resolvedLink, error) {
-	if entry, ok := f.linkCache[sourceFile]; ok {
-		if info, err := os.Stat(sourceFile); err != nil || (info.Size() == entry.size && info.ModTime().Equal(entry.modTime)) {
-			// The file is gone (it was renamed away) or unchanged:
-			// the cached links are the ones we want.
-			return entry.links, nil
-		}
+	if entry, ok := f.linkCache[sourceFile]; ok && cachedLinksMatch(sourceFile, entry) {
+		return entry.links, nil
 	}
 
 	doc, err := docmodel.ParseFile(sourceFile, docmodel.Options{})
@@ -160,6 +156,17 @@ func (f *Fixer) parsedLinks(sourceFile string) ([]resolvedLink, error) {
 	}
 	f.linkCache[sourceFile] = entry
 	return links, nil
+}
+
+// cachedLinksMatch reports whether the cached links still describe the
+// file: it is unchanged, or it is gone because it was renamed away.
+func cachedLinksMatch(sourceFile string, entry cachedLinks) bool {
+	info, err := os.Stat(sourceFile)
+	if err != nil {
+		// The file is gone: the cached links are the ones we want.
+		return true
+	}
+	return info.Size() == entry.size && info.ModTime().Equal(entry.modTime)
 }
 
 // findLinksInFile scans a single markdown file for links to the target.

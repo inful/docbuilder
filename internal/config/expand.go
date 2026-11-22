@@ -7,7 +7,7 @@ import (
 
 // expandEnv expands environment variable references in a config file.
 //
-// Two forms are recognised:
+// Two forms are recognized:
 //
 //	${VAR}  always expanded; an unset variable becomes the empty string
 //	$VAR    expanded only when the variable is set in the environment

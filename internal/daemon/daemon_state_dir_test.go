@@ -24,7 +24,7 @@ func TestDaemon_StateDirSeparateFromRepoCache(t *testing.T) {
 		Build:  config.BuildConfig{WorkspaceDir: filepath.Join(root, "ws")},
 		Output: config.OutputConfig{Directory: filepath.Join(root, "site")},
 	}
-	if err := os.MkdirAll(cfg.Daemon.Storage.RepoCacheDir, 0o755); err != nil {
+	if err := os.MkdirAll(cfg.Daemon.Storage.RepoCacheDir, 0o750); err != nil {
 		t.Fatalf("mkdir repo cache: %v", err)
 	}
 

@@ -21,10 +21,10 @@ func newDaemonTestRepo(t *testing.T) string {
 	t.Helper()
 	repoDir := t.TempDir()
 	docsDir := filepath.Join(repoDir, "docs")
-	if err := os.MkdirAll(docsDir, 0o755); err != nil {
+	if err := os.MkdirAll(docsDir, 0o750); err != nil {
 		t.Fatalf("mkdir docs: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(docsDir, "a.md"), []byte("# A\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(docsDir, "a.md"), []byte("# A\n"), 0o600); err != nil {
 		t.Fatalf("write doc: %v", err)
 	}
 	repo, err := git.PlainInit(repoDir, false)

@@ -248,7 +248,7 @@ func (d *Daemon) initStateStack(cfg *config.Config) error {
 	// Prune the event log before rebuilding the projection: the projection
 	// replays every stored event, so an unbounded log means an unbounded
 	// startup.
-	d.pruneEventStore()
+	d.pruneEventStore(context.Background())
 
 	// Rebuild projection from existing events. Non-fatal: a corrupt log
 	// leaves the projection empty rather than failing daemon startup.
@@ -260,7 +260,7 @@ func (d *Daemon) initStateStack(cfg *config.Config) error {
 
 // pruneEventStore removes the build events older than the configured
 // retention window.
-func (d *Daemon) pruneEventStore() {
+func (d *Daemon) pruneEventStore(ctx context.Context) {
 	if d.state.eventStore == nil || d.config == nil || d.config.Daemon == nil {
 		return
 	}
@@ -271,10 +271,10 @@ func (d *Daemon) pruneEventStore() {
 	window, err := time.ParseDuration(retention)
 	if err != nil || window <= 0 {
 		slog.Warn("Invalid daemon.storage.event_retention, keeping all events",
-			"event_retention", retention, logfields.Error(err))
+			"event_retention", retention, "error", err)
 		return
 	}
-	removed, err := d.state.eventStore.Prune(context.Background(), time.Now().Add(-window))
+	removed, err := d.state.eventStore.Prune(ctx, time.Now().Add(-window))
 	if err != nil {
 		slog.Warn("Failed to prune old build events", logfields.Error(err))
 		return

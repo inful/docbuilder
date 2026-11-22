@@ -16,11 +16,11 @@ func TestSQLiteStore_PruneRemovesOldEvents(t *testing.T) {
 	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
-	if err := store.Append(ctx, "old-build", "BuildStarted", []byte("{}"), nil); err != nil {
-		t.Fatalf("append: %v", err)
+	if appendErr := store.Append(ctx, "old-build", "BuildStarted", []byte("{}"), nil); appendErr != nil {
+		t.Fatalf("append: %v", appendErr)
 	}
-	if err := store.Append(ctx, "new-build", "BuildStarted", []byte("{}"), nil); err != nil {
-		t.Fatalf("append: %v", err)
+	if appendErr := store.Append(ctx, "new-build", "BuildStarted", []byte("{}"), nil); appendErr != nil {
+		t.Fatalf("append: %v", appendErr)
 	}
 
 	// Prune everything older than a moment from now.
@@ -50,8 +50,8 @@ func TestSQLiteStore_PruneKeepsRecentEvents(t *testing.T) {
 	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
-	if err := store.Append(ctx, "build", "BuildStarted", []byte("{}"), nil); err != nil {
-		t.Fatalf("append: %v", err)
+	if appendErr := store.Append(ctx, "build", "BuildStarted", []byte("{}"), nil); appendErr != nil {
+		t.Fatalf("append: %v", appendErr)
 	}
 
 	removed, err := store.Prune(ctx, time.Now().Add(-time.Hour))

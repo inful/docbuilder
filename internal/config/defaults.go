@@ -121,6 +121,27 @@ func (h *HugoDefaultApplier) ApplyDefaults(cfg *Config) error {
 	return nil
 }
 
+// applyDaemonStorageDefaults fills the storage paths of the daemon.
+// The state has a directory of its own, so it does not share one with
+// the cloned repositories.
+func applyDaemonStorageDefaults(cfg *Config) {
+	if cfg.Daemon.Storage.StateFile == "" {
+		cfg.Daemon.Storage.StateFile = "./docbuilder-state.json"
+	}
+	if cfg.Daemon.Storage.RepoCacheDir == "" {
+		cfg.Daemon.Storage.RepoCacheDir = "./repositories"
+	}
+	if cfg.Daemon.Storage.OutputDir == "" {
+		cfg.Daemon.Storage.OutputDir = cfg.Output.Directory
+	}
+	if cfg.Daemon.Storage.StateDir == "" {
+		cfg.Daemon.Storage.StateDir = defaultStateDir
+	}
+	if cfg.Daemon.Storage.EventRetention == "" {
+		cfg.Daemon.Storage.EventRetention = defaultEventRetention
+	}
+}
+
 // OutputDefaultApplier handles Output configuration defaults.
 type OutputDefaultApplier struct{}
 
@@ -197,21 +218,7 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Daemon.Sync.QueueSize == 0 {
 		cfg.Daemon.Sync.QueueSize = 100
 	}
-	if cfg.Daemon.Storage.StateFile == "" {
-		cfg.Daemon.Storage.StateFile = "./docbuilder-state.json"
-	}
-	if cfg.Daemon.Storage.RepoCacheDir == "" {
-		cfg.Daemon.Storage.RepoCacheDir = "./repositories"
-	}
-	if cfg.Daemon.Storage.OutputDir == "" {
-		cfg.Daemon.Storage.OutputDir = cfg.Output.Directory
-	}
-	if cfg.Daemon.Storage.StateDir == "" {
-		cfg.Daemon.Storage.StateDir = defaultStateDir
-	}
-	if cfg.Daemon.Storage.EventRetention == "" {
-		cfg.Daemon.Storage.EventRetention = defaultEventRetention
-	}
+	applyDaemonStorageDefaults(cfg)
 
 	applyDaemonBuildDebounceDefaults(cfg.Daemon)
 

@@ -16,7 +16,7 @@ func TestExpandEnv_BracedFormIsExpanded(t *testing.T) {
 }
 
 func TestExpandEnv_UnsetBracedFormBecomesEmpty(t *testing.T) {
-	os.Unsetenv("DBB_TEST_UNSET")
+	_ = os.Unsetenv("DBB_TEST_UNSET")
 	got := expandEnv("token: ${DBB_TEST_UNSET}")
 	want := "token: "
 	if got != want {
@@ -34,7 +34,7 @@ func TestExpandEnv_BareFormIsExpandedWhenSet(t *testing.T) {
 }
 
 func TestExpandEnv_UnsetBareFormIsLeftAlone(t *testing.T) {
-	os.Unsetenv("DBB_TEST_MISSING")
+	_ = os.Unsetenv("DBB_TEST_MISSING")
 	got := expandEnv("token: $DBB_TEST_MISSING")
 	want := "token: $DBB_TEST_MISSING"
 	if got != want {
