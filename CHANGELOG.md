@@ -9,6 +9,42 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.28.4] - 2026-11-22
+
+A fourth audit of the whole repository. Two of the findings broke the
+site; the rest were a setting that did nothing and a skip that never
+fired.
+
+### Fixed
+- **The daemon never rebuilt the site.** The daemon decided whether a
+  build could be skipped before it looked at the repositories, so it
+  compared the last build with itself and always concluded that nothing
+  had changed. Every build after the first one was skipped: a push to a
+  repository, a scheduled sync, a manual trigger - the site kept serving
+  the first version forever.
+
+  The decision is made by the pipeline now, right after the
+  repositories are cloned, where the commit each repository was at
+  before the clone and the commit it is at now are both known. The
+  broken decision path is gone.
+
+- **The MCP `lint_fix` tool could rewrite files anywhere on the
+  machine.** The tool took a path and renamed and rewrote the files it
+  found there, without checking that the path was inside the
+  documentation directory. Every other tool that touches a file keeps
+  it there. The fixer does too now.
+
+### Changed
+- **`skip_if_unchanged: false` was ignored.** The daemon's defaults
+  overrode the setting, and the pipeline skipped a build whatever the
+  setting said. The setting decides now: with it off, every build runs.
+  An explicit `false` in the configuration is left alone.
+
+- **The pipeline could never see that nothing had moved.** The commit
+  of the clone the last build used was only read with one of the two
+  clone strategies, so the daemon - which uses the other one - always
+  rebuilt. It reads the commit now.
+
 ## [0.28.3] - 2026-11-22
 
 A third audit of the whole repository. Two of the findings broke a
