@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -49,6 +50,14 @@ type Server struct {
 
 	// middleware chain
 	mchain func(http.Handler) http.Handler
+
+	// taxonomies are the tags and the categories of the site. They are
+	// read from the files of the site, and the files change with every
+	// build, so the answer is kept until the content directory changes.
+	taxonomiesMu    sync.Mutex
+	taxonomiesKey   string
+	taxonomiesValue []string
+	taxonomiesCats  []string
 }
 
 // New constructs a new HTTP server wiring instance.
