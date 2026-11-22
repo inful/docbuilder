@@ -52,6 +52,12 @@ commits; pin to a SHA for reproducibility per the README.
   field filter is now read as one term, so the filter means what the
   reader wrote.
 
+- **The `limit` of the search request is honoured.** The client sent
+  the number of results it wanted and the server ignored it, so the
+  site's own limit had no effect. The visitor may now ask for fewer
+  results than the configuration allows; the limit of the configuration
+  stays the ceiling.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added

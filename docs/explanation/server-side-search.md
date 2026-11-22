@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2026-11-22T00:00:00Z
-fingerprint: d749c4d4df0fcbe433cbdf96aafac84eaf4c36709aca38e4a9b9ab0ac4abfd9f
+fingerprint: 7d1d445701a5ca46729802437b610b0a6ca4d88652f57208b3eeecb1f22db848
 lastmod: "2026-11-22"
 tags:
   - search
@@ -108,6 +108,10 @@ $ curl 'http://localhost:8080/api/search?q=install&limit=10'
 | `results[].title` | The title of the page. |
 | `results[].excerpt` | The passage of the page that matched. |
 | `results[].score` | How well the page matches. Bigger is better. |
+
+The query goes in `q`. The visitor may ask for fewer results than the
+configuration allows with `limit`; the limit of the configuration is the
+ceiling, and a visitor cannot ask for more than that.
 
 An empty query is answered with an empty list, not with an error.
 

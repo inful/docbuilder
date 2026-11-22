@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +14,10 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/search"
 )
+
+// defaultMaxResults is how many results a search answers with when
+// the configuration says nothing.
+const defaultMaxResults = 10
 
 // SearchService keeps the full-text index of the rendered site and
 // answers the queries of the docs server.
@@ -99,6 +104,9 @@ type searchResponse struct {
 // The query is answered by the daemon, so the visitor downloads the
 // results and nothing else: the index of the whole site never reaches
 // the browser.
+//
+// The visitor may ask for fewer results than the configuration allows,
+// never for more: the limit of the configuration is the ceiling.
 func (s *SearchService) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	if s == nil || s.index == nil {
 		http.Error(w, "search is not available", http.StatusServiceUnavailable)
@@ -109,7 +117,7 @@ func (s *SearchService) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	response := searchResponse{Query: query, Results: []search.Result{}}
 
 	if query != "" {
-		results, err := s.index.Search(r.Context(), query, s.maxResults)
+		results, err := s.index.Search(r.Context(), query, s.resultLimit(r))
 		if err != nil {
 			slog.Warn("Search failed", logfields.Error(err), slog.String("query", query))
 			http.Error(w, "search failed", http.StatusInternalServerError)
@@ -122,4 +130,19 @@ func (s *SearchService) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		slog.Warn("Failed to write the search response", logfields.Error(err))
 	}
+}
+
+// resultLimit is how many results the answer holds.
+//
+// The visitor may ask for fewer results than the configuration allows,
+// never for more: the limit of the configuration is the ceiling.
+func (s *SearchService) resultLimit(r *http.Request) int {
+	limit := s.maxResults
+	if limit <= 0 {
+		limit = defaultMaxResults
+	}
+	if asked, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && asked > 0 && asked < limit {
+		limit = asked
+	}
+	return limit
 }
