@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-17T00:00:00Z
-fingerprint: ad512134884f37a06c00463cb5cb1dcfd85932595c003994683e8c93228ce21c
-lastmod: "2026-11-19"
+fingerprint: 73d765e0dd435e2fc4c8877bb0f66fd8e9f27ef33a0ae6e349f2b92bd0feb1ca
+lastmod: "2026-11-22"
 tags:
   - architecture
   - webhooks
@@ -71,12 +71,12 @@ func (s *HTTPServer) Start(ctx context.Context) error {
     docsListener := net.Listen("tcp", ":8080")
     webhookListener := net.Listen("tcp", ":8081")
     adminListener := net.Listen("tcp", ":8082")
-    
+
     // Start independent servers
     s.docsServer = &http.Server{Handler: docsHandler}
     s.webhookServer = &http.Server{Handler: webhookHandler}
     s.adminServer = &http.Server{Handler: adminHandler}
-    
+
     go s.docsServer.Serve(docsListener)
     go s.webhookServer.Serve(webhookListener)
     go s.adminServer.Serve(adminListener)
@@ -101,7 +101,7 @@ These paths are unlikely to exist in Hugo documentation because:
 
 Webhook handlers **only accept POST requests**:
 
-DocBuilder also exposes `/webhook` as a generic acknowledgement endpoint; it does not trigger builds.
+DocBuilder serves only the configured forge webhook paths (`/webhooks/<name>` by default). There is no generic webhook endpoint: a path that is not a configured forge webhook is not served at all, so a request to it gets a 404 instead of a misleading acknowledgement.
 
 Documentation requests use **GET**, so even if a collision occurred:
 - `GET /webhooks/github` → Documentation server (404 or docs file)
@@ -205,17 +205,17 @@ server {
 ```nginx
 server {
     server_name example.com;
-    
+
     # Documentation at root
     location / {
         proxy_pass http://localhost:8080;
     }
-    
+
     # Webhooks at /api/webhooks
     location /api/webhooks/ {
         proxy_pass http://localhost:8081/webhooks/;
     }
-    
+
     # Admin at /api/admin
     location /api/admin/ {
         allow 10.0.0.0/8;
@@ -240,7 +240,7 @@ This prevents JavaScript on the docs site from submitting forms to webhook endpo
 ### ❌ Path Traversal Attack
 **Scenario**: Attacker tries `GET /webhooks/../../../etc/passwd`
 
-**Mitigation**: 
+**Mitigation**:
 - HTTP path normalization happens before routing
 - Webhook server only handles `/webhooks/*`, not arbitrary paths
 - Different port means request wouldn't reach docs server anyway

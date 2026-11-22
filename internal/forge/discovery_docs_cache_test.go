@@ -77,6 +77,32 @@ func TestCheckDocumentation_CachesUnchangedRepositories(t *testing.T) {
 	}
 }
 
+// The cache holds one entry per repository. A repository that moved many
+// times must not leave one entry per move behind, or the map grows for the
+// life of the daemon.
+func TestCheckDocumentation_CacheStaysBounded(t *testing.T) {
+	ds := NewDiscoveryService(NewForgeManager(), &config.FilteringConfig{RequiredPaths: []string{"docs"}})
+	client := &countingForge{name: "test"}
+
+	for day := range 30 {
+		repo := &Repository{
+			FullName:      "org/repo",
+			DefaultBranch: "main",
+			LastUpdated:   time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC).AddDate(0, 0, day),
+		}
+		if err := ds.checkDocumentation(context.Background(), client, repo); err != nil {
+			t.Fatalf("check %d: %v", day, err)
+		}
+	}
+
+	if client.calls != 30 {
+		t.Fatalf("calls = %d, want 30", client.calls)
+	}
+	if len(ds.docsCache) != 1 {
+		t.Fatalf("cache entries = %d, want 1", len(ds.docsCache))
+	}
+}
+
 // A repository without a last-updated timestamp cannot be cached: the
 // forge did not say when it last changed, so the answer may be stale.
 func TestCheckDocumentation_DoesNotCacheWithoutTimestamp(t *testing.T) {

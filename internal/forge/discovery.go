@@ -29,6 +29,10 @@ type DiscoveryService struct {
 type docsCheckResult struct {
 	hasDocs      bool
 	hasDocIgnore bool
+	// lastUpdated is the repository timestamp the answer was fetched for.
+	// A different timestamp means the repository moved and the answer is
+	// stale.
+	lastUpdated time.Time
 }
 
 type repoFilterDecision struct {
@@ -362,14 +366,16 @@ func (ds *DiscoveryService) filterDecision(repo *Repository) repoFilterDecision 
 // changes when the repository changes. A repository that has not moved
 // since the last discovery run reuses the answer from the cache.
 //
-// The cache key includes the repository's last-updated timestamp, so any
-// commit invalidates it. A repository without that timestamp is never
-// cached - the forge did not say when it last changed, so the answer
-// cannot be trusted to still hold.
+// The cache holds one entry per repository. The repository's last-updated
+// timestamp is stored with the answer and compared on lookup, so a commit
+// replaces the answer instead of adding a second entry for the same
+// repository. A repository without that timestamp is never cached - the
+// forge did not say when it last changed, so the answer cannot be trusted
+// to still hold.
 func (ds *DiscoveryService) checkDocumentation(ctx context.Context, client Client, repo *Repository) error {
 	key := docsCacheKey(repo)
 	if key != "" {
-		if cached, ok := ds.cachedDocsCheck(key); ok {
+		if cached, ok := ds.cachedDocsCheck(key, repo.LastUpdated); ok {
 			repo.HasDocs = cached.hasDocs
 			repo.HasDocIgnore = cached.hasDocIgnore
 			return nil
@@ -384,6 +390,7 @@ func (ds *DiscoveryService) checkDocumentation(ctx context.Context, client Clien
 		ds.rememberDocsCheck(key, docsCheckResult{
 			hasDocs:      repo.HasDocs,
 			hasDocIgnore: repo.HasDocIgnore,
+			lastUpdated:  repo.LastUpdated,
 		})
 	}
 	return nil
@@ -395,14 +402,19 @@ func docsCacheKey(repo *Repository) string {
 	if repo == nil || repo.FullName == "" || repo.LastUpdated.IsZero() {
 		return ""
 	}
-	return fmt.Sprintf("%s|%s|%s", repo.FullName, repo.DefaultBranch, repo.LastUpdated.UTC().Format(time.RFC3339Nano))
+	return fmt.Sprintf("%s|%s", repo.FullName, repo.DefaultBranch)
 }
 
-func (ds *DiscoveryService) cachedDocsCheck(key string) (docsCheckResult, bool) {
+// cachedDocsCheck returns the cached answer for a repository that has not
+// moved since the answer was fetched.
+func (ds *DiscoveryService) cachedDocsCheck(key string, lastUpdated time.Time) (docsCheckResult, bool) {
 	ds.docsCacheMu.Lock()
 	defer ds.docsCacheMu.Unlock()
 	result, ok := ds.docsCache[key]
-	return result, ok
+	if !ok || !result.lastUpdated.Equal(lastUpdated) {
+		return docsCheckResult{}, false
+	}
+	return result, true
 }
 
 func (ds *DiscoveryService) rememberDocsCheck(key string, result docsCheckResult) {

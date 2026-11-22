@@ -45,5 +45,6 @@ func TestDaemon_schedulePeriodicJobs(t *testing.T) {
 		require.NotEmpty(t, d.lifecycle.syncJobID)
 		require.NotEmpty(t, d.lifecycle.statusJobID)
 		require.NotEmpty(t, d.lifecycle.promJobID)
+		require.NotEmpty(t, d.lifecycle.pruneJobID)
 	})
 }

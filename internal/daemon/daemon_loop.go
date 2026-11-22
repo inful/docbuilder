@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"math"
 	"sort"
 	"strings"
 	"time"
@@ -150,19 +149,6 @@ func (d *Daemon) requestInitialBuild(ctx context.Context) {
 func (d *Daemon) updateStatus() {
 	d.lifecycle.mu.Lock()
 	defer d.lifecycle.mu.Unlock()
-
-	// Update queue length from build queue
-	if d.build.buildQueue != nil {
-		// Clamp to int32 range to avoid overflow warnings from linters and ensure atomic store safety
-		n := d.build.buildQueue.Length()
-		if n > math.MaxInt32 {
-			n = math.MaxInt32
-		} else if n < math.MinInt32 {
-			n = math.MinInt32
-		}
-		// #nosec G115 -- value is clamped to int32 range above
-		d.queueLength.Store(int32(n))
-	}
 
 	// Periodic state save
 	if d.state.stateManager != nil {

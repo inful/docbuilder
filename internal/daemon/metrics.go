@@ -29,10 +29,14 @@ type MetricsCollector struct {
 	customMetrics map[string]CustomMetric
 }
 
+// maxHistogramValues is how many values a histogram keeps.
+const maxHistogramValues = 1000
+
 // Histogram tracks value distributions over time.
 type Histogram struct {
 	mu     sync.RWMutex
-	values []float64
+	values []float64 // ring buffer of the last maxHistogramValues values
+	head   int       // index of the oldest value in the ring
 	sum    float64
 	count  int64
 }
@@ -213,15 +217,17 @@ func (h *Histogram) Record(value float64) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	h.values = append(h.values, value)
 	h.sum += value
 	h.count++
 
-	// Keep only the last 1000 values to prevent unbounded growth
-	if len(h.values) > 1000 {
-		copy(h.values, h.values[len(h.values)-1000:])
-		h.values = h.values[:1000]
+	if len(h.values) < maxHistogramValues {
+		h.values = append(h.values, value)
+		return
 	}
+	// The buffer is full: overwrite the oldest value instead of shifting
+	// every value on every record.
+	h.values[h.head] = value
+	h.head = (h.head + 1) % maxHistogramValues
 }
 
 // GetStats calculates statistical summary of the histogram.

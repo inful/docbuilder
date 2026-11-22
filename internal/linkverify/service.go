@@ -79,6 +79,7 @@ type VerificationService struct {
 	running    bool
 	wg         sync.WaitGroup
 	semaphore  chan struct{} // Limit concurrent verifications
+	rateDelay  time.Duration // Delay between link verification requests
 }
 
 // NewVerificationService creates a new link verification service.
@@ -97,6 +98,12 @@ func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationSe
 	timeout, err := time.ParseDuration(cfg.RequestTimeout)
 	if err != nil {
 		timeout = 10 * time.Second
+	}
+
+	// Parse rate limit delay
+	rateDelay, err := time.ParseDuration(cfg.RateLimitDelay)
+	if err != nil {
+		rateDelay = 100 * time.Millisecond
 	}
 
 	// Create HTTP transport with proxy support
@@ -125,6 +132,7 @@ func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationSe
 		nats:       natsClient,
 		httpClient: httpClient,
 		semaphore:  make(chan struct{}, cfg.MaxConcurrent),
+		rateDelay:  rateDelay,
 	}, nil
 }
 
@@ -146,12 +154,6 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 
 	slog.Info("Starting link verification", "page_count", len(pages))
 
-	// Parse rate limit delay
-	delay, err := time.ParseDuration(s.cfg.RateLimitDelay)
-	if err != nil {
-		delay = 100 * time.Millisecond
-	}
-
 	for _, page := range pages {
 		select {
 		case <-ctx.Done():
@@ -160,9 +162,6 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 			return ctx.Err()
 		default:
 		}
-
-		// Rate limiting
-		time.Sleep(delay)
 
 		// Verify page in background
 		s.wg.Add(1)
@@ -272,6 +271,16 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 			s.handleBrokenLink(ctx, absoluteURL, link, page, cached.Status, cached.Error, cached)
 		}
 		return
+	}
+
+	// Rate limiting: the delay belongs in front of the request, not in
+	// front of the page, so it throttles the requests as documented.
+	if s.rateDelay > 0 {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(s.rateDelay):
+		}
 	}
 
 	// Verify the link

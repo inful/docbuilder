@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
+	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
@@ -35,7 +35,7 @@ func (vm *DefaultVersionManager) DiscoverVersions(repoURL string, config *Versio
 }
 
 // DiscoverVersionsWithAuth discovers available versions for a repository with authentication.
-func (vm *DefaultVersionManager) DiscoverVersionsWithAuth(repoURL string, config *VersionConfig, authConfig any) (*VersionDiscoveryResult, error) {
+func (vm *DefaultVersionManager) DiscoverVersionsWithAuth(repoURL string, config *VersionConfig, authConfig *appcfg.AuthConfig) (*VersionDiscoveryResult, error) {
 	slog.Info("Discovering versions for repository", "repo_url", repoURL, "strategy", config.Strategy)
 
 	// Get existing versions for comparison
@@ -175,23 +175,8 @@ func (vm *DefaultVersionManager) CleanupOldVersions(repoURL string, config *Vers
 	return nil
 }
 
-func (vm *DefaultVersionManager) getGitReferencesWithAuth(repoURL string, authConfig any) ([]*GitReference, error) {
-	var refs []*git.RemoteReference
-	var err error
-
-	// Try to use auth if provided
-	if authConfig != nil {
-		// Type assert to *config.AuthConfig
-		if ac, ok := authConfig.(*config.AuthConfig); ok && ac != nil {
-			refs, err = vm.gitClient.ListRemoteReferencesWithAuth(repoURL, ac)
-		} else {
-			// Fall back to no auth
-			refs, err = vm.gitClient.ListRemoteReferences(repoURL)
-		}
-	} else {
-		refs, err = vm.gitClient.ListRemoteReferences(repoURL)
-	}
-
+func (vm *DefaultVersionManager) getGitReferencesWithAuth(repoURL string, authConfig *appcfg.AuthConfig) ([]*GitReference, error) {
+	refs, err := vm.gitClient.ListRemoteReferencesWithAuth(repoURL, authConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list remote references: %w", err)
 	}

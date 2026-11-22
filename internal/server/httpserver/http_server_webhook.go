@@ -59,9 +59,6 @@ func (s *Server) webhookMux() (*http.ServeMux, error) {
 		})
 	}
 
-	// Generic webhook endpoint (no signature validation, no build triggering)
-	mux.HandleFunc("/webhook", s.webhookHandlers.HandleGenericWebhook)
-
 	return mux, nil
 }
 

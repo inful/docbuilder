@@ -74,10 +74,16 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 		return f.fix(path)
 	}
 
-	// Phase 1: Preview changes (dry-run mode internally)
+	// Phase 1: Preview changes (dry-run mode internally).
+	// The tree is linted once, so the preview and the applied fixes come
+	// from the same findings: what the user approves is what gets applied.
+	result, err := f.linter.LintPath(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to lint path: %w", err)
+	}
 	originalDryRun := f.dryRun
 	f.dryRun = true
-	previewResult, err := f.fix(path)
+	previewResult, err := f.applyFixes(path, result)
 	f.dryRun = originalDryRun
 
 	if err != nil {
@@ -115,7 +121,7 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	}
 
 	// Phase 4: Apply fixes
-	return f.fix(path)
+	return f.applyFixes(path, result)
 }
 
 // fix is the internal implementation that actually performs the fixes.
@@ -125,7 +131,11 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to lint path: %w", err)
 	}
+	return f.applyFixes(path, result)
+}
 
+// applyFixes performs the fixes for a lint result.
+func (f *Fixer) applyFixes(path string, result *Result) (*FixResult, error) {
 	fixResult := &FixResult{
 		FilesRenamed:      make([]RenameOperation, 0),
 		LinksUpdated:      make([]LinkUpdate, 0),
@@ -142,16 +152,10 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 		return nil, fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
-	// Detect broken links before applying fixes.
-	// This is also the worklist for ADR-012 healing.
-	brokenLinksWorklist, err := detectBrokenLinks(path)
-	if err != nil {
-		// Non-fatal: log but continue with fixes
-		fixResult.Errors = append(fixResult.Errors,
-			fmt.Errorf("failed to detect broken links: %w", err))
-	} else {
-		fixResult.BrokenLinks = brokenLinksWorklist
-	}
+	// The lint run already found the broken links, and they are the
+	// worklist for ADR-012 healing. Scanning the tree again here would
+	// parse every markdown file twice.
+	fixResult.BrokenLinks = result.brokenLinks
 
 	// Group issues by file and track uid/fingerprint fix targets.
 	// IMPORTANT: fingerprint regeneration must always run as the final fix step,
@@ -237,7 +241,7 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 
 	// Phase 3.5: heal broken links caused by Git renames/moves.
 	// (No-op when not in a git repository or when no broken links are found.)
-	f.healBrokenLinksFromGitRenames(rootPath, brokenLinksWorklist, fixResult, fingerprintTargets)
+	f.healBrokenLinksFromGitRenames(rootPath, fixResult.BrokenLinks, fixResult, fingerprintTargets)
 
 	// Phase 3.7: rename files in sequence-numbered directories.
 	// Renames also need link-rewrite passes, which are handled

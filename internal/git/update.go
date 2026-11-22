@@ -84,7 +84,12 @@ func (c *Client) fetchOrigin(repository *git.Repository, repo appcfg.Repository,
 	if c.buildCfg != nil && c.buildCfg.ShallowDepth > 0 {
 		depth = c.buildCfg.ShallowDepth
 	}
+	return c.fetchOriginWithDepth(repository, repo, branch, depth)
+}
 
+// fetchOriginWithDepth fetches the origin remote with an explicit history depth.
+// A depth of 0 asks for the full history.
+func (c *Client) fetchOriginWithDepth(repository *git.Repository, repo appcfg.Repository, branch string, depth int) error {
 	refSpecs := []ggitcfg.RefSpec{"+refs/heads/*:refs/remotes/origin/*"}
 	if branch != "" {
 		// Fetch only the required branch.
@@ -156,11 +161,23 @@ func checkoutAndGetRefs(repository *git.Repository, wt *git.Worktree, branch str
 	return localRef, remoteRef, nil
 }
 
+// deepenDepths are the history depths tried when the local clone is too
+// shallow to answer the ancestry question. The list starts small and grows:
+// the missing history is normally only a few commits, and a deeper fetch
+// re-uses the objects already on disk.
+var deepenDepths = []int{16, 128, 1024}
+
 // syncWithRemote fast-forwards or hard-resets the local branch depending on divergence and build config.
 func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, repo appcfg.Repository, branch string, localRef, remoteRef *plumbing.Reference) error {
-	fastForwardPossible, ffErr := isAncestor(repository, localRef.Hash(), remoteRef.Hash())
-	if ffErr != nil {
-		slog.Warn("ancestor check failed", slog.String("error", ffErr.Error()))
+	fastForwardPossible, ancestryErr := c.checkAncestry(repository, repo, branch, localRef.Hash(), remoteRef.Hash())
+	if ancestryErr != nil {
+		// The history could not be read, so we cannot claim the branch
+		// diverged. Say what actually happened instead of guessing.
+		slog.Warn("could not determine ancestry", logfields.Name(repo.Name), slog.String("branch", branch), slog.String("error", ancestryErr.Error()))
+		return GitError("could not read the local history to compare it against the remote").
+			WithCause(ancestryErr).
+			WithContext("hint", "increase shallow_depth or enable hard_reset_on_diverge").
+			Build()
 	}
 	if fastForwardPossible {
 		currentHead, _ := repository.Head()
@@ -189,6 +206,28 @@ func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, re
 	return GitError("local branch diverged from remote").
 		WithContext("hint", "enable hard_reset_on_diverge to override").
 		Build()
+}
+
+// checkAncestry answers whether the local commit is on the remote history.
+// A shallow clone does not hold the history the question needs, so the fetch
+// is deepened and the question asked again: an unreadable history is
+// unknown, not a divergence.
+func (c *Client) checkAncestry(repository *git.Repository, repo appcfg.Repository, branch string, local, remote plumbing.Hash) (bool, error) {
+	ok, err := isAncestor(repository, local, remote)
+	if err == nil {
+		return ok, nil
+	}
+	slog.Warn("ancestor check failed, deepening history", logfields.Name(repo.Name), slog.String("error", err.Error()))
+	for _, depth := range deepenDepths {
+		if fetchErr := c.fetchOriginWithDepth(repository, repo, branch, depth); fetchErr != nil {
+			return false, stdErrors.Join(err, fetchErr)
+		}
+		ok, err = isAncestor(repository, local, remote)
+		if err == nil {
+			return ok, nil
+		}
+	}
+	return false, err
 }
 
 // postUpdateCleanup applies optional workspace hygiene, such as cleaning untracked files and pruning non-doc paths.
