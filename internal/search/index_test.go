@@ -161,11 +161,11 @@ func TestIndexSurvivesAReopen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
-	if err := idx.Upsert(ctx, sampleDocs()); err != nil {
-		t.Fatalf("upsert: %v", err)
+	if upsertErr := idx.Upsert(ctx, sampleDocs()); upsertErr != nil {
+		t.Fatalf("upsert: %v", upsertErr)
 	}
-	if err := idx.Close(); err != nil {
-		t.Fatalf("close: %v", err)
+	if closeErr := idx.Close(); closeErr != nil {
+		t.Fatalf("close: %v", closeErr)
 	}
 
 	reopened, err := Open(dir)

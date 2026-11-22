@@ -15,10 +15,10 @@ package search
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -47,20 +47,16 @@ type Result struct {
 	Score   float64 `json:"score"`
 }
 
-// column order of the FTS5 table. The weights in the bm25() call refer
-// to these positions.
-const (
-	colURL = iota
-	colTitle
-	colCategories
-	colTags
-	colBody
-)
-
-// bm25Weights are the per-column weights: a hit in the title counts
-// more than a hit in the body. The URL is not searched, so its weight
-// is zero.
-var bm25Weights = []float64{0, 5, 2, 2, 1}
+// searchStatement is the query the index is searched with.
+//
+// The weights of the bm25() function are per column: a hit in the
+// title counts more than a hit in the body. The URL is not searched, so
+// its weight is zero. The weights have to be literals: FTS5 reads the
+// arguments of an auxiliary function when the statement is prepared,
+// and a bound parameter is not a value yet.
+const searchStatement = `SELECT url, title, snippet(pages, 4, '', '', '…', 20), ` +
+	`bm25(pages, 0.0, 5.0, 2.0, 2.0, 1.0) FROM pages ` +
+	`WHERE pages MATCH ? ORDER BY rank LIMIT ?`
 
 // Index is the full-text index over the documentation.
 type Index struct {
@@ -71,7 +67,7 @@ type Index struct {
 // not exist yet.
 func Open(dir string) (*Index, error) {
 	if dir == "" {
-		return nil, fmt.Errorf("search: index directory is required")
+		return nil, errors.New("search: index directory is required")
 	}
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return nil, fmt.Errorf("search: create index directory: %w", err)
@@ -89,7 +85,7 @@ func Open(dir string) (*Index, error) {
 		"PRAGMA busy_timeout=5000",
 		"PRAGMA synchronous=NORMAL",
 	} {
-		if _, err := db.Exec(pragma); err != nil {
+		if _, err := db.ExecContext(context.Background(), pragma); err != nil {
 			_ = db.Close()
 			return nil, fmt.Errorf("search: %s: %w", pragma, err)
 		}
@@ -136,7 +132,7 @@ func (i *Index) Close() error {
 // site is gone from the index with it.
 func (i *Index) Upsert(ctx context.Context, docs []Document) error {
 	if i == nil || i.db == nil {
-		return fmt.Errorf("search: index is not open")
+		return errors.New("search: index is not open")
 	}
 
 	tx, err := i.db.BeginTx(ctx, nil)
@@ -145,8 +141,8 @@ func (i *Index) Upsert(ctx context.Context, docs []Document) error {
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM pages`); err != nil {
-		return fmt.Errorf("search: clear index: %w", err)
+	if _, deleteErr := tx.ExecContext(ctx, `DELETE FROM pages`); deleteErr != nil {
+		return fmt.Errorf("search: clear index: %w", deleteErr)
 	}
 
 	stmt, err := tx.PrepareContext(ctx,
@@ -160,13 +156,13 @@ func (i *Index) Upsert(ctx context.Context, docs []Document) error {
 		if doc.URL == "" {
 			continue
 		}
-		if _, err := stmt.ExecContext(ctx, doc.URL, doc.Title, doc.Categories, doc.Tags, doc.Body); err != nil {
-			return fmt.Errorf("search: index %s: %w", doc.URL, err)
+		if _, insertErr := stmt.ExecContext(ctx, doc.URL, doc.Title, doc.Categories, doc.Tags, doc.Body); insertErr != nil {
+			return fmt.Errorf("search: index %s: %w", doc.URL, insertErr)
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("search: commit: %w", err)
+	if commitErr := tx.Commit(); commitErr != nil {
+		return fmt.Errorf("search: commit: %w", commitErr)
 	}
 	return nil
 }
@@ -188,7 +184,7 @@ func (i *Index) Count(ctx context.Context) (int, error) {
 // the index is, so "deploying" finds "deploy".
 func (i *Index) Search(ctx context.Context, query string, limit int) ([]Result, error) {
 	if i == nil || i.db == nil {
-		return nil, fmt.Errorf("search: index is not open")
+		return nil, errors.New("search: index is not open")
 	}
 	if limit <= 0 {
 		limit = 10
@@ -199,19 +195,7 @@ func (i *Index) Search(ctx context.Context, query string, limit int) ([]Result, 
 		return nil, nil
 	}
 
-	// The weights of the bm25() function have to be literals: FTS5 reads
-	// the arguments of an auxiliary function when the statement is
-	// prepared, and a bound parameter is not a value yet.
-	weightList := make([]string, 0, len(bm25Weights))
-	for _, w := range bm25Weights {
-		weightList = append(weightList, strconv.FormatFloat(w, 'f', -1, 64))
-	}
-	stmt := fmt.Sprintf(
-		`SELECT url, title, snippet(pages, %d, '', '', '…', 20), bm25(pages, %s) FROM pages `+
-			`WHERE pages MATCH ? ORDER BY rank LIMIT ?`,
-		colBody, strings.Join(weightList, ", "))
-
-	rows, err := i.db.QueryContext(ctx, stmt, match, limit)
+	rows, err := i.db.QueryContext(ctx, searchStatement, match, limit)
 	if err != nil {
 		return nil, fmt.Errorf("search: query %q: %w", query, err)
 	}
