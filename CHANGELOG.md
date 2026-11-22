@@ -9,6 +9,39 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-11-22
+
+### Added
+- **The search understands operators.** A query is read as it is
+  written now:
+
+  | Written | Means |
+  |---------|-------|
+  | `daemon AND kubernetes` | Both terms have to be in the page. |
+  | `daemon OR kubernetes` | Either term is enough. |
+  | `daemon NOT kubernetes` | The first term, without the second. |
+  | `"package manager"` | The words, in that order, next to each other. |
+  | `title:kubernetes` | The term has to be in the title. |
+  | `body:kubernetes` | The term has to be in the text of the page. |
+  | `tags:adr` | The term has to be in the tags of the page. |
+  | `kuber*` | The words that start with it. |
+
+  The operators are the words of the index, so they are written in
+  upper case - a lower case "and" is a word the pages have to hold.
+
+  A query the index cannot read - a half-written one, most of the time
+  - is searched the forgiving way: every word of the query has to
+  appear somewhere in the page. A search box holds half-written
+  queries, and half a query still finds the pages it can.
+
+  The search box tells the reader about the operators, so the syntax
+  does not have to be guessed.
+
+### Fixed
+- **A search without results answered with nothing instead of an empty
+  list.** The answer of the endpoint held `null` where a reader of the
+  answer expects `[]`.
+
 ## [0.30.0] - 2026-11-22
 
 ### Added

@@ -124,6 +124,15 @@
       });
       html.append(searchResultBody);
 
+      // The query language of the server is worth telling the reader
+      // about: a search that cannot be narrowed is a search that
+      // returns too much.
+      const hint = document.createElement('p');
+      hint.classList.add('text-body-secondary', 'small', 'mt-3', 'mb-0');
+      hint.textContent =
+        'Tip: OR, NOT, "an exact phrase" and title: narrow the search.';
+      html.append(hint);
+
       if (results.length === 0) {
         const noResults = document.createElement('p');
         noResults.textContent = `No results found for query "${query}"`;
