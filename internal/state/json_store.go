@@ -158,6 +158,25 @@ func (js *JSONStore) Health(_ context.Context) foundation.Result[StoreHealth, er
 	return foundation.Ok[StoreHealth, error](health)
 }
 
+// Flush writes the state to disk.
+//
+// The store writes on every change, so a flush is only needed when the
+// caller wants to be sure: the state reached the disk and the write
+// worked.
+func (js *JSONStore) Flush(_ context.Context) foundation.Result[struct{}, error] {
+	js.mu.Lock()
+	defer js.mu.Unlock()
+
+	if err := js.saveToDiskUnsafe(); err != nil {
+		return foundation.Err[struct{}, error](
+			errors.InternalError("failed to flush state").
+				WithCause(err).
+				Build(),
+		)
+	}
+	return foundation.Ok[struct{}, error](struct{}{})
+}
+
 // Close gracefully shuts down the store.
 func (js *JSONStore) Close(_ context.Context) foundation.Result[struct{}, error] {
 	js.mu.Lock()
