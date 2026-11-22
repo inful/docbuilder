@@ -266,6 +266,28 @@ func (g *Generator) SetRecorder(r metrics.Recorder) *Generator {
 	return g
 }
 
+// buildPipeline returns the stages of a build.
+//
+// When cloneAndDiscover is false the repositories are not cloned and
+// the documents are not discovered: the build starts from documents
+// that are already known. The stages after that are the same either
+// way, so they are written once.
+func buildPipeline(cloneAndDiscover bool) []models.StageDef {
+	p := models.NewPipeline().
+		Add(models.StagePrepareOutput, stages.StagePrepareOutput)
+	if cloneAndDiscover {
+		p = p.
+			Add(models.StageCloneRepos, stages.StageCloneRepos).
+			Add(models.StageDiscoverDocs, stages.StageDiscoverDocs)
+	}
+	return p.
+		Add(models.StageGenerateConfig, stages.StageGenerateConfig).
+		Add(models.StageCopyContent, stages.StageCopyContent).
+		Add(models.StageRunHugo, stages.StageRunHugo).
+		Add(models.StagePostProcess, stages.StagePostProcess).
+		Build()
+}
+
 // GenerateSite creates a complete Hugo site from discovered documentation.
 func (g *Generator) GenerateSite(docFiles []docs.DocFile) error {
 	_, err := g.GenerateSiteWithReport(docFiles)
@@ -300,13 +322,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 
 	bs := models.NewBuildState(g, docFiles, report)
 
-	pipeline := models.NewPipeline().
-		Add(models.StagePrepareOutput, stages.StagePrepareOutput).
-		Add(models.StageGenerateConfig, stages.StageGenerateConfig).
-		Add(models.StageCopyContent, stages.StageCopyContent).
-		Add(models.StageRunHugo, stages.StageRunHugo).
-		Add(models.StagePostProcess, stages.StagePostProcess).
-		Build()
+	pipeline := buildPipeline(false)
 
 	if err := stages.RunStages(ctx, bs, pipeline); err != nil {
 		// cleanup staging dir on failure
@@ -441,15 +457,7 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		}
 	}
 
-	pipeline := models.NewPipeline().
-		Add(models.StagePrepareOutput, stages.StagePrepareOutput).
-		Add(models.StageCloneRepos, stages.StageCloneRepos).
-		Add(models.StageDiscoverDocs, stages.StageDiscoverDocs).
-		Add(models.StageGenerateConfig, stages.StageGenerateConfig).
-		Add(models.StageCopyContent, stages.StageCopyContent).
-		Add(models.StageRunHugo, stages.StageRunHugo).
-		Add(models.StagePostProcess, stages.StagePostProcess).
-		Build()
+	pipeline := buildPipeline(true)
 	if err := stages.RunStages(ctx, bs, pipeline); err != nil {
 		// derive outcome even on error for observability; cleanup staging
 		report.DeriveOutcome()
