@@ -891,6 +891,10 @@ func lintExcludes(cfg *config.Config) []string {
 
 // resolveInDocs turns a relative or absolute path into one guaranteed to be
 // inside docsDir. Returns a clear error otherwise.
+//
+// The check follows symlinks: a link inside the docs directory that points
+// outside it would let a caller read or rewrite a file anywhere on the
+// machine.
 func resolveInDocs(docsDir, requested string) (string, error) {
 	cleanDocs := filepath.Clean(docsDir)
 	candidate := requested
@@ -901,12 +905,54 @@ func resolveInDocs(docsDir, requested string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("resolve path: %w", err)
 	}
+
+	// The docs directory is resolved the same way as the path: a path
+	// that runs through a symlinked parent - a temporary directory, for
+	// one - would otherwise look like it is outside.
+	resolvedDocs, err := filepath.EvalSymlinks(cleanDocs)
+	if err != nil {
+		resolvedDocs = cleanDocs
+	}
+	resolved, err := resolveExisting(abs)
+	if err != nil {
+		return "", err
+	}
+
 	// Containment check: prefix with trailing separator so /docs-evil
 	// doesn't match /docs.
-	if !strings.HasPrefix(abs, cleanDocs+string(filepath.Separator)) && abs != cleanDocs {
+	if !strings.HasPrefix(resolved, resolvedDocs+string(filepath.Separator)) && resolved != resolvedDocs {
 		return "", fmt.Errorf("path %q is outside docs directory %q", requested, docsDir)
 	}
 	return abs, nil
+}
+
+// resolveExisting resolves the symlinks of the deepest part of the path
+// that exists and keeps the rest of the path as it is.
+//
+// The file itself may not exist yet - a doc is written from nothing - so
+// the walk stops at the deepest directory that does exist.
+func resolveExisting(path string) (string, error) {
+	current := path
+	rest := ""
+	for {
+		resolved, err := filepath.EvalSymlinks(current)
+		if err == nil {
+			if rest == "" {
+				return resolved, nil
+			}
+			return filepath.Join(resolved, rest), nil
+		}
+		if !os.IsNotExist(err) {
+			return "", fmt.Errorf("resolve path %q: %w", path, err)
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			// Nothing of the path exists; there is no symlink to follow.
+			return path, nil
+		}
+		rest = filepath.Join(filepath.Base(current), rest)
+		current = parent
+	}
 }
 
 // lintResultToJSON formats a lint.Result into a small, LLM-friendly JSON
