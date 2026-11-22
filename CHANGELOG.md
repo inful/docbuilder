@@ -9,6 +9,24 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.28.1] - 2026-11-22
+
+### Fixed
+- **A misplaced configuration key said only that it was unknown.** The
+  configuration parser rejects keys the schema does not know, so that a
+  typo or a key that moved cannot pass unnoticed. The error named the
+  key but not where it belongs, which left an operator who had put a
+  section at the wrong level with nothing to act on.
+
+  A key that the schema knows somewhere else now says where it is
+  accepted: a top-level `outbound` is answered with
+  `"outbound" is accepted at "daemon.outbound"`.
+
+  Note that a misplaced key was never applied. The daemon reads the
+  outbound integration from `daemon.outbound.ragabast`, so a top-level
+  `outbound` block configured nothing at all - it was dropped without
+  a word, and the documents never reached ragabast.
+
 ## [0.28.0] - 2026-11-22
 
 A repository audit turned up twenty findings. All of them are fixed here.
