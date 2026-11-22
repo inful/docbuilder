@@ -69,6 +69,11 @@ commits; pin to a SHA for reproducibility per the README.
   writes `OR`, `NOT`, a phrase or a field filter does not need to be
   reminded of them on every keystroke.
 
+- **A field filter keeps its meaning.** The quoting of the value of a
+  field filter took the wildcard of the value with it, and a colon
+  inside a quoted phrase was read as a field filter. A wildcard stays
+  a wildcard and a phrase stays a phrase.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added
