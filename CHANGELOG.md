@@ -46,7 +46,8 @@ commits; pin to a SHA for reproducibility per the README.
 - **The search results hold the words of the page, not the markup.**
   The page was indexed as it was written, so an excerpt showed the
   reader `**package manager**` and the fences of the code blocks. The
-  index now holds the text of the page.
+  index now holds the text of the page - the same text the theme's own
+  index holds, so a reader finds the same pages either way.
 
 - **A field filter on a hyphenated value finds the page again.**
   `categories:how-to` asked the index for a field named `to`, which
