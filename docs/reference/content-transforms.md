@@ -15,11 +15,14 @@ uid: 3e530ceb-32d7-45fe-888b-6a9309ffb6c4
 ---
 
 > **⚠️ DEPRECATED:** This document describes the old registry-based transform system that was removed on December 16, 2025.
-> 
+>
 > For current pipeline documentation, see:
 > - [ADR-003: Fixed Transform Pipeline](../adr/ADR-003-fixed-transform-pipeline.md)
 > - [Architecture Overview](../explanation/architecture.md)
 > - Implementation: `internal/hugo/pipeline/`
+>
+> The package `internal/hugo/transforms/` and its tests were deleted with
+> the registry, so the paths and commands in this page are history.
 
 ---
 
@@ -86,7 +89,7 @@ Registration occurs in `init()` via `transforms.Register(t)`. The registry produ
 ### Current Transform Stages
 
 | Stage | Transforms | Purpose |
-|-------|------------|---------|  
+|-------|------------|---------|
 | parse | front_matter_parser | Extract existing front matter & strip it |
 | build | front_matter_builder_v2 | Generate baseline fields (title/date/repository/forge/section/metadata) (no editURL) |
 | enrich | edit_link_injector_v2 | Adds `editURL` with set-if-missing semantics using **centralized resolver** & **capability-gated** theme detection |
