@@ -46,6 +46,11 @@ func (d *Daemon) updateStateAfterBuild(report *models.BuildReport) {
 		slog.Warn("Failed to save state after build", "error", err)
 	}
 
+	// The counters of the repositories are raised: without it every
+	// repository stays "pending" on the status page, and the operator
+	// cannot tell which of them was built.
+	d.raiseRepositoryBuildCounters()
+
 	// The time of the last build is shown on the status page. Without
 	// it the operator cannot tell when the site was built.
 	d.lifecycle.mu.Lock()
@@ -251,4 +256,25 @@ func isHugoGeneratedPath(segment string) bool {
 		"sitemap.xml": true,
 	}
 	return hugoGeneratedPaths[segment]
+}
+
+// raiseRepositoryBuildCounters raises the build counter of every
+// repository the daemon knows.
+//
+// The daemon does not hold the list of the repositories in discovery
+// mode, so the state is the list: every repository it knows was part
+// of the build.
+func (d *Daemon) raiseRepositoryBuildCounters() {
+	if d.state.stateManager == nil {
+		return
+	}
+	reader, ok := d.state.stateManager.(interface {
+		RepositoryURLs() []string
+	})
+	if !ok {
+		return
+	}
+	for _, url := range reader.RepositoryURLs() {
+		d.state.stateManager.IncrementRepoBuild(url, true)
+	}
 }

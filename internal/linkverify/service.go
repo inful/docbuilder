@@ -639,7 +639,7 @@ func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL 
 		slog.Warn("Broken link detected",
 			"url", absoluteURL,
 			"source", page.RenderedPath,
-			"repository", page.DocFile.Repository,
+			"repository", docField(page, func(d *docs.DocFile) string { return d.Repository }),
 			"status", status,
 			"error", errorMsg)
 	}

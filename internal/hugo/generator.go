@@ -500,6 +500,16 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	// operator sees why.
 	if report.FailedRepositories > 0 && g.outputHasPublicIndex() {
 		g.abortStaging()
+		// The report of the build is written, and it says that the
+		// build failed: the next build reads it to decide whether it
+		// may skip. A report of a build that did not publish must not
+		// let the next build skip - the site is behind the workspace,
+		// and only a build that runs publishes it.
+		report.DeriveOutcome()
+		report.Finish()
+		if err := report.Persist(g.outputDir); err != nil {
+			slog.Warn("Failed to persist build report", "error", err)
+		}
 		return report, fmt.Errorf("%d of %d repositories could not be cloned; the site was not published",
 			report.FailedRepositories, report.Repositories+report.FailedRepositories)
 	}

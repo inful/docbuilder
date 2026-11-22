@@ -300,6 +300,9 @@ func handleParentDirNavigation(link, docPath, repository, forge string, isSingle
 	for strings.HasPrefix(target, "../") {
 		target = strings.TrimPrefix(target, "../")
 		if dir == "" {
+			// The link goes above the root of the repository: the rest
+			// of the "../" is taken off, so the address stays under it.
+			target = strings.TrimPrefix(target, "../")
 			break
 		}
 		parent := filepath.Dir(dir)
@@ -309,6 +312,7 @@ func handleParentDirNavigation(link, docPath, repository, forge string, isSingle
 		}
 		dir = parent
 	}
+	target = strings.TrimPrefix(target, "../")
 
 	// Prepend repository path (skip if single-repo build)
 	if !isSingleRepo && repository != "" {

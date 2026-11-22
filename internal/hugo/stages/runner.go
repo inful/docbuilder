@@ -56,7 +56,10 @@ func RunStages(ctx context.Context, bs *models.BuildState, stages []models.Stage
 			return fmt.Errorf("stage %s aborted", st.Name)
 		}
 
-		if st.Name == models.StageCloneRepos && bs.Git.AllReposUnchanged {
+		// A repository that could not be cloned is not in the list of the
+		// heads, so it does not count as changed. The build has to run:
+		// the site is missing the pages of that repository.
+		if st.Name == models.StageCloneRepos && bs.Git.AllReposUnchanged && bs.Report.FailedRepositories == 0 {
 			if bs.Generator != nil && bs.Generator.SkipIfUnchanged() && bs.Generator.ExistingSiteValidForSkip() {
 				slog.Info("Early build exit: no repository HEAD changes and existing site valid; skipping remaining stages")
 				bs.Report.SkipReason = "no_changes"
