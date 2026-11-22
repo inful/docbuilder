@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -265,8 +266,8 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 	}
 
 	// Handle relative paths that navigate up directories (../)
-	if after, ok := strings.CutPrefix(path, "../"); ok {
-		path = handleParentDirNavigation(after, repository, forge, isSingleRepo)
+	if strings.HasPrefix(path, "../") {
+		path = handleParentDirNavigation(path, docPath, repository, forge, isSingleRepo)
 		return path + suffix
 	}
 
@@ -286,25 +287,39 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 }
 
 // handleParentDirNavigation handles links with ../ navigation.
-func handleParentDirNavigation(path, repository, forge string, isSingleRepo bool) string {
-	// Strip all leading ../ sequences
-	for strings.HasPrefix(path, "../") {
-		path = strings.TrimPrefix(path, "../")
+//
+// The link is resolved against the directory of the document: a link
+// that goes one level up from "a/b" points at "a" and not at the root
+// of the repository. The address is lowercased, because the content
+// path is lowercased when it is written.
+func handleParentDirNavigation(link, docPath, repository, forge string, isSingleRepo bool) string {
+	dir := extractDirectory(docPath, isSingleRepo, forge)
+	target := link
+
+	// One level up for every "../".
+	for strings.HasPrefix(target, "../") {
+		target = strings.TrimPrefix(target, "../")
+		if dir == "" {
+			break
+		}
+		parent := filepath.Dir(dir)
+		if parent == "." {
+			dir = ""
+			continue
+		}
+		dir = parent
 	}
 
 	// Prepend repository path (skip if single-repo build)
 	if !isSingleRepo && repository != "" {
-		if forge != "" {
-			return fmt.Sprintf("/%s/%s/%s", forge, repository, path)
-		}
-		return fmt.Sprintf("/%s/%s", repository, path)
+		return buildFullPath(forge, repository, dir, target)
 	}
 
 	// Single-repo mode: ensure leading slash
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
+	if dir == "" {
+		return "/" + strings.ToLower(target)
 	}
-	return path
+	return "/" + strings.ToLower(dir+"/"+target)
 }
 
 // handleIndexFileLink handles relative links from index files.
@@ -317,16 +332,15 @@ func handleIndexFileLink(path, docPath, repository, forge string, isSingleRepo b
 		return "", false // Not handled, continue with regular processing
 	}
 
-	// Link is relative to current directory - prepend directory
+	// Link is relative to current directory - prepend directory. The
+	// address is lowercased, because the content path is lowercased
+	// when it is written.
 	if !isSingleRepo {
-		if forge != "" {
-			return fmt.Sprintf("/%s/%s/%s%s", forge, repository, docDir+"/"+path, anchor), true
-		}
-		return fmt.Sprintf("/%s/%s%s", repository, docDir+"/"+path, anchor), true
+		return buildFullPath(forge, repository, docDir, path) + anchor, true
 	}
 
 	// Single-repo mode: skip repository namespace
-	return fmt.Sprintf("/%s/%s%s", docDir, path, anchor), true
+	return "/" + strings.ToLower(docDir+"/"+path) + anchor, true
 }
 
 // handleRegularFileLink handles relative links from regular (non-index) files.
@@ -340,9 +354,9 @@ func handleRegularFileLink(path, docPath, repository, forge string, isSingleRepo
 
 	// Single-repo mode: skip repository namespace
 	if docDir != "" {
-		return "/" + docDir + "/" + path
+		return "/" + strings.ToLower(docDir+"/"+path)
 	}
-	return "/" + path
+	return "/" + strings.ToLower(path)
 }
 
 // extractDirectory extracts the directory part of a Hugo path.
