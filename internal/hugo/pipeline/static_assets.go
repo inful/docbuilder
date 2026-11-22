@@ -92,6 +92,10 @@ func generateThemeAssets(ctx *GenerationContext) ([]*StaticAsset, error) {
 		&StaticAsset{Path: "layouts/_partials/hooks/head-end.html", Content: content},
 		&StaticAsset{Path: "layouts/_partials/head-css.html", Content: []byte(docsyHeadCSS)},
 		&StaticAsset{Path: docsyPageMetaLinksPath, Content: docsyPageMetaLinks},
+		// The children shortcode of the previous theme. The documentation
+		// of the repositories uses it, and a shortcode without a template
+		// fails the build of the whole site.
+		&StaticAsset{Path: docsyChildrenShortcodePath, Content: []byte(docsyChildrenShortcode)},
 		// The theme's own head partial, with the offline-search script
 		// pointed at the vendored copy instead of the unpkg CDN.
 		&StaticAsset{Path: "layouts/_partials/head.html", Content: docsyHeadHTML},
