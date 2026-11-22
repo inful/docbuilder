@@ -9,6 +9,14 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Fixed
+- **A repository whose documentation lives at its root never rebuilt on
+  a push.** The webhook filter compares the changed files with the
+  documentation paths of the repository. The path that means "the whole
+  repository" is `.`, and no file name starts with `./`, so every push
+  was ignored and the site stayed stale. A repository configured with
+  `paths: ["."]` is rebuilt now, for every change.
+
 ## [0.28.1] - 2026-11-22
 
 ### Fixed
