@@ -72,7 +72,7 @@ func (g *Generator) beginStaging() error {
 // Strategy:
 //  1. Move existing outputDir (if exists) to outputDir.prev (overwrite if already there).
 //  2. Rename staging -> outputDir.
-//  3. Remove previous backup asynchronously best-effort.
+//  3. Remove previous backup.
 func (g *Generator) finalizeStaging() error {
 	slog.Info("Starting atomic staging finalization",
 		slog.String("staging", g.stageDir),
@@ -134,19 +134,22 @@ func (g *Generator) finalizeStaging() error {
 	slog.Info("Successfully promoted staging directory",
 		slog.String("output", g.outputDir))
 
-	// Step 3: Remove previous backup asynchronously (non-critical)
-	go func(p string) {
-		slog.Debug("Starting async cleanup of backup directory",
-			slog.String("path", p))
-		if err := os.RemoveAll(p); err != nil {
-			slog.Warn("Failed to remove previous backup in async cleanup",
-				logfields.Path(p),
-				slog.String("error", err.Error()))
-		} else {
-			slog.Debug("Successfully cleaned up backup directory",
-				slog.String("path", p))
-		}
-	}(prev)
+	// Step 3: Remove previous backup.
+	//
+	// The site is promoted and served by now, so the removal is the last
+	// thing the build does. It used to run in a goroutine that nobody
+	// owned: a shutdown could leave the backup half deleted, and the
+	// next build had to clean it up.
+	slog.Debug("Removing previous backup directory",
+		slog.String("path", prev))
+	if err := os.RemoveAll(prev); err != nil {
+		slog.Warn("Failed to remove previous backup",
+			logfields.Path(prev),
+			slog.String("error", err.Error()))
+	} else {
+		slog.Debug("Successfully cleaned up backup directory",
+			slog.String("path", prev))
+	}
 
 	return nil
 }
