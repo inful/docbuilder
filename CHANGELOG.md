@@ -9,6 +9,8 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-11-22
+
 ### Fixed
 - **A long query no longer ties up the search endpoint.** The query
   was cut to 256 characters on one path but not on the other, so the
