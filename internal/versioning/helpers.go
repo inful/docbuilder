@@ -74,8 +74,12 @@ func ExpandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) (
 				"type", string(version.Type),
 				"is_tag", versionedRepo.IsTag)
 
-			// Update name to include version for uniqueness
-			versionedRepo.Name = fmt.Sprintf("%s-%s", repo.Name, version.DisplayName)
+			// Update name to include version for uniqueness. The path of
+			// the version is used and not its display name: the display
+			// name holds spaces, and the name of a branch may hold a
+			// slash. The name of a repository is a path, and two
+			// versions that share one overwrote each other.
+			versionedRepo.Name = fmt.Sprintf("%s-%s", repo.Name, version.Path)
 
 			// Add version metadata to tags. The map is copied: the base
 			// repository and every version would otherwise share it, and

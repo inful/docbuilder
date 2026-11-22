@@ -307,6 +307,23 @@ func (a *ServiceAdapter) IncrementRepoBuild(url string, success bool) {
 	}
 }
 
+// RepositoryURLs returns the addresses of the repositories the state
+// knows.
+func (a *ServiceAdapter) RepositoryURLs() []string {
+	ctx := context.Background()
+	store := a.service.GetRepositoryStore()
+	result := store.List(ctx)
+	if result.IsErr() {
+		return nil
+	}
+	repos := result.Unwrap()
+	urls := make([]string, 0, len(repos))
+	for i := range repos {
+		urls = append(urls, repos[i].URL)
+	}
+	return urls
+}
+
 // --- ConfigurationStateStore interface ---
 
 // SetLastConfigHash stores the last config hash.
