@@ -249,13 +249,21 @@ func (c *ForgejoClient) GetRepository(ctx context.Context, owner, repo string) (
 func (c *ForgejoClient) CheckDocumentation(ctx context.Context, repo *Repository) error {
 	owner, repoName := c.splitFullName(repo.FullName)
 
-	// Check for docs folder
-	hasDocs, err := c.checkPathExists(ctx, owner, repoName, docsToken, repo.DefaultBranch)
-	if err != nil {
-		return errors.ForgeError("failed to check docs folder existence on Forgejo").
-			WithCause(err).
-			WithContext("repo", repo.FullName).
-			Build()
+	// Check for the documentation folders. The operator names them in
+	// the configuration; "docs" is only the default.
+	hasDocs := false
+	for _, path := range repo.docPaths() {
+		found, err := c.checkPathExists(ctx, owner, repoName, path, repo.DefaultBranch)
+		if err != nil {
+			return errors.ForgeError("failed to check docs folder existence on Forgejo").
+				WithCause(err).
+				WithContext("repo", repo.FullName).
+				Build()
+		}
+		if found {
+			hasDocs = true
+			break
+		}
 	}
 	repo.HasDocs = hasDocs
 

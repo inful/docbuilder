@@ -309,6 +309,14 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 	return validRepos, organizations, filteredRepos, nil
 }
 
+// requiredPaths returns the paths that hold the documentation.
+func (ds *DiscoveryService) requiredPaths() []string {
+	if ds.filtering == nil || len(ds.filtering.RequiredPaths) == 0 {
+		return []string{docsToken}
+	}
+	return ds.filtering.RequiredPaths
+}
+
 // shouldIncludeRepository determines if a repository should be included based on filtering config.
 
 func (ds *DiscoveryService) filterDecision(repo *Repository) repoFilterDecision {
@@ -372,6 +380,10 @@ func (ds *DiscoveryService) filterDecision(repo *Repository) repoFilterDecision 
 // forge did not say when it last changed, so the answer cannot be trusted
 // to still hold.
 func (ds *DiscoveryService) checkDocumentation(ctx context.Context, client Client, repo *Repository) error {
+	// The operator names the paths that hold the documentation. The
+	// forge is asked about those paths, and not about "docs".
+	repo.RequiredPaths = ds.requiredPaths()
+
 	key := docsCacheKey(repo)
 	if key != "" {
 		if cached, ok := ds.cachedDocsCheck(key, repo.LastUpdated); ok {

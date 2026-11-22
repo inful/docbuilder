@@ -282,23 +282,26 @@ func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository)
 		branch = defaultMainBranch
 	}
 
-	// Check for docs folder
-	hasDocs, err := c.checkPathExists(ctx, projectID, "docs", branch)
-	if err != nil {
-		// If main doesn't work, try master as fallback
-		if branch == defaultMainBranch && repo.DefaultBranch == "" {
-			hasDocs, err = c.checkPathExists(ctx, projectID, "docs", "master")
+	// Check for the documentation folders. The operator names them in
+	// the configuration; "docs" is only the default.
+	hasDocs := false
+	for _, path := range repo.docPaths() {
+		found, err := c.checkPathExists(ctx, projectID, path, branch)
+		if err != nil {
+			// If main doesn't work, try master as fallback
+			if branch == defaultMainBranch && repo.DefaultBranch == "" {
+				found, err = c.checkPathExists(ctx, projectID, path, "master")
+			}
 			if err != nil {
 				return errors.ForgeError("failed to check docs folder existence on GitLab").
 					WithCause(err).
 					WithContext("repo", repo.FullName).
 					Build()
 			}
-		} else {
-			return errors.ForgeError("failed to check docs folder existence on GitLab").
-				WithCause(err).
-				WithContext("repo", repo.FullName).
-				Build()
+		}
+		if found {
+			hasDocs = true
+			break
 		}
 	}
 	repo.HasDocs = hasDocs
