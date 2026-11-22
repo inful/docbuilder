@@ -74,10 +74,16 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 		return f.fix(path)
 	}
 
-	// Phase 1: Preview changes (dry-run mode internally)
+	// Phase 1: Preview changes (dry-run mode internally).
+	// The tree is linted once, so the preview and the applied fixes come
+	// from the same findings: what the user approves is what gets applied.
+	result, err := f.linter.LintPath(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to lint path: %w", err)
+	}
 	originalDryRun := f.dryRun
 	f.dryRun = true
-	previewResult, err := f.fix(path)
+	previewResult, err := f.applyFixes(path, result)
 	f.dryRun = originalDryRun
 
 	if err != nil {
@@ -115,7 +121,7 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	}
 
 	// Phase 4: Apply fixes
-	return f.fix(path)
+	return f.applyFixes(path, result)
 }
 
 // fix is the internal implementation that actually performs the fixes.
@@ -125,7 +131,11 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to lint path: %w", err)
 	}
+	return f.applyFixes(path, result)
+}
 
+// applyFixes performs the fixes for a lint result.
+func (f *Fixer) applyFixes(path string, result *Result) (*FixResult, error) {
 	fixResult := &FixResult{
 		FilesRenamed:      make([]RenameOperation, 0),
 		LinksUpdated:      make([]LinkUpdate, 0),
