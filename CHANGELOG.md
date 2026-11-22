@@ -9,6 +9,8 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-11-22
+
 ### Added
 - **The search understands operators.** A query is read as it is
   written now:
