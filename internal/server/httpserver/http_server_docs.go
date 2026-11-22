@@ -53,10 +53,18 @@ func parseHugoError(errStr string) string {
 }
 
 // resolveAbsoluteOutputDir resolves the output directory to an absolute path.
+//
+// The base directory holds the output when the directory is relative, so
+// the two are joined here. Everything that looks for the output - the
+// docs root, the status page, the content of the site - has to look in
+// the same place, or it looks where the site is not.
 func (s *Server) resolveAbsoluteOutputDir() string {
 	out := s.cfg.Output.Directory
 	if out == "" {
 		out = defaultSiteDir
+	}
+	if s.cfg.Output.BaseDirectory != "" && !filepath.IsAbs(out) {
+		out = filepath.Join(s.cfg.Output.BaseDirectory, out)
 	}
 	if !filepath.IsAbs(out) {
 		if abs, err := filepath.Abs(out); err == nil {
@@ -251,20 +259,7 @@ func (s *Server) startDocsServerWithListener(_ context.Context, ln net.Listener)
 // 1. <outputDir>/public if it exists (Hugo static render completed)
 // 2. <outputDir> (Hugo project scaffold / in-progress).
 func (s *Server) resolveDocsRoot() string {
-	out := s.cfg.Output.Directory
-	if out == "" {
-		out = defaultSiteDir
-	}
-	// Combine with base_directory if set and path is relative
-	if s.cfg.Output.BaseDirectory != "" && !filepath.IsAbs(out) {
-		out = filepath.Join(s.cfg.Output.BaseDirectory, out)
-	}
-	// Normalize to absolute path once; failures just return original path
-	if !filepath.IsAbs(out) {
-		if abs, err := filepath.Abs(out); err == nil {
-			out = abs
-		}
-	}
+	out := s.resolveAbsoluteOutputDir()
 
 	// First, try the public directory (fully rendered site)
 	public := filepath.Join(out, "public")
