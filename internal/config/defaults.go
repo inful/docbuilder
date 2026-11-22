@@ -415,9 +415,9 @@ func (r *RepositoryDefaultApplier) ApplyDefaults(cfg *Config) error {
 		if len(cfg.Repositories[i].Paths) == 0 {
 			cfg.Repositories[i].Paths = []string{"docs"}
 		}
-		if cfg.Repositories[i].Branch == "" {
-			cfg.Repositories[i].Branch = "main"
-		}
+		// The branch is not defaulted: an empty branch means the branch
+		// the remote points at, and the default of a repository is not
+		// always "main". A repository that names its branch keeps it.
 	}
 
 	return nil
