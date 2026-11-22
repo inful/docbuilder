@@ -20,21 +20,25 @@ const (
 
 // Repository represents a repository discovered from a forge.
 type Repository struct {
-	ID            string            `json:"id"`             // Unique ID from the forge
-	Name          string            `json:"name"`           // Repository name
-	FullName      string            `json:"full_name"`      // Full name (org/repo)
-	CloneURL      string            `json:"clone_url"`      // Git clone URL
-	SSHURL        string            `json:"ssh_url"`        // SSH clone URL
-	DefaultBranch string            `json:"default_branch"` // Default branch name
-	Description   string            `json:"description"`    // Repository description
-	Private       bool              `json:"private"`        // Is repository private
-	Archived      bool              `json:"archived"`       // Is repository archived
-	HasDocs       bool              `json:"has_docs"`       // Does repository have docs folder
-	HasDocIgnore  bool              `json:"has_docignore"`  // Does repository have .docignore
-	LastUpdated   time.Time         `json:"last_updated"`   // Last update timestamp
-	Topics        []string          `json:"topics"`         // Repository topics/tags
-	Language      string            `json:"language"`       // Primary programming language
-	Metadata      map[string]string `json:"metadata"`       // Additional forge-specific metadata
+	ID            string `json:"id"`             // Unique ID from the forge
+	Name          string `json:"name"`           // Repository name
+	FullName      string `json:"full_name"`      // Full name (org/repo)
+	CloneURL      string `json:"clone_url"`      // Git clone URL
+	SSHURL        string `json:"ssh_url"`        // SSH clone URL
+	DefaultBranch string `json:"default_branch"` // Default branch name
+	Description   string `json:"description"`    // Repository description
+	Private       bool   `json:"private"`        // Is repository private
+	Archived      bool   `json:"archived"`       // Is repository archived
+	HasDocs       bool   `json:"has_docs"`       // Does repository have docs folder
+	HasDocIgnore  bool   `json:"has_docignore"`  // Does repository have .docignore
+	// DocsCheckFailed is set when the forge could not be asked whether the
+	// repository has documentation. The answer is then unknown, and the
+	// repository is kept: dropping it would take its pages out of the site.
+	DocsCheckFailed bool              `json:"docs_check_failed"`
+	LastUpdated     time.Time         `json:"last_updated"` // Last update timestamp
+	Topics          []string          `json:"topics"`       // Repository topics/tags
+	Language        string            `json:"language"`     // Primary programming language
+	Metadata        map[string]string `json:"metadata"`     // Additional forge-specific metadata
 }
 
 // Organization represents an organization/group on a forge.

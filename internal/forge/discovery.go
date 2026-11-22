@@ -232,9 +232,6 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 					"forge", client.GetName(),
 					"repository", r.FullName,
 					"error", err)
-				// Continue processing, but assume no docs
-				r.HasDocs = false
-				r.HasDocIgnore = false
 			}
 
 			// Log first few checks for debugging
@@ -330,8 +327,10 @@ func (ds *DiscoveryService) filterDecision(repo *Repository) repoFilterDecision 
 		return repoFilterDecision{include: false, reason: "docignore_present"}
 	}
 
-	// Check if repository has required paths (e.g., docs folder)
-	if !repo.HasDocs && len(filtering.RequiredPaths) > 0 {
+	// Check if repository has required paths (e.g., docs folder). A
+	// repository whose check failed is kept: the answer is unknown, and a
+	// missing answer must not take the repository out of the site.
+	if !repo.HasDocs && !repo.DocsCheckFailed && len(filtering.RequiredPaths) > 0 {
 		return repoFilterDecision{include: false, reason: "missing_required_paths"}
 	}
 
@@ -383,8 +382,15 @@ func (ds *DiscoveryService) checkDocumentation(ctx context.Context, client Clien
 	}
 
 	if err := client.CheckDocumentation(ctx, repo); err != nil {
+		// The forge did not tell us whether the repository has
+		// documentation. Mark it as unknown and keep it: dropping it here
+		// would take its pages out of the site until the next discovery
+		// run. The build looks at the paths again and contributes nothing
+		// when there is no documentation.
+		repo.DocsCheckFailed = true
 		return err
 	}
+	repo.DocsCheckFailed = false
 
 	if key != "" {
 		ds.rememberDocsCheck(key, docsCheckResult{
