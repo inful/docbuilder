@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: f3e31cfaf002e912bba3bf25535e7fa6948d9373c81f47aa4193bdb1e0904111
+fingerprint: 060709d08b63210ed35abaf163e96fdd16bb55454af2a0779000f500d9e8bcb0
 lastmod: "2026-11-22"
 tags:
   - configuration
@@ -548,10 +548,10 @@ index pages.
 
 Configures where the search of the site runs.
 
-The daemon serves the site, so the search runs there by default: the
-daemon keeps an index of the rendered pages and answers the queries.
-The index never reaches the visitor, and the search stays fast however
-large the site is.
+The daemon serves the site, so the search runs there: the daemon keeps
+an index of the rendered pages and answers the queries. The index never
+reaches the visitor, and the search stays fast however large the site
+is.
 
 A site that is served as a static tree - exported and handed to a web
 server - has no server to ask, so it uses the browser-side index the
@@ -560,7 +560,7 @@ the site and every visitor downloads it.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `provider` | string | `server` with a daemon, `lunr` without | Where the search runs: `server` (the daemon's own index) or `lunr` (the browser-side index the theme ships). |
+| `provider` | string | the builder decides | Where the search runs: `server` (the daemon's own index) or `lunr` (the browser-side index the theme ships). Left unset, the daemon chooses `server` and a plain build chooses `lunr`. |
 | `max_results` | int | `10` | How many results a search returns. |
 
 ```yaml

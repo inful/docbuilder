@@ -24,6 +24,14 @@ commits; pin to a SHA for reproducibility per the README.
   on every connection, and the write takes the lock at the start of
   the transaction instead of on its first write.
 
+- **A static export ships a working search again.** The provider
+  followed the configuration file: a file with a `daemon:` block made
+  the `docbuilder build` command ship the search client that asks a
+  server, and no server was there to answer. The provider now follows
+  who builds the site: the daemon, which serves the site it builds,
+  chooses the server; a plain build, which produces a static tree,
+  chooses the browser-side index the theme ships.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added

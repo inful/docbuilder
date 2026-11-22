@@ -50,13 +50,15 @@ const (
 
 // SearchConfig configures the search of the site.
 //
-// The daemon serves the site, so the search runs there by default: the
-// index never reaches the visitor, and the results stay fast however
-// large the site is. A site that is served as a static tree - exported
-// and handed to a web server - needs the browser-side index instead.
+// The daemon serves the site, so the search runs there: the index never
+// reaches the visitor, and the results stay fast however large the site
+// is. A site that is served as a static tree - exported and handed to a
+// web server - needs the browser-side index instead. The provider
+// follows who builds the site, so the two never disagree.
 type SearchConfig struct {
 	// Provider is where the search runs: "server" or "lunr". Empty means
-	// the default applies.
+	// the builder decides: the daemon chooses the server, a plain build
+	// chooses the browser.
 	Provider string `yaml:"provider,omitempty"`
 	// MaxResults is how many results a search returns. Zero means the
 	// default applies.

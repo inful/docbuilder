@@ -28,12 +28,25 @@ type SearchService struct {
 // initSearch opens the search index when the configuration asks for the
 // server-side search. Without it the site keeps the browser-side index
 // the theme ships.
+//
+// The daemon serves the site it builds, so when nobody chose a provider
+// the daemon chooses the server-side one. A plain build has no daemon
+// behind it and keeps the browser-side index - see the config defaults.
 func (d *Daemon) initSearch(cfg *config.Config) error {
-	if cfg == nil || cfg.Search == nil || cfg.Search.Provider != config.SearchProviderServer {
+	if cfg == nil {
 		return nil
 	}
 	if cfg.Daemon == nil {
 		// The search runs on the server, but there is no server.
+		return nil
+	}
+	if cfg.Search == nil {
+		cfg.Search = &config.SearchConfig{}
+	}
+	if cfg.Search.Provider == "" {
+		cfg.Search.Provider = config.SearchProviderServer
+	}
+	if cfg.Search.Provider != config.SearchProviderServer {
 		return nil
 	}
 

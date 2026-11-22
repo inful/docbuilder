@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2026-11-22T00:00:00Z
-fingerprint: 9387056f1993b0d1bd1fabbb7fd4bd87fab23ec7fe2711f3badb0e0566f3e875
+fingerprint: 3e2c17bf5f74087370a6d76ce87e74a8c989b6ede73af064e3493ed49aae7541
 lastmod: "2026-11-22"
 tags:
   - search
@@ -30,7 +30,7 @@ for the download, the parse and the index build.
 
 | Provider | Where the search runs | When to use it |
 |----------|-----------------------|----------------|
-| `server` | The daemon answers the query from its own index | The daemon serves the site. This is the default when a daemon is configured. |
+| `server` | The daemon answers the query from its own index | The daemon serves the site. |
 | `lunr` | The browser searches the index the theme ships | The site is served as a static tree - exported and handed to a web server - and has no server to ask. |
 
 ```yaml
@@ -47,6 +47,12 @@ daemon does.
   the memory on it either.
 - With `lunr`, the site ships the theme's client and the theme's index,
   and the daemon keeps no index.
+
+When the operator does not choose, the builder decides: the daemon
+serves the site it builds, so it chooses `server`; a plain
+`docbuilder build` produces a static tree with no server behind it, so
+it chooses `lunr`. The two never disagree, and the same configuration
+file works for both.
 
 ## How the index is built
 
