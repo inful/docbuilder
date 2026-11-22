@@ -149,6 +149,13 @@ docker run --rm docbuilder:test --version
 - Test coverage
 - Security scanning
 
+### Required Checks
+- `Test (Go 1.24)` runs on every pull request.
+- `lint` runs only when a documentation file changes. A pull request
+  that changes none does not run it, and the branch protection waits
+  for a check that never reports: such a pull request has to carry a
+  documentation change, or an administrator has to merge it.
+
 ## Deployment
 
 ### Staging
