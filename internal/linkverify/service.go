@@ -555,6 +555,15 @@ func isTimeoutError(err error) bool {
 	return nerr.Timeout()
 }
 
+// docField reads a field of the page's document file, or the empty string
+// when the page has no document file.
+func docField(page *PageMetadata, field func(*docs.DocFile) string) string {
+	if page == nil || page.DocFile == nil {
+		return ""
+	}
+	return field(page.DocFile)
+}
+
 // handleBrokenLink creates and publishes a broken link event.
 func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL string, link *Link, page *PageMetadata, status int, errorMsg string, cache *CacheEntry) {
 	event := &BrokenLinkEvent{
@@ -563,14 +572,16 @@ func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL 
 		Error:      errorMsg,
 		IsInternal: link.IsInternal,
 
-		// Source metadata
-		SourcePath:         page.DocFile.Path,
-		SourceRelativePath: page.DocFile.RelativePath,
-		Repository:         page.DocFile.Repository,
-		Forge:              page.DocFile.Forge,
-		Section:            page.DocFile.Section,
-		FileName:           page.DocFile.Name,
-		DocsBase:           page.DocFile.DocsBase,
+		// Source metadata. The document file is optional: a caller that
+		// only has the rendered page does not have one, and a nil pointer
+		// here would take the daemon down.
+		SourcePath:         docField(page, func(d *docs.DocFile) string { return d.Path }),
+		SourceRelativePath: docField(page, func(d *docs.DocFile) string { return d.RelativePath }),
+		Repository:         docField(page, func(d *docs.DocFile) string { return d.Repository }),
+		Forge:              docField(page, func(d *docs.DocFile) string { return d.Forge }),
+		Section:            docField(page, func(d *docs.DocFile) string { return d.Section }),
+		FileName:           docField(page, func(d *docs.DocFile) string { return d.Name }),
+		DocsBase:           docField(page, func(d *docs.DocFile) string { return d.DocsBase }),
 
 		// Generated paths
 		HugoPath:     page.HugoPath,
