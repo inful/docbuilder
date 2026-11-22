@@ -22,16 +22,16 @@ jobs:
     permissions:
       contents: read
       pull-requests: write  # Required for PR comments
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-      
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: '1.21'
-      
+
       - name: Install DocBuilder
         run: |
           # Option 1: Install from releases (production)
@@ -39,31 +39,31 @@ jobs:
           # curl -L "https://github.com/YOUR_ORG/docbuilder/releases/download/${LATEST}/docbuilder-linux-amd64" -o docbuilder
           # chmod +x docbuilder
           # sudo mv docbuilder /usr/local/bin/
-          
+
           # Option 2: Install from source (development/testing)
-          go build -o /usr/local/bin/docbuilder ./cmd/docbuilder 
-      
+          go build -o /usr/local/bin/docbuilder ./cmd/docbuilder
+
       - name: Lint Documentation (JSON output)
         id: lint
         run: |
           # Run linter with JSON output for machine parsing
           docbuilder lint --format=json > lint-report.json || EXIT_CODE=$?
-          
+
           # Store exit code for later steps
           echo "exit_code=${EXIT_CODE:-0}" >> $GITHUB_OUTPUT
-          
+
           # Always upload the report, even on failure
           exit 0
         continue-on-error: true
-      
+
       - name: Upload Lint Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: lint-report
           path: lint-report.json
           retention-days: 30
-      
+
       - name: Parse Lint Results
         if: always()
         id: parse
@@ -73,36 +73,36 @@ jobs:
             TOTAL_FILES=$(jq -r '.files_total' lint-report.json)
             ERRORS=$(jq -r '.error_count' lint-report.json)
             WARNINGS=$(jq -r '.warning_count' lint-report.json)
-            
+
             echo "total_files=${TOTAL_FILES}" >> $GITHUB_OUTPUT
             echo "errors=${ERRORS}" >> $GITHUB_OUTPUT
             echo "warnings=${WARNINGS}" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Comment PR with Lint Results
         if: github.event_name == 'pull_request' && steps.lint.outputs.exit_code != '0'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const fs = require('fs');
             const report = JSON.parse(fs.readFileSync('lint-report.json', 'utf8'));
-            
+
             // Build comment body
             let comment = '## 📝 Documentation Lint Report\n\n';
-            
+
             if (report.error_count > 0) {
               comment += `❌ **${report.error_count} error(s) found** (blocks merge)\n`;
             }
             if (report.warning_count > 0) {
               comment += `⚠️ **${report.warning_count} warning(s) found** (should fix)\n`;
             }
-            
+
             comment += `\n📊 **Summary**: ${report.files_total} files scanned\n\n`;
-            
+
             // Add errors section
             if (report.issues && report.issues.length > 0) {
               comment += '### Issues Found\n\n';
-              
+
               // Group issues by file
               const byFile = {};
               for (const issue of report.issues) {
@@ -111,12 +111,12 @@ jobs:
                 }
                 byFile[issue.file_path].push(issue);
               }
-              
+
               // Display up to 10 files with issues
               const files = Object.keys(byFile).slice(0, 10);
               for (const file of files) {
                 comment += `#### \`${file}\`\n\n`;
-                
+
                 for (const issue of byFile[file].slice(0, 5)) {
                   const emoji = issue.severity === 'error' ? '❌' : '⚠️';
                   comment += `${emoji} **${issue.rule}** (line ${issue.line}): ${issue.message}\n`;
@@ -125,17 +125,17 @@ jobs:
                   }
                   comment += '\n';
                 }
-                
+
                 if (byFile[file].length > 5) {
                   comment += `... and ${byFile[file].length - 5} more issue(s)\n\n`;
                 }
               }
-              
+
               if (Object.keys(byFile).length > 10) {
                 comment += `\n... and ${Object.keys(byFile).length - 10} more file(s) with issues\n`;
               }
             }
-            
+
             comment += '\n---\n';
             comment += '**How to fix:**\n';
             comment += '```bash\n';
@@ -144,7 +144,7 @@ jobs:
             comment += '# Auto-fix where possible\n';
             comment += 'docbuilder lint --fix\n';
             comment += '```\n';
-            
+
             // Post comment
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -152,14 +152,14 @@ jobs:
               issue_number: context.issue.number,
               body: comment
             });
-      
+
       - name: Fail if Errors Found
         if: steps.lint.outputs.exit_code == '2'
         run: |
           echo "❌ Documentation linting failed with errors"
           echo "Run 'docbuilder lint --fix' to resolve issues"
           exit 1
-      
+
       - name: Summary
         if: always()
         run: |
@@ -167,14 +167,14 @@ jobs:
           TOTAL="${{ steps.parse.outputs.total_files }}"
           ERRORS="${{ steps.parse.outputs.errors }}"
           WARNINGS="${{ steps.parse.outputs.warnings }}"
-          
+
           echo "### Documentation Lint Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Files scanned**: ${TOTAL:-0}" >> $GITHUB_STEP_SUMMARY
           echo "- **Errors**: ${ERRORS:-0}" >> $GITHUB_STEP_SUMMARY
           echo "- **Warnings**: ${WARNINGS:-0}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${EXIT_CODE}" = "0" ]; then
             echo "✅ All documentation passes linting!" >> $GITHUB_STEP_SUMMARY
           elif [ "${EXIT_CODE}" = "2" ]; then

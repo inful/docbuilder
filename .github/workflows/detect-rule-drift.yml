@@ -25,20 +25,20 @@ on:
 jobs:
   detect-rule-drift:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-      
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
-      
+
       - name: Install DocBuilder
         run: |
           go install ./cmd/docbuilder
-      
+
       - name: Initialize test repository
         run: |
           TEST_REPO_DIR="$(mktemp -d)"
@@ -56,43 +56,43 @@ jobs:
         run: |
           cat > drift-test-config.yaml <<EOF
           version: "2.0"
-          
+
           repositories:
             - name: test-docs
               url: ${{ env.TEST_REPO_DIR }}
               branch: main
               paths:
                 - docs
-          
+
           hugo:
             title: "Rule Drift Test"
             description: "Testing for linter-DocBuilder drift"
             base_url: "http://localhost:1313/"
-          
+
           output:
             directory: ./drift-test-output
             clean: true
           EOF
-      
+
       - name: Build documentation with DocBuilder
         run: |
           docbuilder build -c drift-test-config.yaml -v
-      
+
       - name: Lint generated content
         id: lint
         run: |
           # Lint the generated Hugo content
           docbuilder lint drift-test-output/content --format=json > drift-report.json || EXIT_CODE=$?
-          
+
           echo "exit_code=${EXIT_CODE:-0}" >> $GITHUB_OUTPUT
-          
+
           # Display results
           cat drift-report.json | jq '.'
-      
+
       - name: Check for drift
         run: |
           EXIT_CODE="${{ steps.lint.outputs.exit_code }}"
-          
+
           if [ "${EXIT_CODE}" = "2" ]; then
             echo "❌ RULE DRIFT DETECTED!"
             echo ""
@@ -104,49 +104,49 @@ jobs:
             echo "  2. DocBuilder output changed without updating lint rules"
             echo "  3. New rules added that DocBuilder doesn't comply with"
             echo ""
-            
+
             # Show details
             cat drift-report.json | jq -r '.issues[] | "- \(.file_path):\(.line) - \(.rule): \(.message)"'
-            
+
             exit 1
           elif [ "${EXIT_CODE}" = "1" ]; then
             echo "⚠️ Warnings detected in generated content"
             echo "Generated content has warnings but no errors"
-            
+
             cat drift-report.json | jq -r '.issues[] | select(.severity=="WARNING") | "- \(.file_path) - \(.rule): \(.message)"'
-            
+
             # Don't fail on warnings, just report
             exit 0
           else
             echo "✅ No rule drift detected"
             echo "DocBuilder-generated content passes all linting rules"
           fi
-      
+
       - name: Upload drift report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: rule-drift-report
           path: drift-report.json
           retention-days: 90
-      
+
       - name: Comment PR on drift detection
         if: github.event_name == 'pull_request' && steps.lint.outputs.exit_code == '2'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const fs = require('fs');
             const report = JSON.parse(fs.readFileSync('drift-report.json', 'utf8'));
-            
+
             let comment = '## ⚠️ Lint Rule Drift Detected\n\n';
             comment += '**DocBuilder-generated content does not pass linting rules.**\n\n';
             comment += 'This PR may have introduced drift between linting rules and DocBuilder output.\n\n';
-            
+
             comment += `### Summary\n\n`;
             comment += `- **Errors**: ${report.error_count}\n`;
             comment += `- **Warnings**: ${report.warning_count}\n`;
             comment += `- **Files affected**: ${report.files_total}\n\n`;
-            
+
             if (report.issues && report.issues.length > 0) {
               comment += '### Issues\n\n';
               const issues = report.issues.slice(0, 10);
@@ -157,14 +157,14 @@ jobs:
                 comment += `\n... and ${report.issues.length - 10} more issue(s)\n`;
               }
             }
-            
+
             comment += '\n### What to do\n\n';
             comment += 'Choose one of the following:\n\n';
             comment += '1. **Update linting rules** if they are too strict\n';
             comment += '2. **Update DocBuilder** to generate compliant content\n';
             comment += '3. **Update tests** if the drift is intentional\n\n';
             comment += '**Important:** Ensure linting rules and DocBuilder output remain synchronized.\n';
-            
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,

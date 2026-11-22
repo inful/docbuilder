@@ -35,24 +35,24 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
-    
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
     - name: Set up Docker Buildx
       env:
         DOCKER_TLS_CERTDIR: ""
         DOCKER_HOST: unix:///var/run/docker.sock
       run: |
         echo "🔧 Setting up Docker Buildx for multi-arch builds..."
-        
+
         # Check if buildx is available
         docker buildx version || { echo "Installing buildx..."; docker buildx install; }
-        
+
         # Create and use a new builder instance for multi-arch
         docker buildx create --name multiarch --driver docker-container --use || docker buildx use multiarch
-        
+
         # Bootstrap the builder
         docker buildx inspect --bootstrap
-        
+
         echo "✅ Docker Buildx ready for multi-arch builds"
 
     - name: Extract version info
@@ -65,7 +65,7 @@ jobs:
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "🏷️  Using version: $VERSION"
-        
+
         # Extract branch name for additional tags
         BRANCH=$(echo "$GITHUB_REF_NAME" | sed 's/\//-/g')
         echo "branch=$BRANCH" >> $GITHUB_OUTPUT
@@ -107,7 +107,7 @@ jobs:
         TARGET="${{ matrix.target.name }}"
         SUFFIX="${{ matrix.target.suffix }}"
         IMAGE_NAME="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
-        
+
         # Determine platform(s) to build
         if [ "${{ steps.check_creds.outputs.skip_push }}" = "false" ]; then
           PLATFORMS="linux/amd64,linux/arm64"
@@ -125,35 +125,35 @@ jobs:
           fi
           echo "🏗️  Building for native platform only (no registry push)..."
         fi
-        
+
         echo "📦 Target: $TARGET (${{ matrix.target.description }})"
         echo "📦 Image: $IMAGE_NAME"
         echo "🏷️  Version: $VERSION$SUFFIX"
         echo "🏗️  Platforms: $PLATFORMS"
         echo "🎨 Hugo version: ${{ env.HUGO_VERSION }}"
-        
+
         # Build tag list
         TAGS="-t ${IMAGE_NAME}:${VERSION}${SUFFIX}"
-        
+
         # Add branch tag if not a release tag
         if [[ ! $GITHUB_REF == refs/tags/* ]]; then
           TAGS="$TAGS -t ${IMAGE_NAME}:${BRANCH}${SUFFIX}"
         fi
-        
+
         # Add 'latest' tag for minimal target on version tags
         if [[ $GITHUB_REF == refs/tags/* ]] && [[ "$SUFFIX" == "" ]]; then
           TAGS="$TAGS -t ${IMAGE_NAME}:latest"
         fi
-        
+
         echo "🏷️  Tags: $TAGS"
-        
+
         # Build arguments
         BUILD_ARGS="--platform $PLATFORMS"
         BUILD_ARGS="$BUILD_ARGS --target $TARGET"
         BUILD_ARGS="$BUILD_ARGS --build-arg VERSION=$VERSION"
         BUILD_ARGS="$BUILD_ARGS --build-arg HUGO_VERSION=${{ env.HUGO_VERSION }}"
         BUILD_ARGS="$BUILD_ARGS --file Dockerfile"
-        
+
         if [ "${{ steps.check_creds.outputs.skip_push }}" = "false" ]; then
           BUILD_ARGS="$BUILD_ARGS --push"
           echo "📤 Will push to registry"
@@ -161,10 +161,10 @@ jobs:
           BUILD_ARGS="$BUILD_ARGS --load"
           echo "💾 Will build and load locally for native platform"
         fi
-        
+
         # Build image with Docker Buildx
         docker buildx build $BUILD_ARGS $TAGS .
-        
+
         if [ "${{ steps.check_creds.outputs.skip_push }}" = "true" ]; then
           echo "⏭️  Skipping push (no registry credentials or push disabled)"
           echo "📋 Built image locally for $PLATFORMS"
@@ -180,7 +180,7 @@ jobs:
         VERSION="${{ steps.version.outputs.version }}"
         SUFFIX="${{ matrix.target.suffix }}"
         IMAGE_NAME="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
-        
+
         echo "## 🏗️ Build Summary - ${{ matrix.target.name }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "- **Target**: \`${{ matrix.target.name }}\` (${{ matrix.target.description }})" >> $GITHUB_STEP_SUMMARY
@@ -188,7 +188,7 @@ jobs:
         echo "- **Platforms**: linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
         echo "- **Hugo Version**: ${{ env.HUGO_VERSION }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Builder**: Docker Buildx (native multi-arch)" >> $GITHUB_STEP_SUMMARY
-        
+
         if [ "${{ steps.check_creds.outputs.skip_push }}" = "true" ]; then
           echo "- **Status**: ⚠️ Built locally for native platform only" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -219,8 +219,8 @@ jobs:
     if: always()
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
-      
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
     - name: Extract version info
       id: version
       run: |
@@ -230,7 +230,7 @@ jobs:
           VERSION=$(git rev-parse --short=7 HEAD)
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        
+
     - name: Final Summary
       run: |
         echo "## 🎉 Multi-Arch Build Complete" >> $GITHUB_STEP_SUMMARY
