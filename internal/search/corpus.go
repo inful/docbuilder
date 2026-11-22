@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
@@ -204,7 +205,9 @@ func defaultTitle(url string) string {
 		return "Documentation"
 	}
 	parts := strings.Split(trimmed, "/")
-	last := parts[len(parts)-1]
-	last = strings.ReplaceAll(last, "-", " ")
-	return strings.ToUpper(last[:1]) + last[1:]
+	last := strings.ReplaceAll(parts[len(parts)-1], "-", " ")
+	// The first letter is upper-cased. It is a letter, not a byte: a
+	// byte would cut a multi-byte letter in half.
+	runes := []rune(last)
+	return string(unicode.ToUpper(runes[0])) + string(runes[1:])
 }

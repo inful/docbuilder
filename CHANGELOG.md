@@ -36,6 +36,11 @@ commits; pin to a SHA for reproducibility per the README.
   kept its file handle on the state directory, and its write-ahead log
   was only folded back into the index when the last connection went.
 
+- **A page under a non-ASCII address gets a readable title again.** The
+  title of a page without one of its own comes from its address, and
+  the first letter was upper-cased as a byte - which cut a multi-byte
+  letter in half and left a broken character in the search results.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added
