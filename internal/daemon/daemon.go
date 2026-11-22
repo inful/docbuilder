@@ -117,6 +117,9 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	if err := d.initStateStack(cfg); err != nil {
 		return nil, err
 	}
+	if err := d.initSearch(cfg); err != nil {
+		return nil, err
+	}
 	if cfg.Build.LiveReload {
 		d.initLiveReload()
 	}
@@ -321,6 +324,7 @@ func (d *Daemon) initHTTPServer(cfg *config.Config) {
 		EnhancedHealthHandle:  d.EnhancedHealthHandler,
 		DetailedMetricsHandle: detailedMetrics,
 		PrometheusHandler:     prometheusOptionalHandler(d),
+		SearchHandle:          d.optional.search.HandleSearch,
 		StatusHandle:          statusHandlers.HandleStatusPage,
 	})
 }

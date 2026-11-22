@@ -4,6 +4,8 @@ import (
 	"bytes"
 	_ "embed"
 	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // Embedded View Transitions API assets
@@ -16,6 +18,15 @@ var viewTransitionsHeadPartial []byte
 
 //go:embed assets/template-metadata-head.html
 var templateMetadataHeadPartial []byte
+
+//go:embed assets/search/offline-search.js
+var serverSideSearchJS []byte
+
+// emptySearchIndex is the search index of a site whose search runs on
+// the server. The theme builds the index of every page into this file
+// and the browser downloads it; with the server-side search the file
+// stays empty, and the browser asks the server instead.
+var emptySearchIndex = []byte("[]")
 
 // StaticAsset represents a static file to be copied to the Hugo site.
 // Unlike Document, StaticAsset doesn't go through the transform pipeline.
@@ -87,5 +98,25 @@ func generateThemeAssets(ctx *GenerationContext) ([]*StaticAsset, error) {
 	)
 	assets = append(assets, docsyVendoredAssets()...)
 
+	if serverSideSearch(ctx) {
+		// The search runs on the server: the browser asks the daemon
+		// instead of downloading an index of the whole site. The theme's
+		// search script and its index are replaced: the script asks the
+		// server, and the index stays empty because nobody reads it.
+		assets = append(assets,
+			&StaticAsset{Path: "assets/js/offline-search.js", Content: serverSideSearchJS},
+			&StaticAsset{Path: "assets/json/offline-search-index.json", Content: emptySearchIndex},
+		)
+	}
+
 	return assets, nil
+}
+
+// serverSideSearch reports whether the search of the site runs on the
+// server.
+func serverSideSearch(ctx *GenerationContext) bool {
+	if ctx == nil || ctx.Config == nil || ctx.Config.Search == nil {
+		return false
+	}
+	return ctx.Config.Search.Provider == config.SearchProviderServer
 }

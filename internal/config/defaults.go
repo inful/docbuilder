@@ -162,6 +162,36 @@ func (o *OutputDefaultApplier) ApplyDefaults(cfg *Config) error {
 	return nil
 }
 
+// SearchDefaultApplier handles Search configuration defaults.
+type SearchDefaultApplier struct{}
+
+func (s *SearchDefaultApplier) Domain() string { return "search" }
+
+func (s *SearchDefaultApplier) ApplyDefaults(cfg *Config) error {
+	if cfg.Search == nil {
+		cfg.Search = &SearchConfig{}
+	}
+	switch cfg.Search.Provider {
+	case SearchProviderServer, SearchProviderLunr:
+		// The operator chose. Keep it.
+	case "":
+		// The daemon serves the site, so the search can run there. A
+		// site that is built without a daemon is a static tree: it has
+		// no server to ask, so the browser searches it.
+		if cfg.Daemon != nil {
+			cfg.Search.Provider = SearchProviderServer
+		} else {
+			cfg.Search.Provider = SearchProviderLunr
+		}
+	default:
+		cfg.Search.Provider = SearchProviderLunr
+	}
+	if cfg.Search.MaxResults <= 0 {
+		cfg.Search.MaxResults = 10
+	}
+	return nil
+}
+
 // DaemonDefaultApplier handles Daemon configuration defaults.
 type DaemonDefaultApplier struct{}
 

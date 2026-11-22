@@ -160,6 +160,11 @@ func (s *Server) startDocsServerWithListener(_ context.Context, ln net.Listener)
 	mux.HandleFunc("/_edit/", s.handleVSCodeEdit)
 	// Machine-readable taxonomy endpoint for template/snippet tooling.
 	mux.HandleFunc("/api/taxonomies.json", s.handleTaxonomiesJSON)
+	// The search of the site. The daemon answers the queries with its
+	// own index, so the visitor never downloads the index itself.
+	if s.opts.SearchHandle != nil {
+		mux.HandleFunc("/api/search", s.opts.SearchHandle)
+	}
 
 	// Root handler dynamically chooses between the Hugo output directory and the rendered "public" folder.
 	// This lets us begin serving immediately (before a static render completes) while automatically

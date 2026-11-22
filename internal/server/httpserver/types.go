@@ -67,4 +67,8 @@ type Options struct {
 	DetailedMetricsHandle http.HandlerFunc
 	EnhancedHealthHandle  http.HandlerFunc
 	StatusHandle          http.HandlerFunc
+
+	// Optional: the search of the site. When it is set, the docs server
+	// answers queries at /api/search.
+	SearchHandle http.HandlerFunc
 }

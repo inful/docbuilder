@@ -15,6 +15,7 @@ func NewDefaultApplier() *CompositeDefaultApplier {
 			&HugoDefaultApplier{},
 			&OutputDefaultApplier{},
 			&DaemonDefaultApplier{},
+			&SearchDefaultApplier{},
 			&FilteringDefaultApplier{},
 			&VersioningDefaultApplier{},
 			&MonitoringDefaultApplier{},

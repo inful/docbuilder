@@ -27,10 +27,40 @@ type Config struct {
 	// Lint configures the documentation linter. Optional; if absent the
 	// linter uses its built-in defaults (see internal/lint.DefaultExcludes).
 	Lint *LintConfig `yaml:"lint,omitempty"`
+	// Search configures the search of the site. Optional; if absent the
+	// defaults apply (see SearchConfig).
+	Search *SearchConfig `yaml:"search,omitempty"`
 	// Optional explicit repository list (direct mode) – replaces legacy v1 top‑level repositories.
 	// When present, these are used directly for build/discover operations. If empty and forges are
 	// configured, auto‑discovery can populate repositories dynamically.
 	Repositories []Repository `yaml:"repositories,omitempty"`
+}
+
+// The providers of the site search.
+const (
+	// SearchProviderServer runs the search on the server. The daemon
+	// keeps the index of the rendered pages and answers the queries, so
+	// the visitor downloads the results and nothing else.
+	SearchProviderServer = "server"
+	// SearchProviderLunr runs the search in the browser. The theme ships
+	// the index and the visitor's browser searches it. This is what a
+	// static site needs: it has no server to ask.
+	SearchProviderLunr = "lunr"
+)
+
+// SearchConfig configures the search of the site.
+//
+// The daemon serves the site, so the search runs there by default: the
+// index never reaches the visitor, and the results stay fast however
+// large the site is. A site that is served as a static tree - exported
+// and handed to a web server - needs the browser-side index instead.
+type SearchConfig struct {
+	// Provider is where the search runs: "server" or "lunr". Empty means
+	// the default applies.
+	Provider string `yaml:"provider,omitempty"`
+	// MaxResults is how many results a search returns. Zero means the
+	// default applies.
+	MaxResults int `yaml:"max_results,omitempty"`
 }
 
 // LintConfig configures the documentation linter. The Excludes list is

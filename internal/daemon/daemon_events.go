@@ -55,6 +55,10 @@ func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, repor
 	// This is critical for skip evaluation to work correctly on subsequent builds.
 	if report != nil && report.Outcome == models.OutcomeSuccess && d.state.stateManager != nil && d.config != nil {
 		d.updateStateAfterBuild(report)
+		// The search index holds the pages of the last build. It is
+		// updated after the state, so a failed index update never holds
+		// up the state.
+		d.indexSearch(ctx, resolveOutputDir(d.config))
 	}
 
 	// Trigger link verification after successful builds (low priority background task).
