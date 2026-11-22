@@ -17,6 +17,13 @@ commits; pin to a SHA for reproducibility per the README.
   of them made the docs server unresponsive. The cut now happens
   once, before either path reads the query.
 
+- **Two builds finishing at the same time no longer break the search
+  index.** The wait for the lock was set through a statement, which
+  reaches only the one connection that ran it - every other connection
+  the pool opened had no wait at all. The index now waits for the lock
+  on every connection, and the write takes the lock at the start of
+  the transaction instead of on its first write.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added

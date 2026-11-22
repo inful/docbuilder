@@ -17,6 +17,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,22 +75,32 @@ func Open(dir string) (*Index, error) {
 		return nil, fmt.Errorf("search: create index directory: %w", err)
 	}
 
-	path := filepath.Join(dir, "search.db")
-	db, err := sql.Open("sqlite", path)
-	if err != nil {
-		return nil, fmt.Errorf("search: open index: %w", err)
-	}
+	// The pragmas go into the DSN, not into a statement. A statement
+	// runs on one connection of the pool; the pool opens more when the
+	// load grows, and those connections would have the default of no
+	// wait at all. The DSN applies the pragmas to every connection the
+	// pool opens.
+	//
 	// The daemon serves search requests while a build writes to the
 	// index, so readers must not block the writer and vice versa.
-	for _, pragma := range []string{
-		"PRAGMA journal_mode=WAL",
-		"PRAGMA busy_timeout=5000",
-		"PRAGMA synchronous=NORMAL",
-	} {
-		if _, err := db.ExecContext(context.Background(), pragma); err != nil {
-			_ = db.Close()
-			return nil, fmt.Errorf("search: %s: %w", pragma, err)
-		}
+	//
+	// The transaction starts as "immediate": a transaction that starts
+	// as "deferred" takes the write lock on its first write, and SQLite
+	// does not wait for the lock on that step - it fails at once. Two
+	// builds finishing at the same time would then break each other.
+	path := filepath.Join(dir, "search.db")
+	dsn := "file:" + path + "?" + url.Values{
+		"_pragma": {
+			"busy_timeout(5000)",
+			"journal_mode(WAL)",
+			"synchronous(NORMAL)",
+		},
+		"_txlock": {"immediate"},
+	}.Encode()
+
+	db, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("search: open index: %w", err)
 	}
 
 	idx := &Index{db: db}
