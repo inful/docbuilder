@@ -9,6 +9,22 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.28.5] - 2026-11-22
+
+A fifth audit of the whole repository.
+
+### Fixed
+- **The site lost a repository when one API call failed.** The
+  discovery asks the forge whether a repository has a documentation
+  folder. When that call failed - a rate limit, a hiccup, a server
+  error - the repository was treated as one without documentation and
+  left out of the build. The site was then rebuilt without it, and its
+  pages disappeared until the next discovery run.
+
+  A failed answer is not an answer. The repository is kept now, and the
+  build looks at the paths again: a repository without documentation
+  contributes nothing, as before.
+
 ## [0.28.4] - 2026-11-22
 
 A fourth audit of the whole repository. Two of the findings broke the
