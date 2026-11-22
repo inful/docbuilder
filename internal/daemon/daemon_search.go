@@ -68,6 +68,21 @@ func (d *Daemon) initSearch(cfg *config.Config) error {
 	return nil
 }
 
+// startIndexSearch writes the search index in the background.
+//
+// The index holds the pages of the last build: a page that is gone
+// from the site is gone from the index with it. The walk over every
+// page takes seconds on a big site, so it does not hold up the next
+// build.
+func (d *Daemon) startIndexSearch(ctx context.Context, outputDir string) {
+	if d.optional.search == nil {
+		return
+	}
+	d.lifecycle.workers.Go(func() {
+		d.indexSearch(ctx, outputDir)
+	})
+}
+
 // indexSearch re-indexes the pages of the last build.
 //
 // The index always holds the pages of the last build: a page that is

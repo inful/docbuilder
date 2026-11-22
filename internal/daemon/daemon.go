@@ -800,6 +800,12 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		}
 	}
 
+	// Stop the workers before the index goes: a worker may still be
+	// writing the index.
+	if err := d.lifecycle.workers.StopAndWait(ctx); err != nil {
+		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(err))
+	}
+
 	// Close the search index. The file handle on the state directory
 	// belongs to the daemon, and the write-ahead log is only folded
 	// back into the index when the last connection goes.
@@ -807,10 +813,6 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		if err := searchIndex.Close(); err != nil {
 			slog.Error("Failed to close the search index", logfields.Error(err))
 		}
-	}
-
-	if err := d.lifecycle.workers.StopAndWait(ctx); err != nil {
-		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(err))
 	}
 
 	d.lifecycle.mu.Lock()

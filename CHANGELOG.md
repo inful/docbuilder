@@ -58,6 +58,11 @@ commits; pin to a SHA for reproducibility per the README.
   results than the configuration allows; the limit of the configuration
   stays the ceiling.
 
+- **The search index is written in the background.** The walk over
+  every page of the site took seconds in the middle of the build
+  queue, so the next build waited for it. The index is now written the
+  way the link verification runs.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added

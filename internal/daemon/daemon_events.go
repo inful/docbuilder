@@ -56,9 +56,10 @@ func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, repor
 	if report != nil && report.Outcome == models.OutcomeSuccess && d.state.stateManager != nil && d.config != nil {
 		d.updateStateAfterBuild(report)
 		// The search index holds the pages of the last build. It is
-		// updated after the state, so a failed index update never holds
-		// up the state.
-		d.indexSearch(ctx, resolveOutputDir(d.config))
+		// written in the background, the way the link verification
+		// runs: on a big site the walk over every page takes seconds,
+		// and the next build must not wait for it.
+		d.startIndexSearch(ctx, resolveOutputDir(d.config))
 	}
 
 	// Trigger link verification after successful builds (low priority background task).
