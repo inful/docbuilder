@@ -19,6 +19,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
 	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
@@ -701,7 +702,7 @@ func handleCreateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if composeErr != nil {
 		return toolErr("write the frontmatter", composeErr)
 	}
-	if writeErr := os.WriteFile(abs, full, 0o600); writeErr != nil { // #nosec G304
+	if writeErr := foundation.WriteFileAtomic(abs, full, 0o600); writeErr != nil { // #nosec G304
 		return toolErr("write file", writeErr)
 	}
 
@@ -782,7 +783,7 @@ func handleUpdateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	}
 
 	full := frontmatter.Join(newFM, []byte(newBody), len(newFM) > 0, style)
-	if writeErr := os.WriteFile(abs, full, 0o600); writeErr != nil { // #nosec G304,G703 -- path resolved + contained inside docsDir via resolveInDocs
+	if writeErr := foundation.WriteFileAtomic(abs, full, 0o600); writeErr != nil { // #nosec G304,G703 -- path resolved + contained inside docsDir via resolveInDocs
 		return toolErr("write file", writeErr)
 	}
 
