@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/markdown"
@@ -38,15 +39,10 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 
 		// Sort links by line number in reverse order to maintain line offsets
 		// (updating from bottom to top preserves line numbers)
-		sortedLinks := make([]LinkReference, len(linkRefs))
-		copy(sortedLinks, linkRefs)
-		for i := range sortedLinks {
-			for j := i + 1; j < len(sortedLinks); j++ {
-				if sortedLinks[i].LineNumber < sortedLinks[j].LineNumber {
-					sortedLinks[i], sortedLinks[j] = sortedLinks[j], sortedLinks[i]
-				}
-			}
-		}
+		sortedLinks := slices.Clone(linkRefs)
+		slices.SortStableFunc(sortedLinks, func(a, b LinkReference) int {
+			return b.LineNumber - a.LineNumber
+		})
 
 		// Apply updates to each link
 		for _, link := range sortedLinks {
