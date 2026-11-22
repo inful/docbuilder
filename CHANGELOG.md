@@ -46,6 +46,12 @@ commits; pin to a SHA for reproducibility per the README.
   reader `**package manager**` and the fences of the code blocks. The
   index now holds the text of the page.
 
+- **A field filter on a hyphenated value finds the page again.**
+  `categories:how-to` asked the index for a field named `to`, which
+  does not exist, so the query found nothing at all. The value of a
+  field filter is now read as one term, so the filter means what the
+  reader wrote.
+
 ## [0.31.0] - 2026-11-22
 
 ### Added

@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2026-11-22T00:00:00Z
-fingerprint: d9864ac511016339f968cd3b5d8a685c63c459a172d292f1c323861fa91a5117
+fingerprint: d749c4d4df0fcbe433cbdf96aafac84eaf4c36709aca38e4a9b9ab0ac4abfd9f
 lastmod: "2026-11-22"
 tags:
   - search
@@ -140,6 +140,10 @@ down.
 | `tags:adr` | The term has to be in the tags of the page. |
 | `categories:how-to` | The term has to be in the category of the page. |
 | `kuber*` | The words that start with it. |
+
+A field filter takes one term. A term with a hyphen in it - a category
+like `how-to` - is read as one term too: the filter holds the whole
+value, not the part before the hyphen.
 
 The operators are the words of the index, so they are written in upper
 case: a lower case "and" is a word the pages have to hold.

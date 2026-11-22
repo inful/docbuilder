@@ -316,7 +316,7 @@ func strictMatch(query string) string {
 	if query == "" {
 		return ""
 	}
-	return withTrailingPrefix(query)
+	return withTrailingPrefix(quoteFieldValues(query))
 }
 
 // withTrailingPrefix adds the prefix wildcard to the last term of the
@@ -351,6 +351,74 @@ func withTrailingPrefix(query string) string {
 		return query
 	}
 	return query[:wordEnd] + "*" + query[wordEnd:]
+}
+
+// quoteFieldValues quotes the value of a field filter when the value
+// holds a character the index would read as syntax.
+//
+// "categories:how-to" asks for the category "how-to", but the index
+// reads the hyphen as the end of the field name: it looks for a field
+// named "to" and finds none, so the query finds nothing at all. The
+// value is quoted, so it means what the reader wrote: 'categories:"how-to"'.
+func quoteFieldValues(query string) string {
+	var out strings.Builder
+	runes := []rune(query)
+	for i := 0; i < len(runes); {
+		// A field filter is a name, a colon and a value.
+		nameEnd := i
+		for nameEnd < len(runes) && isNameRune(runes[nameEnd]) {
+			nameEnd++
+		}
+		if nameEnd == i || nameEnd >= len(runes) || runes[nameEnd] != ':' {
+			// Not a field filter. Copy the rune and move on.
+			out.WriteRune(runes[i])
+			i++
+			continue
+		}
+
+		// The name of the field, then the colon.
+		out.WriteString(string(runes[i:nameEnd]))
+		out.WriteRune(':')
+		i = nameEnd + 1
+
+		// The value of the field runs to the next space.
+		valueEnd := i
+		for valueEnd < len(runes) && !unicode.IsSpace(runes[valueEnd]) {
+			valueEnd++
+		}
+		value := string(runes[i:valueEnd])
+		i = valueEnd
+
+		// A value that is already quoted is left alone, and so is one
+		// the index reads as it is: a plain word.
+		if value == "" || value[0] == '"' || isPlainWord(value) {
+			out.WriteString(value)
+			continue
+		}
+
+		// The value is quoted. A quote inside it is doubled, the way
+		// the index reads it.
+		out.WriteByte('"')
+		out.WriteString(strings.ReplaceAll(value, `"`, `""`))
+		out.WriteByte('"')
+	}
+	return out.String()
+}
+
+// isNameRune reports whether the rune can be part of a field name.
+func isNameRune(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
+}
+
+// isPlainWord reports whether the value is a word the index reads as
+// it is: letters, digits and the underscore.
+func isPlainWord(value string) bool {
+	for _, r := range value {
+		if !isNameRune(r) {
+			return false
+		}
+	}
+	return value != ""
 }
 
 // buildMatch turns a user query into an FTS5 match expression.
