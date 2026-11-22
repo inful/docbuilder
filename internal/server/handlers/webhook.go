@@ -195,16 +195,29 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 	}
 }
 
-// validateWebhookSignature validates webhook signature if configured.
-// Returns nil if validation passes or is not configured, error otherwise.
+// validateWebhookSignature validates the webhook signature.
+//
+// It fails closed: when the signature cannot be checked — no webhook config,
+// an unknown forge, no secret, or no forge client — the request is rejected
+// rather than accepted. An endpoint that cannot verify a request must not
+// trigger a build.
 func (h *WebhookHandlers) validateWebhookSignature(forgeName, signatureHeader string, body []byte, r *http.Request) error {
 	if h.webhookConfig == nil {
-		return nil
+		return errors.ValidationError("webhook signature validation is not configured").
+			WithContext("forge", forgeName).
+			Build()
 	}
 
 	whCfg, ok := h.webhookConfig[forgeName]
-	if !ok || whCfg == nil || whCfg.Secret == "" {
-		return nil
+	if !ok || whCfg == nil {
+		return errors.ValidationError("webhook signature validation is not configured").
+			WithContext("forge", forgeName).
+			Build()
+	}
+	if whCfg.Secret == "" {
+		return errors.ValidationError("webhook secret is not configured").
+			WithContext("forge", forgeName).
+			Build()
 	}
 
 	signature := r.Header.Get(signatureHeader)
@@ -215,7 +228,9 @@ func (h *WebhookHandlers) validateWebhookSignature(forgeName, signatureHeader st
 
 	client, ok := h.forgeClients[forgeName]
 	if !ok || client == nil {
-		return nil
+		return errors.ValidationError("webhook signature validation is not configured").
+			WithContext("forge", forgeName).
+			Build()
 	}
 
 	if !client.ValidateWebhook(body, signature, whCfg.Secret) {

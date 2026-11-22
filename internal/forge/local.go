@@ -67,8 +67,10 @@ func (c *LocalClient) CheckDocumentation(ctx context.Context, repo *Repository) 
 	return nil
 }
 
+// ValidateWebhook always rejects: the local forge has no webhook secret to
+// compare against, so a signature cannot be verified.
 func (c *LocalClient) ValidateWebhook(payload []byte, signature string, secret string) bool {
-	return true
+	return false
 }
 
 func (c *LocalClient) ParseWebhookEvent(payload []byte, event string) (*WebhookEvent, error) {
