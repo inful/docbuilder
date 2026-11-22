@@ -121,7 +121,6 @@ func TestDefaultBuildService_Run_SkipGating(t *testing.T) {
 				Repositories: []config.Repository{{Name: "test", URL: "https://example.com/test.git"}},
 			},
 			OutputDir: t.TempDir(),
-			Options:   BuildOptions{SkipIfUnchanged: true},
 		})
 
 		if result.Skipped {
@@ -139,7 +138,6 @@ func TestDefaultBuildService_Run_SkipGating(t *testing.T) {
 				Repositories: []config.Repository{{Name: "test", URL: "https://example.com/test.git"}},
 			},
 			OutputDir: t.TempDir(),
-			Options:   BuildOptions{SkipIfUnchanged: false},
 		})
 
 		if result.Skipped {

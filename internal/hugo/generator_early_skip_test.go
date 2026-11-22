@@ -49,8 +49,12 @@ func TestGenerateFullSite_EarlySkip_DoesNotFinalizeStaging(t *testing.T) {
 
 	// Prepare config early so we can seed a realistic build-report.json.
 	cfg := &config.Config{
-		Hugo:   config.HugoConfig{Title: "Test", BaseURL: "/"},
-		Build:  config.BuildConfig{CloneStrategy: config.CloneStrategyAuto, RenderMode: config.RenderModeNever},
+		Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"},
+		Build: config.BuildConfig{
+			CloneStrategy:   config.CloneStrategyAuto,
+			RenderMode:      config.RenderModeNever,
+			SkipIfUnchanged: true,
+		},
 		Output: config.OutputConfig{},
 	}
 

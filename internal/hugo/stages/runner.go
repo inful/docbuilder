@@ -57,7 +57,7 @@ func RunStages(ctx context.Context, bs *models.BuildState, stages []models.Stage
 		}
 
 		if st.Name == models.StageCloneRepos && bs.Git.AllReposUnchanged {
-			if bs.Generator != nil && bs.Generator.ExistingSiteValidForSkip() {
+			if bs.Generator != nil && bs.Generator.SkipIfUnchanged() && bs.Generator.ExistingSiteValidForSkip() {
 				slog.Info("Early build exit: no repository HEAD changes and existing site valid; skipping remaining stages")
 				bs.Report.SkipReason = "no_changes"
 				bs.Report.DeriveOutcome()

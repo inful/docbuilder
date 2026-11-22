@@ -38,6 +38,9 @@ type BuildConfig struct {
 	// hardResetOnDivergeSpecified is set internally during load when the YAML explicitly sets hard_reset_on_diverge.
 	// This lets defaults apply (true) only when user omitted the field entirely.
 	hardResetOnDivergeSpecified bool `yaml:"-"`
+	// skipIfUnchangedSpecified is set internally during load when the YAML explicitly sets skip_if_unchanged.
+	// This lets the daemon default apply (true) only when user omitted the field entirely.
+	skipIfUnchangedSpecified bool `yaml:"-"`
 }
 
 // UnmarshalYAML is a custom unmarshal to detect if detect_deletions was explicitly set by user.
@@ -61,6 +64,9 @@ func (b *BuildConfig) UnmarshalYAML(unmarshal func(any) error) error {
 		}
 		if _, ok := m["hard_reset_on_diverge"]; ok {
 			b.hardResetOnDivergeSpecified = true
+		}
+		if _, ok := m["skip_if_unchanged"]; ok {
+			b.skipIfUnchangedSpecified = true
 		}
 	}
 	return nil

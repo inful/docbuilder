@@ -12,6 +12,7 @@ import (
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
+	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
 // newTestRepo creates a git repository with one markdown file and returns
@@ -75,9 +76,7 @@ func TestBuild_PersistsPerRepoState(t *testing.T) {
 	req := BuildRequest{
 		Config:       cfg,
 		OutputDir:    out,
-		SkipState:    sm,
 		StateManager: sm,
-		Options:      BuildOptions{SkipIfUnchanged: true},
 	}
 	res, err := svc.Run(t.Context(), req)
 	if err != nil {
@@ -99,7 +98,10 @@ func TestBuild_PersistsPerRepoState(t *testing.T) {
 	}
 }
 
-// The second build of an unchanged repository must be skipped.
+// The second build of an unchanged repository must be skipped. The
+// pipeline can only tell that nothing moved when the clone it updates is
+// the one the last build used, so the test uses the persistent workspace
+// the daemon uses.
 func TestBuild_SkipsUnchangedRepository(t *testing.T) {
 	out := t.TempDir()
 	repoDir := newTestRepo(t)
@@ -107,8 +109,12 @@ func TestBuild_SkipsUnchangedRepository(t *testing.T) {
 	cfg := &appcfg.Config{
 		Output: appcfg.OutputConfig{Directory: out, Clean: true},
 		Build: appcfg.BuildConfig{
-			WorkspaceDir:  filepath.Join(out, "ws"),
-			CloneStrategy: appcfg.CloneStrategyFresh,
+			// The workspace holds the clone. It must live outside the
+			// output directory: that one is cleaned on every build.
+			WorkspaceDir: filepath.Join(t.TempDir(), "ws"),
+			// The daemon updates the clone it used last time; that is what
+			// lets the pipeline see that nothing moved.
+			CloneStrategy: appcfg.CloneStrategyUpdate,
 			// "always" runs Hugo, so the site is rendered and the next
 			// build can be skipped. "auto" renders nothing.
 			RenderMode:      appcfg.RenderModeAlways,
@@ -125,13 +131,13 @@ func TestBuild_SkipsUnchangedRepository(t *testing.T) {
 	}
 	sm := state.NewServiceAdapter(svcResult.Unwrap())
 
-	svc := NewBuildService()
+	svc := NewBuildService().WithWorkspaceFactory(func() *workspace.Manager {
+		return workspace.NewPersistentManager(cfg.Build.WorkspaceDir, "working")
+	})
 	req := BuildRequest{
 		Config:       cfg,
 		OutputDir:    out,
-		SkipState:    sm,
 		StateManager: sm,
-		Options:      BuildOptions{SkipIfUnchanged: true},
 	}
 
 	first, err := svc.Run(t.Context(), req)

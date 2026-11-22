@@ -24,6 +24,7 @@ type Generator interface {
 	CopyContentFilesWithState(ctx context.Context, docFiles []docs.DocFile, bs *BuildState) error
 	Observer() BuildObserver
 	ExistingSiteValidForSkip() bool
+	SkipIfUnchanged() bool
 	Renderer() Renderer
 }
 

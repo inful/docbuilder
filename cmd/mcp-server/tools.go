@@ -90,7 +90,7 @@ func toolLintDocs() mcp.Tool {
 			"Use lint_fix to apply fixes. Each issue carries a `fix` field with a concrete remediation "+
 			"hint — surface it verbatim when reporting issues to the user, especially for rules "+
 			"that lint_fix does not auto-fix (body-h1, tag-count, cross-mode-category)."),
-		mcp.WithString("path", mcp.Description("Path to lint (file or directory). Defaults to the configured docs dir.")),
+		mcp.WithString("path", mcp.Description("Path to lint (file or directory), inside the configured docs dir. Defaults to the configured docs dir.")),
 		mcp.WithBoolean("quiet", mcp.Description("Suppress warnings, only return errors.")),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
@@ -123,8 +123,8 @@ func toolCreateFromTemplate() mcp.Tool {
 func toolLintFix() mcp.Tool {
 	return mcp.NewTool("lint_fix",
 		mcp.WithDescription("Run the lint fixer on a file or directory. Will rename files, rewrite links, "+
-			"and update frontmatter fingerprints where applicable."),
-		mcp.WithString("path", mcp.Description("Path to fix (file or directory). Defaults to the configured docs dir.")),
+			"and update frontmatter fingerprints where applicable. Path must be inside the configured docs directory."),
+		mcp.WithString("path", mcp.Description("Path to fix (file or directory), inside the configured docs dir. Defaults to the configured docs dir.")),
 		mcp.WithBoolean("dry_run", mcp.Description("If true, show what would change without writing.")),
 		mcp.WithBoolean("confirm", mcp.Required(), mcp.Description("Must be true.")),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -373,9 +373,9 @@ func handleCreateFromTemplate(ctx context.Context, req mcp.CallToolRequest) (*mc
 
 func handleLintDocs(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	state := stateFromContext(ctx)
-	path := req.GetString("path", "")
-	if path == "" {
-		path = state.docsDir
+	path, err := lintPath(state, req)
+	if err != nil {
+		return toolErr("lint", err)
 	}
 	quiet := req.GetBool("quiet", false)
 
@@ -388,14 +388,25 @@ func handleLintDocs(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	return lintResultToJSON(result)
 }
 
+// lintPath returns the path the linter works on. It stays inside the docs
+// directory: the fixer renames and rewrites files, so it must never be
+// pointed at another directory on the machine.
+func lintPath(state *serverState, req mcp.CallToolRequest) (string, error) {
+	requested := req.GetString("path", "")
+	if requested == "" {
+		return state.docsDir, nil
+	}
+	return resolveInDocs(state.docsDir, requested)
+}
+
 func handleLintFix(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	state := stateFromContext(ctx)
 	if !req.GetBool("confirm", false) {
 		return toolErrMsg("confirm must be true to apply fixes")
 	}
-	path := req.GetString("path", "")
-	if path == "" {
-		path = state.docsDir
+	path, err := lintPath(state, req)
+	if err != nil {
+		return toolErr("fix", err)
 	}
 	dryRun := req.GetBool("dry_run", false)
 
