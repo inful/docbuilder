@@ -243,12 +243,43 @@ func (d *Daemon) initStateStack(cfg *config.Config) error {
 	d.state.eventEmitter = NewEventEmitter(eventStore, d.state.buildProjection)
 	d.state.eventEmitter.daemon = d // Wire back reference for hooks
 
+	// Prune the event log before rebuilding the projection: the projection
+	// replays every stored event, so an unbounded log means an unbounded
+	// startup.
+	d.pruneEventStore()
+
 	// Rebuild projection from existing events. Non-fatal: a corrupt log
 	// leaves the projection empty rather than failing daemon startup.
 	if rebuildErr := d.state.buildProjection.Rebuild(context.Background()); rebuildErr != nil {
 		slog.Warn("Failed to rebuild build history projection", logfields.Error(rebuildErr))
 	}
 	return nil
+}
+
+// pruneEventStore removes the build events older than the configured
+// retention window.
+func (d *Daemon) pruneEventStore() {
+	if d.state.eventStore == nil || d.config == nil || d.config.Daemon == nil {
+		return
+	}
+	retention := strings.TrimSpace(d.config.Daemon.Storage.EventRetention)
+	if retention == "" || retention == "0" {
+		return
+	}
+	window, err := time.ParseDuration(retention)
+	if err != nil || window <= 0 {
+		slog.Warn("Invalid daemon.storage.event_retention, keeping all events",
+			"event_retention", retention, logfields.Error(err))
+		return
+	}
+	removed, err := d.state.eventStore.Prune(context.Background(), time.Now().Add(-window))
+	if err != nil {
+		slog.Warn("Failed to prune old build events", logfields.Error(err))
+		return
+	}
+	if removed > 0 {
+		slog.Info("Pruned old build events", "removed", removed, "retention", retention)
+	}
 }
 
 // initLiveReload constructs the SSE-based live reload hub. Only invoked

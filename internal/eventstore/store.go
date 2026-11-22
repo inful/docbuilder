@@ -16,6 +16,10 @@ type Store interface {
 	// GetRange retrieves events within a time range.
 	GetRange(ctx context.Context, start, end time.Time) ([]Event, error)
 
+	// Prune deletes the events older than the given time and returns how
+	// many were removed. Without it the log grows without bound.
+	Prune(ctx context.Context, olderThan time.Time) (int64, error)
+
 	// Close closes the store and releases resources.
 	Close() error
 }

@@ -195,6 +195,10 @@ type StorageConfig struct {
 	StateFile    string `yaml:"state_file"`     // Path to state file
 	RepoCacheDir string `yaml:"repo_cache_dir"` // Directory for cached repositories
 	OutputDir    string `yaml:"output_dir"`     // Output directory for generated site
+	// EventRetention is how long build events are kept in the event store.
+	// "0" keeps everything; otherwise the store prunes events older than
+	// this duration, so the log cannot grow without bound.
+	EventRetention string `yaml:"event_retention,omitempty"`
 }
 
 // FilteringConfig represents repository filtering configuration, including required paths, ignore files, and name patterns.

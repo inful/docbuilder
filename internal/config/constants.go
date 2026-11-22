@@ -11,4 +11,8 @@ const (
 	// The admin API has no password, so it must not be reachable from the
 	// network by accident.
 	defaultAdminBind = "127.0.0.1"
+
+	// defaultEventRetention is how long build events are kept in the event
+	// store. Without it the event log grows without bound.
+	defaultEventRetention = "720h" // 30 days
 )

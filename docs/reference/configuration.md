@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 627b008add1e15b6221c34aabcced7ff9ba76c4328e7d38439015013e0de21e7
-lastmod: "2026-11-21"
+fingerprint: 06f23be9441185e9dc1fcfb3f99f274275dc40256c2a4fc29bec3570e7d0d631
+lastmod: "2026-11-22"
 tags:
   - configuration
   - yaml
@@ -346,6 +346,7 @@ Semantics:
 |-------|------|---------|-------------|
 | output_dir | string | ./site | Output directory (must match `output.directory`). |
 | repo_cache_dir | string | - | Persistent repository cache directory. Holds the daemon state file (`daemon-state.json`). |
+| event_retention | string | 720h | How long build events are kept in the event store (`events.db`). `0` keeps every event. |
 
 If `daemon-state.json` cannot be read, the daemon quarantines it as `daemon-state.json.corrupt-<timestamp>` and starts with empty state rather than failing.
 
@@ -362,6 +363,7 @@ daemon:
     build_on_discovery: true  # Default: enqueue builds for discovered repositories
   storage:
     repo_cache_dir: "./daemon-data/repos"
+    event_retention: "720h"         # Keep build events for 30 days
 ```
 
 ## Versioning Section

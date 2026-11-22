@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: f942f1be4dfe641817ce04de1e642973744bbccf55c46125dc182c62cb72ef88
+fingerprint: 2fef75506f45051af7d00359c79696daa5a67d6bbd36a40709d14cbc6eabc294
 lastmod: "2026-11-22"
 tags:
   - components
