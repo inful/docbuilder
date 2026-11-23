@@ -149,7 +149,14 @@ func checkoutAndGetRefs(repository *git.Repository, wt *git.Worktree, branch str
 				WithContext("branch", branch).
 				Build()
 		}
-		localRef, _ = repository.Reference(localBranchRef, true)
+		var refErr error
+		localRef, refErr = repository.Reference(localBranchRef, true)
+		if refErr != nil {
+			return nil, nil, GitError("failed to read the branch that was checked out").
+				WithCause(refErr).
+				WithContext("branch", branch).
+				Build()
+		}
 	} else {
 		if err = wt.Checkout(&git.CheckoutOptions{Branch: localBranchRef, Force: true}); err != nil {
 			return nil, nil, GitError("failed to checkout existing branch").
@@ -186,10 +193,14 @@ func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, re
 				WithCause(err).
 				Build()
 		}
+		from := "unknown"
+		if currentHead != nil {
+			from = currentHead.Hash().String()[:8]
+		}
 		if currentHead != nil && currentHead.Hash() == remoteRef.Hash() {
 			slog.Info("Repository already up-to-date", logfields.Name(repo.Name), slog.String("branch", branch), slog.String("commit", remoteRef.Hash().String()[:8]))
 		} else {
-			slog.Info("Fast-forwarded repository", logfields.Name(repo.Name), slog.String("branch", branch), slog.String("from", currentHead.Hash().String()[:8]), slog.String("to", remoteRef.Hash().String()[:8]))
+			slog.Info("Fast-forwarded repository", logfields.Name(repo.Name), slog.String("branch", branch), slog.String("from", from), slog.String("to", remoteRef.Hash().String()[:8]))
 		}
 		return nil
 	}

@@ -21,6 +21,11 @@ func (c *Client) pruneNonDocTopLevel(repoPath string, repo appcfg.Repository) er
 		}
 		p = strings.TrimPrefix(p, "./")
 		p = strings.TrimPrefix(p, "/")
+		if p == "" || p == "." {
+			// The documentation is at the root of the repository: nothing
+			// may be pruned, or the clone is wiped.
+			return nil
+		}
 		parts := strings.Split(p, "/")
 		if len(parts) > 0 && parts[0] != "" {
 			docRoots[parts[0]] = struct{}{}
