@@ -447,7 +447,6 @@ func handleLintFix(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	// lint.Fixer and lint.NewFixer don't accept context.Context. The fix
 	// runs are local file operations that complete quickly, so using
 	// context.Background() internally is acceptable here.
-	//nolint:contextcheck // lint fixer is local-only and short-lived; context.Background() is appropriate
 	fixer := lint.NewFixer(lint.NewLinter(&lint.Config{Yes: true, Excludes: lintExcludes(state.cfg)}), dryRun, false).WithAutoConfirm(true)
 	//nolint:contextcheck // same rationale as above
 	fixResult, err := fixer.Fix(path)
@@ -714,7 +713,7 @@ func handleCreateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 
 	out := map[string]any{"path": abs, "wrote": true}
 	if lintAfter {
-		//nolint:contextcheck // lint fixer uses context.Background() internally; fix is local
+		//nolint:contextcheck // the lint fixer is local and short-lived
 		result := runLintFixOn(abs)
 		out["lint_result"] = result
 		// The fixer may have renamed the file: the path the caller holds
@@ -801,7 +800,7 @@ func handleUpdateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 
 	out := map[string]any{"path": abs, "wrote": true, "merge_strategy": strategy}
 	if req.GetBool("lint_after", false) {
-		//nolint:contextcheck // lint fixer uses context.Background() internally; fix is local
+		//nolint:contextcheck // the lint fixer is local and short-lived
 		result := runLintFixOn(abs)
 		out["lint_result"] = result
 		// The fixer may have renamed the file: the path the caller holds

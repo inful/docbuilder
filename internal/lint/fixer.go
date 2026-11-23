@@ -25,7 +25,6 @@ type Fixer struct {
 	linter      *Linter
 	dryRun      bool
 	force       bool
-	gitAware    bool
 	autoConfirm bool // Skip confirmation prompts (for CI/automated use)
 	nowFn       func() time.Time
 
@@ -52,7 +51,6 @@ func NewFixer(linter *Linter, dryRun, force bool) *Fixer {
 		linter:      linter,
 		dryRun:      dryRun,
 		force:       force,
-		gitAware:    isGitRepository("."),
 		autoConfirm: false,
 		nowFn:       time.Now,
 	}
