@@ -279,6 +279,7 @@ type fakeConfigHashState struct{ last string }
 
 func (f fakeConfigHashState) SetRepoDocumentCount(string, int)   {}
 func (f fakeConfigHashState) SetRepoDocFilesHash(string, string) {}
+func (f fakeConfigHashState) SetRepoLastError(string, string)    {}
 func (f fakeConfigHashState) GetLastConfigHash() string          { return f.last }
 
 func TestExistingSiteValidForSkip_RejectsConfigHashMismatchInState(t *testing.T) {

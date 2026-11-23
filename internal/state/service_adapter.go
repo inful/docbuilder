@@ -176,6 +176,22 @@ func (a *ServiceAdapter) SetRepoDocFilesHash(url, hash string) {
 
 // --- RepositoryMetadataReader interface ---
 
+// SetRepoLastError stores the last error of a repository.
+//
+// The error was never written: a repository whose clone failed showed
+// "ok" on the status page, because the counter of the last successful
+// build was not zero.
+func (a *ServiceAdapter) SetRepoLastError(url string, message string) {
+	if url == "" {
+		return
+	}
+	ctx := context.Background()
+	store := a.service.GetRepositoryStore()
+	if res := store.SetLastError(ctx, url, message); res.IsErr() {
+		logStateError("the last error of the repository", res.UnwrapErr())
+	}
+}
+
 // GetRepoDocumentCount returns the number of documents a repository had
 // in the last build.
 func (a *ServiceAdapter) GetRepoDocumentCount(url string) int {

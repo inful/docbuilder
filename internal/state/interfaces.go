@@ -33,6 +33,10 @@ type RepositoryStore interface {
 	// SetLastCommit records the commit a repository was built at.
 	SetLastCommit(ctx context.Context, url, commit string, updatedAt time.Time) foundation.Result[struct{}, error]
 
+	// SetLastError records the last error of a repository. An empty
+	// message takes the error away.
+	SetLastError(ctx context.Context, url, message string) foundation.Result[struct{}, error]
+
 	// SetLastDiscovery records the time of the last discovery of a repository.
 	SetLastDiscovery(ctx context.Context, url string, at time.Time) foundation.Result[struct{}, error]
 

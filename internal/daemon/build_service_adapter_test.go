@@ -102,6 +102,7 @@ func (*fakeDaemonStateManager) EnsureRepositoryState(string, string, string) {
 }
 func (*fakeDaemonStateManager) SetRepoDocumentCount(string, int)   {}
 func (*fakeDaemonStateManager) SetRepoDocFilesHash(string, string) {}
+func (*fakeDaemonStateManager) SetRepoLastError(string, string)    {}
 
 func (*fakeDaemonStateManager) IncrementRepoBuild(string, bool) {}
 func (*fakeDaemonStateManager) RecordDiscovery(string, int)     {}
