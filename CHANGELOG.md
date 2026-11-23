@@ -9,6 +9,17 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.9] - 2026-11-23
+
+### Fixed
+- **The index of a section is not generated when a document has the
+  name of the section.** The document and the index publish at the same
+  page, and Hugo keeps one of them without a word: the index was a file
+  in the content tree that published nowhere, and it could take the page
+  of the document away. The document is the page of the section now, and
+  the build says so.
+
+
 ## [0.35.8] - 2026-11-23
 
 ### Fixed
