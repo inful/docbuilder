@@ -129,6 +129,15 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 		if namespaceForges {
 			// Use Namespace as alias for forge_type (preferred)
 			if repo.Namespace != "" {
+				// The namespace is a directory of the content path: a
+				// namespace with a path in it would write the pages
+				// outside of the content directory.
+				if repo.Namespace == "." || repo.Namespace == ".." || strings.ContainsAny(repo.Namespace, `/\`) {
+					return nil, errors.WrapError(derrors.ErrDocsPathNotFound, errors.CategoryDocs, "the namespace of the repository is not a single path segment").
+						WithContext("repository", repoName).
+						WithContext("namespace", repo.Namespace).
+						Build()
+				}
 				forgeNS = repo.Namespace
 			} else if ft, ok := repo.Tags["forge_type"]; ok && ft != "" {
 				forgeNS = ft
