@@ -87,6 +87,7 @@ func (*fakeDaemonStateManager) SetLastConfigHash(string)          {}
 func (*fakeDaemonStateManager) GetLastReportChecksum() string     { return "" }
 func (*fakeDaemonStateManager) SetLastReportChecksum(string)      {}
 func (*fakeDaemonStateManager) GetRepoDocFilesHash(string) string { return "" }
+func (*fakeDaemonStateManager) GetRepoDocumentCount(string) int   { return 0 }
 func (*fakeDaemonStateManager) GetLastGlobalDocFilesHash() string { return "" }
 func (*fakeDaemonStateManager) SetLastGlobalDocFilesHash(string)  {}
 func (f *fakeDaemonStateManager) SetRepoLastCommit(url, _, _, commit string) {

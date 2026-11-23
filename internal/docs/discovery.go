@@ -152,18 +152,6 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 			d.docFiles = append(d.docFiles, files...)
 		}
 
-		// A repository whose configured documentation paths are all gone
-		// is a repository that lost its documentation - it was renamed,
-		// or it was moved. The build has to fail: the site that is
-		// published now would have the pages of that repository missing,
-		// and it would replace the site that still has them.
-		if len(repo.Paths) > 0 && missingDocsPaths == len(repo.Paths) {
-			return nil, errors.WrapError(derrors.ErrDocsPathNotFound, errors.CategoryDocs, "the documentation path of the repository does not exist").
-				WithContext("repository", repoName).
-				WithContext("paths", repo.Paths).
-				Build()
-		}
-
 		filesAfterRepo := len(d.docFiles)
 		if filesAfterRepo == filesBeforeRepo {
 			reason := "no_docs_files_found"

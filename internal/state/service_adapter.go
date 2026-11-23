@@ -175,6 +175,25 @@ func (a *ServiceAdapter) SetRepoDocFilesHash(url, hash string) {
 
 // --- RepositoryMetadataReader interface ---
 
+// GetRepoDocumentCount returns the number of documents a repository had
+// in the last build.
+func (a *ServiceAdapter) GetRepoDocumentCount(url string) int {
+	if url == "" {
+		return 0
+	}
+	ctx := context.Background()
+	store := a.service.GetRepositoryStore()
+	result := store.GetByURL(ctx, url)
+	if result.IsErr() {
+		return 0
+	}
+	opt := result.Unwrap()
+	if opt.IsNone() {
+		return 0
+	}
+	return opt.Unwrap().DocumentCount
+}
+
 // GetRepoDocFilesHash returns the document files hash for a repository.
 func (a *ServiceAdapter) GetRepoDocFilesHash(url string) string {
 	if url == "" {
