@@ -14,7 +14,10 @@ import (
 
 // DaemonCmd implements the 'daemon' command.
 type DaemonCmd struct {
-	DataDir string `short:"d" default:"./daemon-data" help:"Data directory for daemon state"`
+	// DataDir is the directory the daemon keeps its state in: the state
+	// file, the event log and the remote-head cache. Empty means the
+	// configuration decides (daemon.storage.state_dir).
+	DataDir string `short:"d" default:"" help:"Data directory for daemon state (default: the state_dir of the configuration)"`
 }
 
 func (d *DaemonCmd) Run(_ *Global, root *CLI) error {
@@ -31,11 +34,23 @@ func (d *DaemonCmd) Run(_ *Global, root *CLI) error {
 	for _, w := range result.Warnings {
 		slog.Warn(w)
 	}
-	return RunDaemon(cfg, d.DataDir, root.Config)
+	applyDataDir(cfg, d.DataDir)
+	return RunDaemon(cfg, root.Config)
 }
 
-func RunDaemon(cfg *config.Config, dataDir, configPath string) error {
-	slog.Info("Starting daemon mode", "data_dir", dataDir)
+// applyDataDir lets the --data-dir flag decide where the daemon keeps its
+// state. The flag wins over the configuration: the operator asked for it on
+// the command line. An empty flag leaves the configuration alone, so a
+// configuration with a state_dir keeps it.
+func applyDataDir(cfg *config.Config, dataDir string) {
+	if dataDir == "" || cfg == nil || cfg.Daemon == nil {
+		return
+	}
+	cfg.Daemon.Storage.StateDir = dataDir
+}
+
+func RunDaemon(cfg *config.Config, configPath string) error {
+	slog.Info("Starting daemon mode", "data_dir", cfg.Daemon.Storage.StateDir)
 
 	// Create main context for the daemon
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

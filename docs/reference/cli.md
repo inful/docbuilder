@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 65a83b5d7dcf28cbd348a58bc125a2376276f5a62e7f0892f80cb9a672d5a228
-lastmod: "2026-11-19"
+fingerprint: aaf585282fbb7ebda153e4f0167076d861ab67893e76528eed319e364a982fc4
+lastmod: "2026-11-23"
 tags:
   - cli
   - commands
@@ -285,7 +285,7 @@ docbuilder daemon [flags]
 
 | Flag | Description |
 |------|-------------|
-| `-d, --data-dir DIR` | Data directory for daemon state (default: `./daemon-data`) |
+| `-d, --data-dir DIR` | Data directory for daemon state (default: the `state_dir` of the configuration, `./daemon-data`) |
 
 ## Preview Command
 
