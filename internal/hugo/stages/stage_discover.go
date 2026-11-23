@@ -97,6 +97,16 @@ func persistDiscoveredDocsToState(bs *models.BuildState, docFiles []docs.DocFile
 	previousCount, _ := sm.(interface {
 		GetRepoDocumentCount(url string) int
 	})
+	// The repositories that have no file at all are part of the list:
+	// the loop walks the files of the repositories, and a repository
+	// that lost its documentation has none.
+	for i := range bs.Git.Repositories {
+		repo := &bs.Git.Repositories[i]
+		if _, known := pathsByRepo[repo.Name]; !known {
+			pathsByRepo[repo.Name] = nil
+		}
+	}
+
 	for repoName, paths := range pathsByRepo {
 		sort.Strings(paths)
 		h := sha256.New()

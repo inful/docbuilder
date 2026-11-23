@@ -706,7 +706,12 @@ func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 func (d *Daemon) Stop(ctx context.Context) error {
 	d.lifecycle.mu.Lock()
 	currentStatus := d.GetStatus()
-	if currentStatus == StatusStopped || currentStatus == StatusStopping {
+	// The status is "stopping" when the main loop has ended, and the
+	// teardown has not run yet: the loop ends when the context is
+	// canceled, and the caller stops the daemon right after. Returning
+	// here skipped the whole teardown: the state file was not written
+	// and the ports stayed bound.
+	if currentStatus == StatusStopped {
 		d.lifecycle.mu.Unlock()
 		return nil
 	}
