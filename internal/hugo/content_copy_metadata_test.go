@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
@@ -24,7 +25,9 @@ func TestBuildRepositoryMetadataHoldsTheVersionedRepositories(t *testing.T) {
 	}
 
 	g := NewGenerator(cfg, t.TempDir())
-	bs := models.NewBuildState(g, nil, models.NewBuildReport(context.Background(), 0, 0))
+	bs := models.NewBuildState(g, []docs.DocFile{
+		{Repository: "repo-v1.0", Name: "page", Extension: ".md", Forge: "github"},
+	}, models.NewBuildReport(context.Background(), 0, 0))
 	bs.Git.Repositories = []config.Repository{{
 		Name:   "repo-v1.0",
 		URL:    "https://example.com/repo.git",
@@ -39,6 +42,8 @@ func TestBuildRepositoryMetadataHoldsTheVersionedRepositories(t *testing.T) {
 	if !ok {
 		t.Fatalf("the versioned repository is missing from the metadata: %+v", metadata)
 	}
+	// The forge is the one the discovery gave: the content path of the
+	// generated index has to be the one of the pages.
 	if info.Forge != "github" {
 		t.Fatalf("the forge of the versioned repository is %q", info.Forge)
 	}
