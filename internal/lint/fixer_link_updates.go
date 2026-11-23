@@ -189,23 +189,61 @@ func (f *Fixer) updateLinkTarget(link LinkReference, oldPath, newPath string) st
 		}
 	}
 
-	// Fallback: keep legacy behavior (filename-only replacement).
+	// Fallback: the name of the file is replaced in the last segment of
+	// the path of the link.
 	//
-	// The name of the file is replaced with and without its extension: a
-	// link that points at the root of the repository has no extension
-	// ("/Guide Setup"), and the name of the file has one
-	// ("Guide Setup.md").
+	// The replacement of the first occurrence of the name anywhere in
+	// the target changed the directory of the link ("../old/old.md")
+	// and the query of the link ("old.md?x=old").
 	newFilename := filepath.Base(newPath)
 	oldFilename := filepath.Base(oldPath)
-	newTarget := strings.Replace(link.Target, oldFilename, newFilename, 1)
-	if newTarget == link.Target {
+
+	newPathPart := replaceLastSegment(link.Target, oldFilename, newFilename)
+	if newPathPart == link.Target {
+		// The link points at the root of the repository: it has no
+		// extension ("/Guide Setup"), and the name of the file has one
+		// ("Guide Setup.md").
 		newBase := strings.TrimSuffix(oldFilename, filepath.Ext(oldFilename))
-		newTarget = strings.Replace(link.Target, newBase, strings.TrimSuffix(newFilename, filepath.Ext(newFilename)), 1)
+		newPathPart = replaceLastSegment(link.Target, newBase, strings.TrimSuffix(newFilename, filepath.Ext(newFilename)))
 	}
-	if link.Fragment != "" {
-		newTarget += link.Fragment
+
+	return newPathPart + link.Fragment
+}
+
+// replaceLastSegment replaces the last segment of a path when it is
+// the old name of the file.
+//
+// The segment is the file name of the link: the directories above it and
+// the query of the link are not the name of the file, and they must not
+// be changed.
+func replaceLastSegment(path, oldName, newName string) string {
+	slash := strings.LastIndex(path, "/")
+	prefix := ""
+	segment := path
+	if slash != -1 {
+		prefix = path[:slash+1]
+		segment = path[slash+1:]
 	}
-	return newTarget
+
+	idx := indexFold(segment, oldName)
+	if idx == -1 {
+		return path
+	}
+	return prefix + segment[:idx] + newName + segment[idx+len(oldName):]
+}
+
+// indexFold returns the index of the first occurrence of a substring in
+// a string, ignoring the case.
+func indexFold(s, substr string) int {
+	if substr == "" {
+		return 0
+	}
+	for i := 0; i+len(substr) <= len(s); i++ {
+		if strings.EqualFold(s[i:i+len(substr)], substr) {
+			return i
+		}
+	}
+	return -1
 }
 
 // rollbackLinkUpdates restores files from their backups.
