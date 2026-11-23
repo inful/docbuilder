@@ -505,9 +505,11 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		// let the next build skip - the site is behind the workspace,
 		// and only a build that runs publishes it.
 		// The build failed: a repository is missing from the site that
-		// was published, and the report in the site says so.
-		report.Outcome = models.OutcomeFailed
-		report.DeriveOutcome()
+		// was published, and the report in the site says so. The
+		// outcome is set after the derivation: the derivation looks at
+		// the errors and the warnings, and a clone failure that is not
+		// recognized is only a warning.
+		failedOutcome(report)
 		report.Finish()
 		if err := report.Persist(g.outputDir); err != nil {
 			slog.Warn("Failed to persist build report", "error", err)
@@ -589,4 +591,18 @@ func (g *Generator) WithRenderer(r models.Renderer) *Generator {
 func (g *Generator) WithDocumentReady(fn func(content []byte, path string)) *Generator {
 	g.onDocumentReady = fn
 	return g
+}
+
+// failedOutcome records that a build failed.
+//
+// The derivation of the outcome looks at the errors and the warnings: a
+// clone failure that the classification does not recognize is only a
+// warning, and the report of the build said warning although a
+// repository was missing from the site that was published.
+func failedOutcome(report *models.BuildReport) {
+	if report == nil {
+		return
+	}
+	report.DeriveOutcome()
+	report.Outcome = models.OutcomeFailed
 }
