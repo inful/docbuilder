@@ -2,6 +2,7 @@ package lint
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,10 +47,12 @@ func (f *Fixer) findLinksToFile(targetPath, rootPath string) ([]LinkReference, e
 			continue
 		}
 
-		// Find links in this file
+		// Find links in this file. A file that cannot be read does not
+		// stop the scan: the links of the other files are still found.
 		fileLinks, err := f.findLinksInFile(path, absTarget)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan %s: %w", path, err)
+			slog.Warn("Failed to scan a file for links", "file", path, "error", err)
+			continue
 		}
 
 		links = append(links, fileLinks...)

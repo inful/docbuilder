@@ -603,8 +603,12 @@ func (d *Daemon) Start(ctx context.Context) error {
 	// Run main daemon loop (blocks until stopped)
 	d.mainLoop(runCtx)
 
-	// When mainLoop exits, we're stopping
-	d.lifecycle.status.Store(StatusStopping)
+	// When the loop ends, the daemon is stopping. The daemon may have
+	// been stopped while the loop was ending, and the status of a
+	// stopped daemon stays "stopped".
+	if d.GetStatus() == StatusRunning {
+		d.lifecycle.status.Store(StatusStopping)
+	}
 	slog.Info("Main loop exited, daemon stopping")
 
 	return nil
@@ -743,15 +747,15 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		runCancel()
 	}
 
-	// Signal stop to all components (only if not already closed)
-	if stopChan != nil {
-		select {
-		case <-stopChan:
-			// Channel already closed
-		default:
+	// Signal stop to all components. The close happens once: two
+	// concurrent stops - the signal handler and the deferred shutdown -
+	// closed the channel twice, and the second close stopped the daemon
+	// with a panic.
+	d.lifecycle.stopOnce.Do(func() {
+		if stopChan != nil {
 			close(stopChan)
 		}
-	}
+	})
 
 	// Stop components in reverse order
 	if bus != nil {

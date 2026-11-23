@@ -2,7 +2,9 @@ package forge
 
 import (
 	"context"
+	"log/slog"
 	"strconv"
+	"strings"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -181,9 +183,20 @@ func (r *Repository) ToConfigRepository(auth *config.AuthConfig) config.Reposito
 		url = r.SSHURL
 	}
 
+	name := r.Name
+	// The name of a repository is the name of the directory the clone
+	// goes to: a name with a path in it would put the clone outside of
+	// the cache, and the removal of the old clone would delete it.
+	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, `/\`) {
+		slog.Warn("Skipping a repository with a name that is not a single path segment",
+			slog.String("name", r.Name),
+			slog.String("full_name", r.FullName))
+		return config.Repository{}
+	}
+
 	return config.Repository{
 		URL:    url,
-		Name:   r.Name,
+		Name:   name,
 		Branch: r.DefaultBranch,
 		Auth:   auth,
 		Paths:  r.docPaths(),

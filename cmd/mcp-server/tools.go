@@ -766,6 +766,12 @@ func handleUpdateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	var newFM []byte
 	switch strategy {
 	case "replace":
+		if len(patch) == 0 {
+			// The replacement of nothing would delete the whole
+			// frontmatter: the title, the uid and the aliases of the
+			// page would be gone.
+			return toolErrMsg("the frontmatter patch is empty; a replace would delete the frontmatter of the page")
+		}
 		yaml, yerr := marshalYAML(patch, writeStyle)
 		if yerr != nil {
 			return toolErr("write the frontmatter", yerr)

@@ -48,6 +48,15 @@ func (h *BuildHandlers) handleTriggerAction(w http.ResponseWriter, r *http.Reque
 
 	if h.daemon != nil {
 		jobID := triggerFunc()
+		if jobID == "" {
+			// Nothing was queued: the daemon is not running, or the
+			// event did not reach the orchestration bus. The answer said
+			// that a build was triggered, and no build ever ran.
+			err := errors.DaemonError("the build was not queued").
+				Build()
+			h.errorAdapter.WriteErrorResponse(w, r, err)
+			return
+		}
 		response := &responses.TriggerResponse{
 			Status: "triggered",
 			JobID:  jobID,

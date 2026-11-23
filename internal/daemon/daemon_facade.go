@@ -26,6 +26,7 @@ type lifecycleStack struct {
 	status      atomic.Value // holds Status
 	startTime   time.Time
 	stopChan    chan struct{}
+	stopOnce    sync.Once
 	runCancel   context.CancelFunc
 	workers     WorkerGroup
 	lastBuild   *time.Time
