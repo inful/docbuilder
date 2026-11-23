@@ -9,6 +9,18 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.6] - 2026-11-23
+
+### Fixed
+- **The build says when the Hugo is too old for the theme.** The theme
+  asks the site for the direction of its language, and Hugo added that
+  field in v0.158.0. An older Hugo fails on the first page with
+  "can't evaluate field Direction in type *langs.Language", and the
+  build says nothing about the version that is too old. The build
+  checks the version of the Hugo binary before it renders and refuses
+  the build with a clear message.
+
+
 ## [0.35.5] - 2026-11-23
 
 ### Fixed
