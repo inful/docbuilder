@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // maxTemplateResponseBytes is the maximum size of template page responses (5MB).
@@ -128,14 +130,14 @@ func fetchHTML(ctx context.Context, pageURL string, client *http.Client) ([]byte
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fetch %s: %w", pageURL, err)
+		return nil, fmt.Errorf("fetch %s: %w", logfields.RedactURL(pageURL), err)
 	}
 	defer func() {
 		_ = resp.Body.Close()
 	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("fetch %s: HTTP %d", pageURL, resp.StatusCode)
+		return nil, fmt.Errorf("fetch %s: HTTP %d", logfields.RedactURL(pageURL), resp.StatusCode)
 	}
 
 	limited := io.LimitReader(resp.Body, maxTemplateResponseBytes+1)

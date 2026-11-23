@@ -352,8 +352,10 @@ func (d *Daemon) initLinkVerifier(cfg *config.Config) {
 	}
 	d.optional.linkVerifier = linkVerifier
 	slog.Info("Link verification service initialized",
-		"nats_url", cfg.Daemon.LinkVerification.NATSURL,
-		"kv_bucket", cfg.Daemon.LinkVerification.KVBucket)
+		// The URL of NATS holds a password, and the link verification
+		// redacts it in its own logs.
+		logfields.URL(cfg.Daemon.LinkVerification.NATSURL),
+		slog.String("kv_bucket", cfg.Daemon.LinkVerification.KVBucket))
 }
 
 // initDiscoveryRunner builds the runner that owns the daemon's
@@ -494,8 +496,8 @@ func (d *Daemon) initOutboundDispatcher(ragCfg *config.RagabastConfig) error {
 	}
 	d.optional.outboundDispatcher = dispatcher
 	slog.Info("Outbound dispatcher initialized (ragabast)",
-		slog.String("ragabast_base_url", ragCfg.BaseURL),
-		slog.String("ingest_url", ragCfg.IngestURL),
+		logfields.URL(ragCfg.BaseURL),
+		logfields.URL(ragCfg.IngestURL),
 		slog.Bool("auth_enabled", token != ""))
 	return nil
 }

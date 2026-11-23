@@ -22,6 +22,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
 )
 
@@ -656,20 +657,20 @@ func fetchSiteJSON(ctx context.Context, state *serverState, path string, values 
 	}
 	resp, err := siteClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("the published site at %s is not reachable: %w", state.baseURL, err)
+		return "", fmt.Errorf("the published site at %s is not reachable: %w", logfields.RedactURL(state.baseURL), err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxSiteResponse+1))
 	if err != nil {
-		return "", fmt.Errorf("read the answer of %s: %w", endpoint, err)
+		return "", fmt.Errorf("read the answer of %s: %w", logfields.RedactURL(endpoint), err)
 	}
 	if len(body) > maxSiteResponse {
-		return "", fmt.Errorf("the answer of %s is larger than %d bytes; narrow the request", endpoint, maxSiteResponse)
+		return "", fmt.Errorf("the answer of %s is larger than %d bytes; narrow the request", logfields.RedactURL(endpoint), maxSiteResponse)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("the published site at %s answered %s: %s",
-			state.baseURL, resp.Status, strings.TrimSpace(string(body)))
+			logfields.RedactURL(state.baseURL), resp.Status, strings.TrimSpace(string(body)))
 	}
 	return string(body), nil
 }

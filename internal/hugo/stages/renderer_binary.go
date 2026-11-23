@@ -209,6 +209,13 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 
 	if err != nil {
 		logHugoExecutionError(outStr, errStr)
+
+		// The message of the failure carries what Hugo said: the
+		// operator sees "exit status 1" otherwise, and the reason is
+		// only in the log of the daemon.
+		if summary := hugoFailureSummary(outStr, errStr); summary != "" {
+			return fmt.Errorf("%w: %w: %s", herrors.ErrHugoExecutionFailed, err, summary)
+		}
 		return fmt.Errorf("%w: %w", herrors.ErrHugoExecutionFailed, err)
 	}
 
@@ -313,4 +320,42 @@ func (n *NoopRenderer) Execute(_ context.Context, rootDir string) error {
 		return fmt.Errorf("create public dir: %w", err)
 	}
 	return nil
+}
+
+// hugoFailureSummary returns what Hugo said about the failure.
+//
+// The errors of Hugo come first: they say what is wrong with the
+// content. The other lines are the last ones of the output, so that a
+// failure without an error line is not a bare "exit status 1".
+func hugoFailureSummary(outStr, errStr string) string {
+	lines := strings.Split(strings.TrimSpace(errStr+outStr), "\n")
+
+	var errors []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "ERROR") || strings.HasPrefix(trimmed, "Error") ||
+			strings.HasPrefix(trimmed, "error") {
+			errors = append(errors, trimmed)
+		}
+	}
+
+	if len(errors) > 0 {
+		if len(errors) > 5 {
+			errors = errors[:5]
+		}
+		return strings.Join(errors, "; ")
+	}
+
+	// No error line: the last lines of the output are the best guess.
+	var last []string
+	for i := len(lines) - 1; i >= 0 && len(last) < 5; i-- {
+		trimmed := strings.TrimSpace(lines[i])
+		if trimmed != "" {
+			last = append([]string{trimmed}, last...)
+		}
+	}
+	return strings.Join(last, "; ")
 }

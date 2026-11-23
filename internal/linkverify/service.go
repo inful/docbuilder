@@ -77,8 +77,6 @@ type VerificationService struct {
 	httpClient *http.Client
 	mu         sync.Mutex
 	running    bool
-	wg         sync.WaitGroup
-	semaphore  chan struct{} // Limit concurrent verifications
 	rateDelay  time.Duration // Delay between link verification requests
 }
 
@@ -141,7 +139,6 @@ func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationSe
 		cfg:        cfg,
 		nats:       natsClient,
 		httpClient: httpClient,
-		semaphore:  make(chan struct{}, maxConcurrent(cfg.MaxConcurrent)),
 		rateDelay:  rateDelay,
 	}, nil
 }
@@ -217,7 +214,6 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 	close(linkQueue)
 	linkWorkers.Wait()
 
-	s.wg.Wait()
 	if canceled {
 		return ctx.Err()
 	}

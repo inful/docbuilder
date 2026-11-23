@@ -78,7 +78,14 @@ func (f *Fixer) markdownFilesOf(root string) ([]string, error) {
 		if info.IsDir() || !IsDocFile(path) {
 			return nil
 		}
-		files = append(files, path)
+		// The paths are absolute: the files of the tree and the files
+		// of the issues do not have the same shape, and the comparison
+		// of the two never matched.
+		abs, absErr := filepath.Abs(path)
+		if absErr != nil {
+			abs = path
+		}
+		files = append(files, abs)
 		return nil
 	})
 	if err != nil {

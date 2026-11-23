@@ -35,7 +35,19 @@ func fileExists(path string) bool {
 // pathsEqualCaseInsensitive compares two paths case-insensitively.
 // This is important for filesystems like macOS (HFS+/APFS) and Windows (NTFS)
 // that are case-insensitive but case-preserving.
+//
+// The paths are made absolute first: they come from different places,
+// and one of them is relative to the working directory of the process.
+// The comparison of a relative path with an absolute one never matches,
+// and the link to a file that was renamed was never healed.
 func pathsEqualCaseInsensitive(path1, path2 string) bool {
+	if abs, err := filepath.Abs(path1); err == nil {
+		path1 = abs
+	}
+	if abs, err := filepath.Abs(path2); err == nil {
+		path2 = abs
+	}
+
 	// Normalize paths to forward slashes for consistent comparison
 	path1 = filepath.ToSlash(filepath.Clean(path1))
 	path2 = filepath.ToSlash(filepath.Clean(path2))

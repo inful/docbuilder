@@ -327,5 +327,7 @@ func logSkippedFetch(name, branch, remoteSHA string) {
 	slog.Info("Repository unchanged, skipping fetch",
 		logfields.Name(name),
 		slog.String("branch", branch),
-		slog.String("commit", remoteSHA[:8]))
+		// The hash can be empty: the remote has no branch of that
+		// name, and the slice of it stopped the daemon.
+		slog.String("commit", shortSHA(remoteSHA)))
 }

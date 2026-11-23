@@ -40,7 +40,6 @@ func TestVerifyLinkWithoutDocFileDoesNotPanic(t *testing.T) {
 		cfg:        cfg,
 		nats:       nats,
 		httpClient: srv.Client(),
-		semaphore:  make(chan struct{}, 1),
 		rateDelay:  time.Millisecond,
 	}
 
@@ -50,8 +49,6 @@ func TestVerifyLinkWithoutDocFileDoesNotPanic(t *testing.T) {
 		Links:        []*Link{{URL: srv.URL + "/missing"}},
 	}
 
-	svc.semaphore <- struct{}{}
-	svc.wg.Add(1)
 	svc.verifyLink(context.Background(), page.Links[0], page)
 
 	// The same page with a document file still fills the source fields.

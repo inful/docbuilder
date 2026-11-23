@@ -9,6 +9,39 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.5] - 2026-11-23
+
+### Fixed
+- **The failure of Hugo says what Hugo said.** The operator saw "hugo
+  execution failed: exit status 1" and the reason was only in the log of
+  the daemon. The message carries the errors of Hugo now, and the
+  preview shows them on its error page.
+
+- **The paths of the files and of the links have the same shape.** The
+  files of the tree and the files of the issues do not have the same
+  shape: one of them is relative to the working directory of the
+  process and the other one is absolute. The comparison of the two never
+  matched: the links inside a renamed file were never rewritten, and the
+  broken links to a file that was renamed were never healed.
+
+- **The log of a skipped fetch survives an empty hash.** The remote has
+  no branch of that name, and the slice of the empty hash stopped the
+  daemon.
+
+- **The token of the address of the site stays out of the answers.** The
+  address of a private site can hold a token, and the error messages of
+  the server and of the template fetcher carried it as it is.
+
+- **The addresses of the daemon hold no credentials in the log.** The
+  URL of NATS holds a password, and the address of the ragabast can
+  hold credentials.
+
+- **The fallback of the rewrite touches the last segment of the link.**
+  The replacement of the first occurrence of the name of the file
+  anywhere in the target changed the directory of the link and the query
+  of the link.
+
+
 ## [0.35.4] - 2026-11-23
 
 ### Fixed
