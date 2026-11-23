@@ -197,7 +197,7 @@ func extractTitleFromBody(body []byte, filePath string) string {
 // inject a fixed clock if needed; defaults to time.Now.
 func (f *Fixer) now() time.Time {
 	if f.nowFn != nil {
-		return f.nowFn()
+		return f.nowFn().UTC()
 	}
-	return time.Now()
+	return time.Now().UTC()
 }
