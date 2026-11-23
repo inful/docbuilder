@@ -310,7 +310,11 @@ docbuilder build -c config.yaml --render-mode never
 1. If `build.render_mode` or `--render-mode` is `never` -> never run.
 2. If `build.render_mode` or `--render-mode` is `always` -> run.
 3. Else -> scaffold only.
-Hugo must be installed and on `PATH`. If the build fails, the scaffolded site remains available (warning is logged) so you can run `hugo` manually inside the output directory.
+Hugo must be installed and on `PATH`, and it must be **v0.158.0 or
+newer**: the Docsy theme asks the site for the direction of its
+language, and Hugo added that field in v0.158.0. The build checks the
+version before it renders and refuses the build with a clear message
+when the Hugo is too old. If the build fails, the scaffolded site remains available (warning is logged) so you can run `hugo` manually inside the output directory.
 
 ### Docsy Theme
 

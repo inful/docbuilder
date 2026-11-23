@@ -15,6 +15,15 @@ import (
 // TestVendoredDocsyAssetsMatchPinnedVersion enforces that.
 const DocsyVersion = "v0.18.1"
 
+// MinHugoVersion is the oldest Hugo the pinned Docsy theme works with.
+//
+// The theme asks the site for the direction of its language
+// (.Site.Language.Direction), and Hugo added that field in v0.158.0.
+// An older Hugo fails on the first page with "can't evaluate field
+// Direction in type *langs.Language", and the build says nothing about
+// the version that is too old.
+const MinHugoVersion = "0.158.0"
+
 // DocsyModulePath is the Hugo module path of the Docsy theme.
 const DocsyModulePath = "github.com/docsy/docsy/theme"
 

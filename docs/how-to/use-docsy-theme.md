@@ -6,8 +6,8 @@ categories:
   - how-to
 date: 2025-12-15T00:00:00Z
 description: The Docsy theme, and what the build does for you
-fingerprint: ae5554abdb2a23a37adcf8c52bd2f6920c24b76d75230f98c3b424792ad59bbd
-lastmod: "2026-11-22"
+fingerprint: 383d7743b3a782192843dd5cc46c200e53a3d80382db3255bc8728a8e12d349d
+lastmod: "2026-11-23"
 tags:
   - themes
   - docsy
@@ -22,6 +22,20 @@ page furniture a technical documentation site needs.
 
 There is nothing to configure to get it: the build imports the theme,
 writes the layout overrides, and ships the stylesheet.
+
+## The Hugo you need
+
+The theme asks the site for the direction of its language
+(`.Site.Language.Direction`), and Hugo added that field in **v0.158.0**.
+An older Hugo fails on the first page with:
+
+```
+can't evaluate field Direction in type *langs.Language
+```
+
+The build checks the version of the Hugo binary before it renders and
+refuses the build with that message, so the reason is not a template
+error in the middle of the Hugo output.
 
 ## What the build does for you
 

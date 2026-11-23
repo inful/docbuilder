@@ -8,10 +8,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/pipeline"
 )
 
 // Renderer abstracts how the final static site rendering step is performed after
@@ -136,6 +139,12 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 		return fmt.Errorf("%w: %w", herrors.ErrGoBinaryNotFound, err)
 	}
 	goDir := filepath.Dir(goPath)
+
+	// The Hugo of the operator has to be new enough for the theme.
+	if version := models.DetectHugoVersion(ctx); hugoVersionTooOld(version) {
+		return fmt.Errorf("%w: the hugo binary is v%s, and the Docsy theme %s needs v%s or newer: the theme uses the field .Site.Language.Direction, which the older Hugo does not have",
+			herrors.ErrHugoExecutionFailed, version, pipeline.DocsyVersion, pipeline.MinHugoVersion)
+	}
 
 	// Check staging directory exists before Hugo runs
 	stat, statErr := os.Stat(rootDir)
@@ -358,4 +367,49 @@ func hugoFailureSummary(outStr, errStr string) string {
 		}
 	}
 	return strings.Join(last, "; ")
+}
+
+// hugoVersionTooOld reports whether the Hugo of the operator is too old
+// for the pinned theme.
+//
+// The version is empty when the binary does not answer: the render
+// fails with a clear message in that case.
+func hugoVersionTooOld(version string) bool {
+	if version == "" {
+		return false
+	}
+	return compareVersions(version, pipeline.MinHugoVersion) < 0
+}
+
+// compareVersions compares two semantic versions ("0.158.0").
+//
+//nolint:unparam // the second version is the minimum of the theme, the first one is the version of the operator
+func compareVersions(a, b string) int {
+	partsA := versionParts(a)
+	partsB := versionParts(b)
+	for i := range partsA {
+		switch {
+		case partsA[i] < partsB[i]:
+			return -1
+		case partsA[i] > partsB[i]:
+			return 1
+		}
+	}
+	return 0
+}
+
+// versionParts splits a semantic version into its numbers.
+func versionParts(version string) [3]int {
+	var parts [3]int
+	for i, part := range strings.SplitN(version, ".", 3) {
+		if i > 2 {
+			break
+		}
+		number, err := strconv.Atoi(strings.TrimSpace(part))
+		if err != nil {
+			break
+		}
+		parts[i] = number
+	}
+	return parts
 }
