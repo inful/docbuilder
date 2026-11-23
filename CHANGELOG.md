@@ -9,6 +9,18 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.8] - 2026-11-23
+
+### Fixed
+- **The landing page of a repository is never empty.** The generated
+  index is written next to the documents it describes: the tree of the
+  documents decides the tree of the index, and not the metadata of a
+  repository name. Two repositories that share a name - the same name
+  on two forges - each get their own landing page. A landing page
+  without an index was rendered by Hugo as a bare section page: no
+  content, and no navigation at all.
+
+
 ## [0.35.7] - 2026-11-23
 
 ### Fixed

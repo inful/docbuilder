@@ -63,6 +63,16 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 	return []*Document{doc}, nil
 }
 
+// repositoryKey identifies a repository in the content tree.
+//
+// The name alone is not enough: two repositories can share a name, the
+// same name on two forges. The forge is part of the identity, because
+// the forge is a directory of the content path.
+type repositoryKey struct {
+	forge      string
+	repository string
+}
+
 // generateRepositoryIndex creates _index.md for repositories that don't have one.
 func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 	// Skip repository indexes entirely for single-repository builds
@@ -71,16 +81,17 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 	}
 
 	// Group documents by repository
-	repoFiles := make(map[string][]*Document)
+	repoFiles := make(map[repositoryKey][]*Document)
 	for _, doc := range ctx.Discovered {
 		if doc.Repository != "" {
-			repoFiles[doc.Repository] = append(repoFiles[doc.Repository], doc)
+			key := repositoryKey{forge: doc.Forge, repository: doc.Repository}
+			repoFiles[key] = append(repoFiles[key], doc)
 		}
 	}
 
 	var generated []*Document
 
-	for repo, repoDocs := range repoFiles {
+	for key, repoDocs := range repoFiles {
 		// Check if repository index already exists
 		hasIndex := false
 		for _, doc := range repoDocs {
@@ -92,19 +103,21 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 
 		if !hasIndex {
 			// Generate repository index
-			repoMeta := ctx.RepositoryMetadata[repo]
-			title := titleCase(repo)
-			description := fmt.Sprintf("Documentation for %s", repo)
+			title := titleCase(key.repository)
+			description := fmt.Sprintf("Documentation for %s", key.repository)
 
 			// Build the content path via the single source of truth
 			// (docs.HugoContentPath) so this stage agrees with the
-			// doc-copy stage on the case of every path component.
+			// doc-copy stage on the case of every path component. The
+			// forge is the one of the documents: the index belongs
+			// next to them, and the metadata of a name cannot say
+			// which of the repositories of that name it describes.
 			doc := &Document{
-				Path:       docs.HugoContentPath(repoMeta.Forge, repo, "", indexFileSuffix, markdownExtension, ctx.IsSingleRepo),
+				Path:       docs.HugoContentPath(key.forge, key.repository, "", indexFileSuffix, markdownExtension, ctx.IsSingleRepo),
 				IsIndex:    true,
 				Generated:  true,
-				Repository: repo,
-				Forge:      repoMeta.Forge,
+				Repository: key.repository,
+				Forge:      key.forge,
 				Section:    "",
 				Content:    indexContent(title, description),
 				FrontMatter: map[string]any{
@@ -123,34 +136,47 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 	return generated, nil
 }
 
+// sectionKey identifies a section in the content tree.
+//
+// The forge is part of the identity: the same repository name on two
+// forges has two trees, and a section of one is not a section of the
+// other.
+type sectionKey struct {
+	forge      string
+	repository string
+	section    string
+}
+
 // generateSectionIndex creates _index.md for sections that don't have one.
 // Ensures all intermediate directories in deep hierarchies get index files.
 func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 	// Collect all unique section paths (including intermediate directories)
-	allSections := make(map[string]bool)
+	allSections := make(map[sectionKey]bool)
 
 	for _, doc := range ctx.Discovered {
 		if doc.Section != "" {
-			section := filepath.Join(doc.Repository, doc.Section)
-
-			// Add this section and all parent sections
-			allSections[section] = true
+			key := sectionKey{forge: doc.Forge, repository: doc.Repository, section: doc.Section}
+			allSections[key] = true
 
 			// Add all intermediate parent directories
-			parts := strings.Split(section, string(filepath.Separator))
-			for i := 2; i < len(parts); i++ {
-				parentSection := filepath.Join(parts[:i]...)
-				allSections[parentSection] = true
+			parts := strings.Split(doc.Section, string(filepath.Separator))
+			for i := 1; i < len(parts); i++ {
+				parent := sectionKey{
+					forge:      doc.Forge,
+					repository: doc.Repository,
+					section:    strings.Join(parts[:i], string(filepath.Separator)),
+				}
+				allSections[parent] = true
 			}
 		}
 	}
 
 	// Check which sections already have indexes
-	existingIndexes := make(map[string]bool)
+	existingIndexes := make(map[sectionKey]bool)
 	for _, doc := range ctx.Discovered {
 		if doc.IsIndex && doc.Section != "" {
-			section := filepath.Join(doc.Repository, doc.Section)
-			existingIndexes[section] = true
+			key := sectionKey{forge: doc.Forge, repository: doc.Repository, section: doc.Section}
+			existingIndexes[key] = true
 		}
 	}
 
@@ -158,19 +184,14 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 
 	// Generate indexes for missing sections
 
-	for section := range allSections {
+	for key := range allSections {
 		// Skip if index already exists
-		if existingIndexes[section] {
+		if existingIndexes[key] {
 			continue
 		}
 
-		// Extract repository and section name
-		parts := strings.SplitN(section, string(filepath.Separator), 2)
-		if len(parts) != 2 {
-			continue // Skip malformed sections
-		}
-		repo := parts[0]
-		sectionName := parts[1]
+		repo := key.repository
+		sectionName := key.section
 
 		// Get repository metadata
 		repoMeta := ctx.RepositoryMetadata[repo]
@@ -181,14 +202,20 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 		title := filepath.Base(sectionName)
 		if isConfiguredDocsPath(sectionName, repoMeta.DocsPaths) {
 			title = repoMeta.Name // Use actual repository name from config
+			if title == "" {
+				title = repo
+			}
 		}
 		description := fmt.Sprintf("Documentation for %s", sectionName)
 
 		// Build section path via the single source of truth
 		// (docs.HugoContentPath) so this stage agrees with the doc-copy
 		// stage on the case of every path component. The helper handles
-		// the single-repo skip and the forge namespacing internally.
-		sectionPath := docs.HugoContentPath(repoMeta.Forge, repo, sectionName, indexFileSuffix, markdownExtension, ctx.IsSingleRepo)
+		// the single-repo skip and the forge namespacing internally. The
+		// forge is the one of the documents: the index belongs next to
+		// them, and the metadata of a name cannot say which of the
+		// repositories of that name it describes.
+		sectionPath := docs.HugoContentPath(key.forge, repo, sectionName, indexFileSuffix, markdownExtension, ctx.IsSingleRepo)
 
 		// Use a deterministic epoch date so reproducible builds don't churn
 		// the fingerprint across runs. Auto-generated section indexes are
@@ -200,7 +227,7 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 			IsIndex:    true,
 			Generated:  true,
 			Repository: repo,
-			Forge:      repoMeta.Forge,
+			Forge:      key.forge,
 			Section:    sectionName,
 			Content:    indexContent(title, description),
 			FrontMatter: map[string]any{
