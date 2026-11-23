@@ -9,6 +9,30 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.2] - 2026-11-23
+
+### Fixed
+- **The status page counts the builds.** The builds that ran and the ones
+  that failed were serialized and never filled: the page reported zero
+  of both while the daemon was building and failing.
+
+- **The preview reads no state.** The preview daemon has no state
+  manager, and the repositories were read from it: a request to
+  `/api/repositories` panicked.
+
+- **The time to live of the cache is read once.** It was parsed on every
+  lookup, and a value that does not parse left it at zero: every link
+  was checked again on every build, even though the cache was full.
+
+- **The backoff does not overflow.** The shift of the exponential
+  backoff was not capped: a shift of 63 overflows the duration, the
+  delay became negative, and the retry loop spun without a backoff.
+
+### Performance
+- The patterns of the headings and of the images are compiled once and
+  not for every document of every build.
+
+
 ## [0.35.1] - 2026-11-23
 
 ### Fixed
