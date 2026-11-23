@@ -70,8 +70,11 @@ func TestBuildDebouncer_MaxDelayForcesBuild(t *testing.T) {
 
 	var running atomic.Bool
 	debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
-		QuietWindow:       200 * time.Millisecond, // would postpone forever if requests keep coming
-		MaxDelay:          60 * time.Millisecond,
+		// The margins are wide: the test runs under the race detector,
+		// where a timer of 60 milliseconds is late often enough to
+		// fail the build of the project.
+		QuietWindow:       400 * time.Millisecond, // would postpone forever if requests keep coming
+		MaxDelay:          150 * time.Millisecond,
 		CheckBuildRunning: running.Load,
 		PollInterval:      10 * time.Millisecond,
 	})
@@ -89,7 +92,7 @@ func TestBuildDebouncer_MaxDelayForcesBuild(t *testing.T) {
 		t.Fatal("timed out waiting for debouncer ready")
 	}
 
-	deadline := time.Now().Add(150 * time.Millisecond)
+	deadline := time.Now().Add(300 * time.Millisecond)
 	for time.Now().Before(deadline) {
 		require.NoError(t, bus.Publish(context.Background(), events.BuildRequested{Reason: "test"}))
 		time.Sleep(10 * time.Millisecond)
@@ -98,7 +101,7 @@ func TestBuildDebouncer_MaxDelayForcesBuild(t *testing.T) {
 	select {
 	case got := <-buildNowCh:
 		require.Equal(t, "max_delay", got.DebounceCause)
-	case <-time.After(500 * time.Millisecond):
+	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for max-delay BuildNow")
 	}
 }

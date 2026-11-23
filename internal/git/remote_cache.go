@@ -134,8 +134,8 @@ func (c *Client) CheckRemoteChanged(cache *RemoteHeadCache, repo appcfg.Reposito
 	if cached.CommitSHA != currentSHA {
 		slog.Info("Remote HEAD changed",
 			logfields.Name(repo.Name),
-			slog.String("old", cached.CommitSHA[:8]),
-			slog.String("new", currentSHA[:8]))
+			slog.String("old", shortSHA(cached.CommitSHA)),
+			slog.String("new", shortSHA(currentSHA)))
 		return true, currentSHA, nil
 	}
 
@@ -260,4 +260,14 @@ func (c *RemoteHeadCache) load() error {
 
 func cacheKey(url, branch string) string {
 	return fmt.Sprintf("%s:%s", url, branch)
+}
+
+// shortSHA returns the first eight characters of a commit hash. The
+// hash of the cache can be short or empty, and a slice of it would
+// stop the daemon.
+func shortSHA(sha string) string {
+	if len(sha) > 8 {
+		return sha[:8]
+	}
+	return sha
 }

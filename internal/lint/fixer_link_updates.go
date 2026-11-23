@@ -178,7 +178,11 @@ func findLineByteRange(content []byte, lineNumber int) (int, int, bool) {
 func (f *Fixer) updateLinkTarget(link LinkReference, oldPath, newPath string) string {
 	originalTarget := link.Target + link.Fragment
 	resolved, resErr := resolveRelativePath(link.SourceFile, originalTarget)
-	if resErr == nil && pathsEqualCaseInsensitive(resolved, oldPath) {
+	// The path of the walk is relative and the resolved link is
+	// absolute: without the same shape the precise rewrite is skipped
+	// and the link keeps the old name.
+	absoluteOld, absErr := filepath.Abs(oldPath)
+	if resErr == nil && absErr == nil && pathsEqualCaseInsensitive(resolved, absoluteOld) {
 		updated, changed, err := computeUpdatedLinkTarget(link.SourceFile, originalTarget, oldPath, newPath)
 		if err == nil && changed {
 			return updated

@@ -794,17 +794,18 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		}
 	}
 
+	// Stop the workers before the event store and the index go: a
+	// worker may still be writing to them, and an event that is written
+	// after the close is lost from the build history.
+	if err := d.lifecycle.workers.StopAndWait(ctx); err != nil {
+		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(err))
+	}
+
 	// Close event store (Phase B)
 	if eventStore != nil {
 		if err := eventStore.Close(); err != nil {
 			slog.Error("Failed to close event store", logfields.Error(err))
 		}
-	}
-
-	// Stop the workers before the index goes: a worker may still be
-	// writing the index.
-	if err := d.lifecycle.workers.StopAndWait(ctx); err != nil {
-		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(err))
 	}
 
 	// Close the search index. The file handle on the state directory

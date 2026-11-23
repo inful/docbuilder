@@ -497,8 +497,11 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	// A repository that could not be cloned would take its pages out of
 	// the site. The site of the last build still has them, so it stays
 	// published and the build fails: the daemon retries, and the
-	// operator sees why.
-	if report.FailedRepositories > 0 && g.outputHasPublicIndex() {
+	// operator sees why. When there is no site yet, the build fails as
+	// well: a portal without one of its repositories is worse than no
+	// portal, and the daemon serves the page that says that the site is
+	// being prepared.
+	if report.FailedRepositories > 0 {
 		g.abortStaging()
 		// The report of the build is written, and it says that the
 		// build failed: the next build reads it to decide whether it

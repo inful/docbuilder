@@ -12,6 +12,7 @@ import (
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // DefaultVersionManager implements VersionManager using Git operations.
@@ -36,7 +37,7 @@ func (vm *DefaultVersionManager) DiscoverVersions(repoURL string, config *Versio
 
 // DiscoverVersionsWithAuth discovers available versions for a repository with authentication.
 func (vm *DefaultVersionManager) DiscoverVersionsWithAuth(repoURL string, config *VersionConfig, authConfig *appcfg.AuthConfig) (*VersionDiscoveryResult, error) {
-	slog.Info("Discovering versions for repository", "repo_url", repoURL, "strategy", config.Strategy)
+	slog.Info("Discovering versions for repository", logfields.URL(repoURL), slog.String("strategy", string(config.Strategy)))
 
 	// Get existing versions for comparison
 	vm.mu.RLock()
@@ -88,11 +89,11 @@ func (vm *DefaultVersionManager) DiscoverVersionsWithAuth(repoURL string, config
 	}
 
 	slog.Info("Version discovery completed",
-		"repo_url", repoURL,
-		"total_versions", len(versions),
-		"new", result.NewCount,
-		"updated", result.UpdatedCount,
-		"removed", result.RemovedCount)
+		logfields.URL(repoURL),
+		slog.Int("total_versions", len(versions)),
+		slog.Int("new", result.NewCount),
+		slog.Int("updated", result.UpdatedCount),
+		slog.Int("removed", result.RemovedCount))
 
 	return result, nil
 }
@@ -113,7 +114,7 @@ func (vm *DefaultVersionManager) UpdateVersions(repoURL string, versions []*Vers
 		}
 	}
 
-	slog.Debug("Updated versions for repository", "repo_url", repoURL, "count", len(versions))
+	slog.Debug("Updated versions for repository", logfields.URL(repoURL), slog.Int("count", len(versions)))
 	return nil
 }
 
@@ -169,7 +170,7 @@ func (vm *DefaultVersionManager) CleanupOldVersions(repoURL string, config *Vers
 
 	removedCount := originalCount - len(versions.Versions)
 	if removedCount > 0 {
-		slog.Info("Cleaned up old versions", "repo_url", repoURL, "removed", removedCount)
+		slog.Info("Cleaned up old versions", logfields.URL(repoURL), slog.Int("removed", removedCount))
 	}
 
 	return nil
