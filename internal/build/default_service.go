@@ -36,6 +36,17 @@ func NewBuildService() *DefaultBuildService {
 	}
 }
 
+// WithRecorder injects the recorder of the build.
+//
+// Without it every metric of the build went to the no-op recorder, and
+// the metrics of the build stayed at zero.
+func (s *DefaultBuildService) WithRecorder(recorder metrics.Recorder) *DefaultBuildService {
+	if recorder != nil {
+		s.recorder = recorder
+	}
+	return s
+}
+
 // WithWorkspaceFactory allows injecting a custom workspace factory (for testing).
 func (s *DefaultBuildService) WithWorkspaceFactory(factory func() *workspace.Manager) *DefaultBuildService {
 	s.workspaceFactory = factory
@@ -45,10 +56,13 @@ func (s *DefaultBuildService) WithWorkspaceFactory(factory func() *workspace.Man
 // newHugoGenerator constructs the canonical Hugo site generator. Centralized
 // here so both Run and RunDirect build it the same way; tests can substitute
 // behavior by reaching for hugo.Generator.WithRenderer(&stages.NoopRenderer{}).
-func newHugoGenerator(cfg *appcfg.Config, outputDir string, sm state.RepositoryMetadataWriter) *hugo.Generator {
+func newHugoGenerator(cfg *appcfg.Config, outputDir string, sm state.RepositoryMetadataWriter, recorder metrics.Recorder) *hugo.Generator {
 	gen := hugo.NewGenerator(cfg, outputDir)
 	if sm != nil {
 		gen = gen.WithStateManager(sm)
+	}
+	if recorder != nil {
+		gen = gen.SetRecorder(recorder)
 	}
 	return gen
 }
@@ -117,7 +131,7 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		req.Config.Build.CloneStrategy = appcfg.CloneStrategyUpdate
 	}
 
-	generator := newHugoGenerator(req.Config, req.OutputDir, req.StateManager)
+	generator := newHugoGenerator(req.Config, req.OutputDir, req.StateManager, s.recorder)
 	if req.OnDocumentReady != nil {
 		generator = generator.WithDocumentReady(req.OnDocumentReady)
 	}
@@ -189,7 +203,7 @@ func (s *DefaultBuildService) RunDirect(ctx context.Context, req DirectBuildRequ
 		return result, dberrors.ConfigError("config required").Build()
 	}
 
-	generator := newHugoGenerator(req.Config, req.OutputDir, nil)
+	generator := newHugoGenerator(req.Config, req.OutputDir, nil, s.recorder)
 	if req.KeepStaging {
 		generator = generator.WithKeepStaging(true)
 	}
