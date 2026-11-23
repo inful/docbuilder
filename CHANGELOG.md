@@ -9,6 +9,23 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.34.6] - 2026-11-23
+
+### Fixed
+- **The state of the daemon is written once per build.** Every setter
+  re-marshalled, wrote, synced and renamed the whole state file: a build
+  writes the state of every repository about five times, so a portal
+  with a hundred repositories rewrote the whole file hundreds of times
+  per build. The changes mark the store dirty now, and the file is
+  written when the state is saved: the daemon saves it after every
+  build, and the store writes it when it closes.
+
+- **The paths of the pages are not stored.** The state kept the Hugo
+  path of every page of every repository, and nothing read them back:
+  the file grew to megabytes and was rewritten on every change. The
+  hash of the files of the repository covers the change detection.
+
+
 ## [0.34.5] - 2026-11-23
 
 ### Fixed
