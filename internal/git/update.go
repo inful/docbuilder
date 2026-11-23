@@ -177,14 +177,28 @@ var deepenDepths = []int{16, 128, 1024}
 // syncWithRemote fast-forwards or hard-resets the local branch depending on divergence and build config.
 func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, repo appcfg.Repository, branch string, localRef, remoteRef *plumbing.Reference) error {
 	fastForwardPossible, ancestryErr := c.checkAncestry(repository, repo, branch, localRef.Hash(), remoteRef.Hash())
+	hardReset := c.buildCfg != nil && c.buildCfg.HardResetOnDiverge
 	if ancestryErr != nil {
 		// The history could not be read, so we cannot claim the branch
 		// diverged. Say what actually happened instead of guessing.
 		slog.Warn("could not determine ancestry", logfields.Name(repo.Name), slog.String("branch", branch), slog.String("error", ancestryErr.Error()))
-		return GitError("could not read the local history to compare it against the remote").
-			WithCause(ancestryErr).
-			WithContext("hint", "increase shallow_depth or enable hard_reset_on_diverge").
-			Build()
+		if !hardReset {
+			return GitError("could not read the local history to compare it against the remote").
+				WithCause(ancestryErr).
+				WithContext("hint", "increase shallow_depth or enable hard_reset_on_diverge").
+				Build()
+		}
+		// The operator asked for the local branch to be aligned to the
+		// remote (hard_reset_on_diverge, on by default). A history that
+		// cannot be read does not stop that: the branch is aligned to
+		// the remote, which is what the setting says.
+		slog.Warn("the history could not be read, hard resetting", logfields.Name(repo.Name), slog.String("branch", branch))
+		if err := wt.Reset(&git.ResetOptions{Commit: remoteRef.Hash(), Mode: git.HardReset}); err != nil {
+			return GitError("failed to reset for hard-reset").
+				WithCause(err).
+				Build()
+		}
+		return nil
 	}
 	if fastForwardPossible {
 		currentHead, _ := repository.Head()
@@ -204,7 +218,6 @@ func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, re
 		}
 		return nil
 	}
-	hardReset := c.buildCfg != nil && c.buildCfg.HardResetOnDiverge
 	if hardReset {
 		slog.Warn("diverged branch, hard resetting", logfields.Name(repo.Name), slog.String("branch", branch))
 		if err := wt.Reset(&git.ResetOptions{Commit: remoteRef.Hash(), Mode: git.HardReset}); err != nil {
