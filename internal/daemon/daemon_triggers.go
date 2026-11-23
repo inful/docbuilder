@@ -12,6 +12,11 @@ import (
 
 // TriggerDiscovery manually triggers repository discovery.
 func (d *Daemon) TriggerDiscovery() string {
+	// The preview daemon has no discovery: the trigger would dereference
+	// a nil runner and kill the process.
+	if d.discover.discoveryRunner == nil {
+		return ""
+	}
 	return d.discover.discoveryRunner.TriggerManual(func() bool { return d.GetStatus() == StatusRunning })
 }
 
