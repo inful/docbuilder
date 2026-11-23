@@ -82,7 +82,10 @@ func TestVerificationService_CheckExternalLink_ReportsServerErrors(t *testing.T)
 	}
 }
 
-func TestVerificationService_CheckExternalLink_TreatsTimeoutAsValid(t *testing.T) {
+// A link that did not answer is not known to be broken and it is not
+// known to be good. It is reported as an error, so it is checked again
+// later instead of being cached as valid for the whole time to live.
+func TestVerificationService_CheckExternalLink_ReportsATimeout(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(50 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
@@ -95,7 +98,10 @@ func TestVerificationService_CheckExternalLink_TreatsTimeoutAsValid(t *testing.T
 	svc := &VerificationService{httpClient: client}
 
 	status, err := svc.checkExternalLink(context.Background(), srv.URL+"/slow")
-	if err != nil {
-		t.Fatalf("expected no error, got %v (status %d)", err, status)
+	if err == nil {
+		t.Fatalf("expected an error for the link that timed out (status %d)", status)
+	}
+	if !isTimeoutError(err) {
+		t.Fatalf("expected a timeout, got %v", err)
 	}
 }

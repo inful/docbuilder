@@ -230,9 +230,14 @@ func (g *Generator) buildRepositoryMetadata(bs *models.BuildState) map[string]pi
 			DocsPaths: []string{"docs"},
 		}
 
-		// Get forge type from tags
-		if forgeType, ok := repo.Tags["forge_type"]; ok {
-			info.Forge = forgeType
+		// The forge of the repository: the namespace comes first, the tag
+		// is the fallback. The discovery reads them in the same order, or
+		// the pages and the generated index land in different trees.
+		info.Forge = repo.Namespace
+		if info.Forge == "" {
+			if forgeType, ok := repo.Tags["forge_type"]; ok {
+				info.Forge = forgeType
+			}
 		}
 
 		// Get docs base from paths (use first path if multiple)

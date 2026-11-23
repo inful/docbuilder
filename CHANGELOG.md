@@ -9,6 +9,33 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-11-23
+
+### Fixed
+- **The forge of a repository is the namespace,** and the tag is the
+  fallback. The metadata of the build and the discovery read them in
+  different orders, so the pages and the generated index of a repository
+  with a namespace landed in different trees.
+
+- **A build that did not publish is a failed build.** The report in the
+  site said warning although a repository was missing from it.
+
+- **The early skip sees a repository that was removed from the
+  configuration.** Its pages stayed published forever.
+
+- **The counters of the builds are raised.** The metric of the builds
+  stayed at 0 on a portal that had run thousands of them.
+
+- **A link that timed out is checked again later.** It was cached as
+  valid for the whole time to live and was never published as broken.
+
+- **The link verification runs in a worker** the daemon waits for, and
+  the verifier is closed after the workers stopped.
+
+- **The status page shows the state of the repositories.** Every
+  repository was shown as healthy, also the ones whose clone failed.
+
+
 ## [0.34.9] - 2026-11-23
 
 ### Fixed

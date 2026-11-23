@@ -25,6 +25,9 @@ func (d *Daemon) EmitBuildStarted(ctx context.Context, buildID string, meta even
 
 // EmitBuildCompleted implements BuildEventEmitter for the daemon.
 func (d *Daemon) EmitBuildCompleted(ctx context.Context, buildID string, duration time.Duration, artifacts map[string]string) error {
+	if d.serve.metrics != nil {
+		d.serve.metrics.IncrementCounter("build_completed_total")
+	}
 	if d.state.eventEmitter == nil {
 		return nil
 	}
@@ -33,6 +36,9 @@ func (d *Daemon) EmitBuildCompleted(ctx context.Context, buildID string, duratio
 
 // EmitBuildFailed implements BuildEventEmitter for the daemon.
 func (d *Daemon) EmitBuildFailed(ctx context.Context, buildID, stage, errorMsg string) error {
+	if d.serve.metrics != nil {
+		d.serve.metrics.IncrementCounter("build_failed_total")
+	}
 	if d.state.eventEmitter == nil {
 		return nil
 	}
@@ -74,7 +80,11 @@ func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, repor
 		}(),
 		"verifier_nil", d.optional.linkVerifier == nil)
 	if shouldVerify {
-		go d.verifyLinksAfterBuild(ctx, buildID)
+		// The verification runs in a worker: the daemon waits for it
+		// when it stops, and the verifier is closed after the workers.
+		d.goWorker("link_verification", func() {
+			d.verifyLinksAfterBuild(ctx, buildID)
+		})
 	}
 
 	return nil

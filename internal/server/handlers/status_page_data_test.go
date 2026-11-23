@@ -10,11 +10,13 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 )
 
 const testConfigVersion = "2.0"
 
 type fakeStatusProvider struct {
+	repoStatuses   []responses.RepositoryInfo
 	status         string
 	startTime      time.Time
 	activeJobs     int
@@ -41,6 +43,10 @@ func (f fakeStatusProvider) GetBuildProjection() *eventstore.BuildHistoryProject
 	return f.buildProj
 }
 func (f fakeStatusProvider) GetLastDiscovery() *time.Time { return f.lastDiscovery }
+func (f fakeStatusProvider) RepositoryStatuses() []responses.RepositoryInfo {
+	return f.repoStatuses
+}
+
 func (f fakeStatusProvider) GetDiscoveryResult() (*forge.DiscoveryResult, error) {
 	return f.discoveryRes, f.discoveryErr
 }
