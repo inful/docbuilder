@@ -2,6 +2,7 @@ package lint
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,6 +64,14 @@ func pathsEqualCaseInsensitive(path1, path2 string) bool {
 func resolveRelativePath(sourceFile, linkTarget, rootPath string) (string, error) {
 	// Remove any URL fragments (#section).
 	targetPath, _, _ := strings.Cut(linkTarget, "#")
+
+	// A link target is a URL: the space of a file name is written as
+	// %20. The file on disk has the space, so the target is decoded
+	// before it is looked for - otherwise every link to a file with a
+	// space in its name is a broken link, and the fixer cannot heal it.
+	if decoded, err := url.PathUnescape(targetPath); err == nil {
+		targetPath = decoded
+	}
 
 	var resolvedPath string
 
