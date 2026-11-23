@@ -190,9 +190,18 @@ func (f *Fixer) updateLinkTarget(link LinkReference, oldPath, newPath string) st
 	}
 
 	// Fallback: keep legacy behavior (filename-only replacement).
+	//
+	// The name of the file is replaced with and without its extension: a
+	// link that points at the root of the repository has no extension
+	// ("/Guide Setup"), and the name of the file has one
+	// ("Guide Setup.md").
 	newFilename := filepath.Base(newPath)
 	oldFilename := filepath.Base(oldPath)
 	newTarget := strings.Replace(link.Target, oldFilename, newFilename, 1)
+	if newTarget == link.Target {
+		newBase := strings.TrimSuffix(oldFilename, filepath.Ext(oldFilename))
+		newTarget = strings.Replace(link.Target, newBase, strings.TrimSuffix(newFilename, filepath.Ext(newFilename)), 1)
+	}
 	if link.Fragment != "" {
 		newTarget += link.Fragment
 	}

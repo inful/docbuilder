@@ -63,6 +63,11 @@ func (h *LiveReloadHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.metrics.SetGauge("livereload_clients", int64(clients))
 	}
 
+	// The client is removed when the connection ends, also when it ends
+	// before its first byte: an entry that stays in the map is walked by
+	// every broadcast.
+	defer h.removeClient(client.id)
+
 	// Initial comment / optional last hash event
 	bw := bufio.NewWriter(w)
 	if _, err := bw.WriteString(": connected\n\n"); err != nil {

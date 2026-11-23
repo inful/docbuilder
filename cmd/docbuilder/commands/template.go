@@ -88,6 +88,12 @@ func (t *TemplateNewCmd) Run(_ *Global, root *CLI) error {
 		return err
 	}
 
+	// The template has to come from the site the templates were
+	// discovered on: the page that names them could point anywhere.
+	if hostErr := templating.CheckTemplateHost(baseURL, selected.URL); hostErr != nil {
+		return hostErr
+	}
+
 	page, err := templating.FetchTemplatePage(context.Background(), selected.URL, client)
 	if err != nil {
 		return err

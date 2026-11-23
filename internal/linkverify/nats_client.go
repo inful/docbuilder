@@ -55,7 +55,7 @@ func NewNATSClient(cfg *config.LinkVerificationConfig) (*NATSClient, error) {
 	// Attempt initial connection (non-fatal if fails)
 	if err := client.connect(); err != nil {
 		slog.Warn("Initial NATS connection failed, will retry on first use",
-			"url", cfg.NATSURL,
+			"url", redactURL(cfg.NATSURL),
 			"error", err)
 		// Return client anyway - it will reconnect on first use
 	}
@@ -153,7 +153,7 @@ func (c *NATSClient) connectWithContext(ctx context.Context) error {
 	}
 
 	slog.Info("NATS client connected",
-		"url", c.cfg.NATSURL,
+		"url", redactURL(c.cfg.NATSURL),
 		"subject", c.subject,
 		"kv_bucket", c.kvBucket)
 

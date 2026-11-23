@@ -9,6 +9,43 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.34.9] - 2026-11-23
+
+### Fixed
+- **A template comes from the site it was discovered on.** The
+  discovery page names the templates, and the CLI and the TUI fetched
+  whatever it named: a site that lists a template of another host had
+  its body written into the documentation of the operator.
+
+- **A generated file stays in the docs directory.** The write checked
+  the path as it was written, and a directory of the docs that is a link
+  to another place took the file outside of it.
+
+- **A link to the root of the repository is rewritten.** A link that
+  points at the root has no extension ("/Guide Setup") and the name of
+  the file has one ("Guide Setup.md"): the link kept the old name of a
+  file that was renamed.
+
+- **The tree is walked once per run, not once per renamed file.**
+
+- **The daemon stops.** Stop returned at once when the status was
+  "stopping", and that is the status when the main loop ends: the
+  teardown never ran, the state file was not written and the ports
+  stayed bound.
+
+- **The guard of a repository that lost its documentation works.** It
+  walked the repositories that have files, and a repository that lost
+  all of them has none.
+
+- **The URL of NATS holds a password and stays out of the log.**
+
+- **A live reload client that breaks leaves no entry behind.**
+
+### Performance
+- The fixer collects the markdown files of the tree once per run: a run
+  that renames a hundred files walked the tree a hundred times.
+
+
 ## [0.34.8] - 2026-11-23
 
 ### Fixed

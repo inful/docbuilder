@@ -57,6 +57,27 @@ func WriteGeneratedFile(docsDir, relativePath, content string) (string, error) {
 		return "", errors.New("output path escapes docs directory")
 	}
 
+	// The links of the path are followed: a directory of the docs that
+	// is a link to another place would take the file outside of the
+	// docs directory.
+	resolvedDir, err := filepath.EvalSymlinks(filepath.Dir(fullPath))
+	if err != nil {
+		// The directory does not exist yet: the links of the parents are
+		// followed instead.
+		resolvedDir, err = resolveExistingDir(filepath.Dir(fullPath))
+		if err != nil {
+			return "", fmt.Errorf("resolve the output directory: %w", err)
+		}
+	}
+	resolvedDocs, err := filepath.EvalSymlinks(docsDir)
+	if err != nil {
+		resolvedDocs = docsDir
+	}
+	resolvedRel, err := filepath.Rel(resolvedDocs, filepath.Join(resolvedDir, filepath.Base(fullPath)))
+	if err != nil || strings.HasPrefix(resolvedRel, "..") {
+		return "", errors.New("output path escapes docs directory")
+	}
+
 	if err = os.MkdirAll(filepath.Dir(fullPath), 0o750); err != nil {
 		return "", fmt.Errorf("create output directory: %w", err)
 	}
@@ -79,4 +100,21 @@ func WriteGeneratedFile(docsDir, relativePath, content string) (string, error) {
 	}
 
 	return fullPath, nil
+}
+
+// resolveExistingDir resolves the links of the deepest directory of the
+// path that exists.
+func resolveExistingDir(path string) (string, error) {
+	current := path
+	for {
+		resolved, err := filepath.EvalSymlinks(current)
+		if err == nil {
+			return resolved, nil
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			return "", err
+		}
+		current = parent
+	}
 }
