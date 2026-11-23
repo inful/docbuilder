@@ -26,9 +26,39 @@ type Bus struct {
 	closeOnce sync.Once
 }
 
+// subscriber is one subscription of the bus.
+//
+// The lock of the subscriber serializes the delivery with the shutdown:
+// the channel of the subscriber is closed when it goes away, and a send
+// on a closed channel is a panic.
 type subscriber struct {
-	send  func(ctx context.Context, evt any) error
-	close func()
+	mu     sync.Mutex
+	closed bool
+	send   func(ctx context.Context, evt any) error
+	close  func()
+}
+
+// deliver hands the event to the subscriber. A subscriber that is gone
+// takes nothing.
+func (s *subscriber) deliver(ctx context.Context, evt any) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return nil
+	}
+	return s.send(ctx, evt)
+}
+
+// shutdown closes the channel of the subscriber. It waits for a
+// delivery that is in flight.
+func (s *subscriber) shutdown() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return
+	}
+	s.closed = true
+	s.close()
 }
 
 func NewBus() *Bus {
@@ -66,10 +96,14 @@ func Subscribe[T any](b *Bus, buffer int) (<-chan T, func()) {
 			defer b.mu.Unlock()
 
 			if typeSubs, ok := b.subs[eventType]; ok {
+				if sub, found := typeSubs[id]; found {
+					sub.shutdown()
+				}
 				delete(typeSubs, id)
 				if len(typeSubs) == 0 {
 					delete(b.subs, eventType)
 				}
+				return
 			}
 
 			closeChannel()
@@ -173,7 +207,7 @@ func (b *Bus) Publish(ctx context.Context, evt any) error {
 	b.mu.RUnlock()
 
 	for _, sub := range matched {
-		if err := sub.send(ctx, evt); err != nil {
+		if err := sub.deliver(ctx, evt); err != nil {
 			return err
 		}
 	}
@@ -202,7 +236,7 @@ func (b *Bus) Close() {
 		b.mu.Unlock()
 
 		for _, s := range toClose {
-			s.close()
+			s.shutdown()
 		}
 	})
 }
