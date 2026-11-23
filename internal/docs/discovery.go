@@ -432,14 +432,30 @@ func (d *Discovery) detectPathCollisions() error {
 	// Track Hugo path -> source file paths
 	seen := make(map[string][]string)
 
+	// The directories that have an index of their own. A README next to
+	// an index is a page of its own: the pipeline keeps its name, and
+	// the two of them are not the same page.
+	indexDirs := make(map[string]struct{})
+	for i := range d.docFiles {
+		file := &d.docFiles[i]
+		name := strings.ToLower(file.Name)
+		if name == "index" || name == "_index" {
+			indexDirs[filepath.Dir(file.GetHugoPath(d.isSingleRepo))] = struct{}{}
+		}
+	}
+
 	for i := range d.docFiles {
 		file := &d.docFiles[i]
 		hugoPath := file.GetHugoPath(d.isSingleRepo)
 		// The pipeline renames a README to _index, so two files that are
 		// written to different paths land on the same one: the check has
-		// to compare the path the file is published at.
+		// to compare the path the file is published at. A README whose
+		// directory has an index of its own keeps its name.
 		if strings.EqualFold(file.Name, "README") {
-			hugoPath = filepath.Join(filepath.Dir(hugoPath), "_index"+file.Extension)
+			dir := filepath.Dir(hugoPath)
+			if _, hasIndex := indexDirs[dir]; !hasIndex {
+				hugoPath = filepath.Join(dir, "_index"+file.Extension)
+			}
 		}
 		sourcePath := filepath.Join(file.Repository, file.RelativePath)
 		seen[hugoPath] = append(seen[hugoPath], sourcePath)

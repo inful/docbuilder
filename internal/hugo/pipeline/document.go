@@ -27,21 +27,25 @@ type Document struct {
 	HadFrontMatter bool
 
 	// Metadata for transforms to use (read-only during transform phase)
-	Path            string         // Hugo content path (e.g., "repo-name/section/file.md")
-	IsIndex         bool           // True if this is _index.md or README.md
-	Repository      string         // Source repository name
-	Forge           string         // Optional forge namespace
-	Section         string         // Documentation section
-	IsSingleRepo    bool           // True if this is a single-repository build (skip repo namespace in links)
-	IsPreviewMode   bool           // True if running in preview/daemon mode
-	VSCodeEditLinks bool           // True if VS Code edit links are enabled (via --vscode flag)
-	EditURLBase     string         // Base URL override for edit links (from --edit-url-base flag)
-	SourceCommit    string         // Git commit SHA
-	CommitDate      time.Time      // Git commit date
-	SourceURL       string         // Repository URL for edit links
-	SourceBranch    string         // Git branch name
-	Generated       bool           // True if this was generated (not discovered)
-	CustomMetadata  map[string]any // Generic metadata from discovery phase (e.g., tags)
+	Path            string    // Hugo content path (e.g., "repo-name/section/file.md")
+	IsIndex         bool      // True if this is _index.md or README.md
+	Repository      string    // Source repository name
+	Forge           string    // Optional forge namespace
+	Section         string    // Documentation section
+	IsSingleRepo    bool      // True if this is a single-repository build (skip repo namespace in links)
+	IsPreviewMode   bool      // True if running in preview/daemon mode
+	VSCodeEditLinks bool      // True if VS Code edit links are enabled (via --vscode flag)
+	EditURLBase     string    // Base URL override for edit links (from --edit-url-base flag)
+	SourceCommit    string    // Git commit SHA
+	CommitDate      time.Time // Git commit date
+	SourceURL       string    // Repository URL for edit links
+	SourceBranch    string    // Git branch name
+	Generated       bool      // True if this was generated (not discovered)
+	// KeepName tells the transforms to keep the name of the document. A
+	// README whose directory has an index of its own is a page of its
+	// own, and not the index of the directory.
+	KeepName       bool
+	CustomMetadata map[string]any // Generic metadata from discovery phase (e.g., tags)
 
 	// Internal fields (used by pipeline, not by transforms)
 	FilePath     string // Absolute path to source file (for discovered docs)
