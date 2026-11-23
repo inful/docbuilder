@@ -19,7 +19,6 @@ type Repository struct {
 	ErrorCount    int64                        `json:"error_count"`
 	LastError     foundation.Option[string]    `json:"last_error"`
 	DocFilesHash  foundation.Option[string]    `json:"doc_files_hash"`
-	DocFilePaths  []string                     `json:"doc_file_paths"`
 	CreatedAt     time.Time                    `json:"created_at"`
 	UpdatedAt     time.Time                    `json:"updated_at"`
 }

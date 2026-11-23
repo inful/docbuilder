@@ -17,18 +17,12 @@ type RepositoryMetadataWriter interface {
 type RepositoryMetadataReader interface {
 	// GetRepoDocFilesHash returns the stored document files hash for a repository.
 	GetRepoDocFilesHash(url string) string
-
-	// GetRepoDocFilePaths returns the stored document file paths for a repository.
-	GetRepoDocFilePaths(url string) []string
 }
 
 // RepositoryMetadataStore combines read and write operations for repository metadata.
 type RepositoryMetadataStore interface {
 	RepositoryMetadataReader
 	RepositoryMetadataWriter
-
-	// SetRepoDocFilePaths stores the sorted list of document file paths for a repository.
-	SetRepoDocFilePaths(url string, paths []string)
 }
 
 // RepositoryInitializer ensures repository state entries exist before operations.

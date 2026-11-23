@@ -259,26 +259,3 @@ func (rs *jsonRepositoryStore) SetDocFilesHash(_ context.Context, url, hash stri
 
 	return foundation.Ok[struct{}, error](struct{}{})
 }
-
-func (rs *jsonRepositoryStore) SetDocFilePaths(_ context.Context, url string, paths []string) foundation.Result[struct{}, error] {
-	rs.store.mu.Lock()
-	defer rs.store.mu.Unlock()
-
-	repo, exists := rs.store.repositories[url]
-	if !exists {
-		return foundation.Err[struct{}, error](
-			errors.NotFoundError("repository").
-				WithContext("url", url).
-				Build(),
-		)
-	}
-
-	// Make a copy of the paths to prevent external modification
-	repo.DocFilePaths = append([]string{}, paths...)
-	repo.UpdatedAt = time.Now()
-
-	// Auto-save if enabled
-	rs.store.dirty = true
-
-	return foundation.Ok[struct{}, error](struct{}{})
-}
