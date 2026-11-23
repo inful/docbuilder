@@ -9,6 +9,26 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.11] - 2026-11-24
+
+### Fixed
+- **The outbound dispatcher does not send on a closed queue.** The queue
+  was closed by the stop of the dispatcher and never opened again. A
+  document that arrived after the stop went into the closed channel: a
+  send on a closed channel panics, and the panic happens in a build
+  worker, outside the recovery of the HTTP server - the first document of
+  the first build after a restart took the whole daemon down. The queue is
+  guarded by a mutex now: a document that arrives after the stop is
+  dropped with a counter, and a dispatcher that runs again gets a new
+  queue.
+- **The stop of the build queue is bounded by its context.** The queue
+  threw the context away and waited for its workers without an end. A
+  build that does not stop - a clone to a host that never answers - kept
+  the daemon from shutting down, and the state file, which is written
+  after the queue is stopped, was lost with it. The stop waits for the
+  deadline of its context now and then gives up.
+
+
 ## [0.35.10] - 2026-11-24
 
 ### Fixed
