@@ -95,9 +95,25 @@ func (f *Fixer) shouldUseGitMv(filePath string) bool {
 }
 
 // gitMv performs a git mv operation.
+//
+// The paths are relative to the directory of the -C flag: git reads
+// them there, and the paths of the fixer are relative to the working
+// directory of the process. The rename failed with "fatal: bad source"
+// on every file of a repository.
 func (f *Fixer) gitMv(oldPath, newPath string) error {
+	dir := filepath.Dir(oldPath)
+
+	oldRel, err := filepath.Rel(dir, oldPath)
+	if err != nil {
+		return fmt.Errorf("the path of the file is not in its directory: %w", err)
+	}
+	newRel, err := filepath.Rel(dir, newPath)
+	if err != nil {
+		return fmt.Errorf("the path of the new file is not in the directory of the file: %w", err)
+	}
+
 	//nolint:gosec // command is executed without a shell; args are passed as separate parameters
-	cmd := exec.CommandContext(context.Background(), "git", "-C", filepath.Dir(oldPath), "mv", oldPath, newPath)
+	cmd := exec.CommandContext(context.Background(), "git", "-C", dir, "mv", oldRel, newRel)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%w: %s", err, string(output))
