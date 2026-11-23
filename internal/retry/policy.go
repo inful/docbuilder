@@ -2,6 +2,7 @@ package retry
 
 import (
 	"errors"
+	"math"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -60,12 +61,23 @@ func (p Policy) Delay(retryCount int) time.Duration {
 		// the delay became negative, so the retry loop spun without a
 		// backoff.
 		shift := min(retryCount-1, 30)
+		// The multiplication is guarded as well: with a large initial
+		// delay the product of the shift overflows the duration too,
+		// and the delay became negative.
+		if p.Initial > time.Duration(math.MaxInt64>>shift) {
+			return p.Max
+		}
 		d := p.Initial * (1 << shift)
 		if d > p.Max {
 			return p.Max
 		}
 		return d
 	case config.RetryBackoffLinear:
+		// The multiplication is guarded here as well: the same overflow
+		// turned the delay negative.
+		if p.Initial > 0 && time.Duration(retryCount) > math.MaxInt64/p.Initial {
+			return p.Max
+		}
 		d := time.Duration(retryCount) * p.Initial
 		if d > p.Max {
 			return p.Max
