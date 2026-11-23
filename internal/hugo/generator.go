@@ -465,10 +465,6 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		g.abortStaging()
 		return report, err
 	}
-	// Record the commit each repository was built at. The next build reads
-	// it back to decide whether anything changed, so it must be persisted
-	// here — where the repositories and their commits are both known.
-	g.persistRepoCommits(bs)
 	// IMPORTANT: stages.RunStages may return nil after an early skip (e.g. no repo
 	// HEAD changes and existing output is valid). In that case, we must not promote
 	// the staging directory, otherwise we could replace a valid site with an empty
@@ -525,6 +521,15 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	if err := g.finalizeStaging(); err != nil {
 		return report, fmt.Errorf("finalize staging: %w", err)
 	}
+
+	// Record the commit each repository was built at. The next build
+	// reads it back to decide whether anything changed, so it must be
+	// persisted here — after the site is published. A build that fails
+	// after the clone stage left the commits of the next build in the
+	// workspace, and the state said that the site was built from them:
+	// the next build skipped, and the content never reached the site.
+	g.persistRepoCommits(bs)
+
 	if err := report.Persist(g.outputDir); err != nil {
 		slog.Warn("Failed to persist build report", "error", err)
 	}

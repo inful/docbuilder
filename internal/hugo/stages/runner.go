@@ -60,7 +60,8 @@ func RunStages(ctx context.Context, bs *models.BuildState, stages []models.Stage
 		// heads, so it does not count as changed. The build has to run:
 		// the site is missing the pages of that repository.
 		if st.Name == models.StageCloneRepos && bs.Git.AllReposUnchanged && bs.Report.FailedRepositories == 0 {
-			if bs.Generator != nil && bs.Generator.SkipIfUnchanged() && bs.Generator.ExistingSiteValidForSkip() && repositoriesMatchTheState(bs) {
+			if bs.Generator != nil && bs.Generator.SkipIfUnchanged() && bs.Generator.ExistingSiteValidForSkip() &&
+				repositoriesMatchTheState(bs) && publishedCommitsMatchTheWorkspace(bs) {
 				slog.Info("Early build exit: no repository HEAD changes and existing site valid; skipping remaining stages")
 				bs.Report.SkipReason = "no_changes"
 				bs.Report.DeriveOutcome()
@@ -103,5 +104,39 @@ func repositoriesMatchTheState(bs *models.BuildState) bool {
 			return false
 		}
 	}
+	return true
+}
+
+// publishedCommitsMatchTheWorkspace reports whether the site that is
+// published was built from the commits of the workspace.
+//
+// The heads of the workspace alone do not say it: a build that failed
+// after the clone stage leaves the commits of the next build in the
+// workspace, and the site is still the one of the build before it. The
+// next build saw "no HEAD changes" and skipped, and the content never
+// reached the site.
+func publishedCommitsMatchTheWorkspace(bs *models.BuildState) bool {
+	if bs.Generator == nil || bs.Generator.StateManager() == nil {
+		return true
+	}
+
+	reader, ok := any(bs.Generator.StateManager()).(interface {
+		GetRepoLastCommit(url string) string
+	})
+	if !ok {
+		return true
+	}
+
+	for i := range bs.Git.Repositories {
+		repo := &bs.Git.Repositories[i]
+		post, known := bs.Git.PostHeads[repo.Name]
+		if !known || post == "" {
+			continue
+		}
+		if reader.GetRepoLastCommit(repo.URL) != post {
+			return false
+		}
+	}
+
 	return true
 }
