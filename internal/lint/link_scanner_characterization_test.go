@@ -23,7 +23,7 @@ func TestDetectBrokenLinks_SkipsTildeFencedCodeBlocks(t *testing.T) {
 		"~~~\n"
 	require.NoError(t, os.WriteFile(indexPath, []byte(content), 0o600))
 
-	broken, err := detectBrokenLinks(docsDir)
+	broken, err := detectBrokenLinks(docsDir, nil)
 	require.NoError(t, err)
 
 	assert.Empty(t, broken)
@@ -42,7 +42,7 @@ func TestDetectBrokenLinks_AllowsNestedParenthesesInInlineLinkTargets(t *testing
 	content := "# Test\n\n[HasParens](./file(name).md)\n"
 	require.NoError(t, os.WriteFile(indexPath, []byte(content), 0o600))
 
-	broken, err := detectBrokenLinks(docsDir)
+	broken, err := detectBrokenLinks(docsDir, nil)
 	require.NoError(t, err)
 
 	assert.Empty(t, broken)
@@ -59,7 +59,7 @@ func TestDetectBrokenLinks_IgnoresEscapedLinkText(t *testing.T) {
 	content := "# Test\n\n\\[NotALink](./missing.md)\n"
 	require.NoError(t, os.WriteFile(indexPath, []byte(content), 0o600))
 
-	broken, err := detectBrokenLinks(docsDir)
+	broken, err := detectBrokenLinks(docsDir, nil)
 	require.NoError(t, err)
 
 	assert.Empty(t, broken)
@@ -75,7 +75,7 @@ func TestDetectBrokenLinks_ReferenceDefinitionIsChecked(t *testing.T) {
 	content := "# Test\n\n[ref]: ./missing.md\n"
 	require.NoError(t, os.WriteFile(indexPath, []byte(content), 0o600))
 
-	broken, err := detectBrokenLinks(docsDir)
+	broken, err := detectBrokenLinks(docsDir, nil)
 	require.NoError(t, err)
 
 	require.Len(t, broken, 1)

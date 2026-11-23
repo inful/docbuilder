@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -230,15 +231,11 @@ func (g *Generator) buildRepositoryMetadata(bs *models.BuildState) map[string]pi
 			DocsPaths: []string{"docs"},
 		}
 
-		// The forge of the repository: the namespace comes first, the tag
-		// is the fallback. The discovery reads them in the same order, or
-		// the pages and the generated index land in different trees.
-		info.Forge = repo.Namespace
-		if info.Forge == "" {
-			if forgeType, ok := repo.Tags["forge_type"]; ok {
-				info.Forge = forgeType
-			}
-		}
+		// The forge of the repository is the one the discovery gave it:
+		// the discovery names a repository only when the configuration
+		// asks for it, and the generated index has to land in the same
+		// tree as the pages.
+		info.Forge = forgeOfRepository(bs, repo)
 
 		// Get docs base from paths (use first path if multiple)
 		if len(repo.Paths) > 0 {
@@ -328,4 +325,25 @@ func (g *Generator) copyAssetFile(file docs.DocFile, isSingleRepo bool) error {
 		slog.String("type", file.Extension))
 
 	return nil
+}
+
+// forgeOfRepository returns the forge the discovery gave to a
+// repository.
+//
+// The discovery names a repository only when the configuration asks for
+// it: the pages of a repository without a namespace live in the tree of
+// the repository, and the generated index has to live there as well.
+func forgeOfRepository(bs *models.BuildState, repo *config.Repository) string {
+	if bs != nil {
+		for i := range bs.Docs.Files {
+			file := &bs.Docs.Files[i]
+			if file.Repository == repo.Name && file.Forge != "" {
+				return file.Forge
+			}
+		}
+	}
+	if repo.Namespace != "" {
+		return repo.Namespace
+	}
+	return repo.Tags["forge_type"]
 }

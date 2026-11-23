@@ -132,7 +132,14 @@ func persistDiscoveredDocsToState(bs *models.BuildState, docFiles []docs.DocFile
 		// build has to fail: the site that is published now would have
 		// the pages of that repository missing, and it would replace the
 		// site that still has them.
-		if repositoryLostDocumentation(previousCount, repoURL, len(paths)) {
+		// The versions of a repository share its URL, so the state holds
+		// the count of the last one of them: the guard would fire for a
+		// version that never had documents.
+		versioned := false
+		if cfg, ok := repoCfgByName[repoName]; ok {
+			versioned = cfg.IsVersioned
+		}
+		if !versioned && repositoryLostDocumentation(previousCount, repoURL, len(paths)) {
 			slog.Error("Repository lost its documentation",
 				slog.String("repository", repoName),
 				slog.Int("documents_before", previousCount.GetRepoDocumentCount(repoURL)))

@@ -27,7 +27,7 @@ func TestFixer_HealsBrokenLinks_FromGitUncommittedRename(t *testing.T) {
 	git(t, repoDir, "mv", "docs/old/target.md", "docs/new/target.md")
 
 	// Sanity: link is currently broken.
-	before, err := detectBrokenLinks(docsDir)
+	before, err := detectBrokenLinks(docsDir, nil)
 	require.NoError(t, err)
 	require.Len(t, before, 1)
 
@@ -192,7 +192,7 @@ func TestFixer_SkipsBrokenLinkHealing_WhenRenameMappingIsAmbiguous(t *testing.T)
 	git(t, repoDir, "mv", "docs/foo.md", "docs/fooNew.md")
 
 	// Sanity: link is currently broken.
-	before, err := detectBrokenLinks(indexFile)
+	before, err := detectBrokenLinks(indexFile, nil)
 	require.NoError(t, err)
 	require.Len(t, before, 1)
 
@@ -234,7 +234,7 @@ func TestFixer_HealsBrokenLinks_ToFinalPath_WhenFixerAlsoRenamesDestination(t *t
 	git(t, repoDir, "mv", "docs/file.md", "docs/subdir/File.md")
 
 	// Sanity: link is currently broken.
-	before, err := detectBrokenLinks(docsDir)
+	before, err := detectBrokenLinks(docsDir, nil)
 	require.NoError(t, err)
 	require.Len(t, before, 1)
 
@@ -283,7 +283,7 @@ func TestFixer_WarnsOnRenameCollision_WhenHistoryRenameCreatesCaseOnlyConflict(t
 	git(t, repoDir, "commit", "-m", "rename test2 to Test")
 
 	// Sanity: link is currently broken.
-	before, err := detectBrokenLinks(docsDir)
+	before, err := detectBrokenLinks(docsDir, nil)
 	require.NoError(t, err)
 	require.Len(t, before, 1)
 

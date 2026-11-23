@@ -74,6 +74,14 @@ func tryProcessLink(content string, i int, repository, forge string, isIndex boo
 	text := content[i+1 : closeBracket]
 	path := content[closeBracket+2 : closeParen]
 
+	// A link may carry a title: "[text](path "title")". The title is
+	// split off the path, and it is put back after the rewrite.
+	title := ""
+	if space := strings.IndexAny(path, " \t"); space != -1 {
+		title = path[space:]
+		path = path[:space]
+	}
+
 	// If it's an image or absolute URL, write as-is
 	if isImage || isAbsoluteOrSpecialURL(path) {
 		result.WriteString(content[i : closeParen+1])
@@ -86,6 +94,7 @@ func tryProcessLink(content string, i int, repository, forge string, isIndex boo
 	result.WriteString(text)
 	result.WriteString("](")
 	result.WriteString(newPath)
+	result.WriteString(title)
 	result.WriteByte(')')
 	return closeParen + 1, true
 }
@@ -117,10 +126,8 @@ func findClosingParen(content string, start int) int {
 		if content[i] == '\n' {
 			return -1
 		}
-		// Stop at spaces in URLs (markdown links don't have spaces in URLs)
-		if content[i] == ' ' {
-			return -1
-		}
+		// A link may carry a title: "[text](path "title")". The space
+		// does not end the link, and the title is split off below.
 	}
 	return -1
 }

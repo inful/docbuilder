@@ -2,6 +2,7 @@ package stages
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -24,6 +25,13 @@ func StageRunHugo(ctx context.Context, bs *models.BuildState) error {
 		// No rendering needed (e.g., auto mode without explicit request)
 		// However, if a custom renderer is set (like NoopRenderer), we should still proceed
 		if bs.Generator.Renderer() == nil {
+			// The mode asks for Hugo and Hugo is not there: the build
+			// would publish a staging tree without a rendered site, and
+			// the site that was published would be gone.
+			if mode == config.RenderModeAlways {
+				return models.NewFatalStageError(models.StageRunHugo,
+					errors.New("the mode render_mode=always asks for Hugo and the hugo binary was not found"))
+			}
 			return nil
 		}
 		// Custom renderer is set, so we'll use it even if shouldRunHugo says no

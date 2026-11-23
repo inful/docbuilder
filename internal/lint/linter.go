@@ -13,6 +13,9 @@ type Linter struct {
 	cfg          *Config
 	rules        []Rule
 	excludeGlobs []globPattern // pre-compiled from cfg.Excludes
+	// excludePatternsList holds the patterns the globs were compiled
+	// from, for the callers that need them.
+	excludePatternsList []string
 }
 
 const formatText = "text"
@@ -37,8 +40,9 @@ func NewLinter(cfg *Config) *Linter {
 	}
 
 	return &Linter{
-		cfg:          cfg,
-		excludeGlobs: compileGlobs(excludes),
+		cfg:                 cfg,
+		excludeGlobs:        compileGlobs(excludes),
+		excludePatternsList: excludes,
 		rules: []Rule{
 			&FilenameRule{},
 			&FrontmatterUIDRule{},
@@ -77,7 +81,7 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 
 	// Broken link detection is a lint-time check (not only a fixer feature).
 	// This ensures `docbuilder lint` fails the same way `docbuilder lint --fix` reports.
-	brokenLinks, blErr := detectBrokenLinks(path)
+	brokenLinks, blErr := detectBrokenLinks(path, l.excludePatterns())
 	if blErr != nil {
 		return nil, blErr
 	}
@@ -192,6 +196,14 @@ func (l *Linter) LintFiles(files []string) (*Result, error) {
 	}
 
 	return result, nil
+}
+
+// excludePatterns returns the exclude patterns of the linter.
+func (l *Linter) excludePatterns() []string {
+	if l == nil {
+		return nil
+	}
+	return l.excludePatternsList
 }
 
 // isExcluded reports whether the given file path matches any of the

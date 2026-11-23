@@ -108,30 +108,43 @@ func (c *GitHubClient) ListOrganizations(ctx context.Context) ([]*Organization, 
 
 // getUserOrganizations gets organizations for the authenticated user.
 func (c *GitHubClient) getUserOrganizations(ctx context.Context) ([]*Organization, error) {
-	req, err := c.NewRequest(ctx, "GET", "/user/orgs", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var githubOrgs []githubOrg
-	if err := c.DoRequest(req, &githubOrgs); err != nil {
-		return nil, err
-	}
-
-	orgs := make([]*Organization, 0, len(githubOrgs))
-	for _, gOrg := range githubOrgs {
-		org := &Organization{
-			ID:          strconv.Itoa(gOrg.ID),
-			Name:        gOrg.Login,
-			DisplayName: gOrg.Name,
-			Description: gOrg.Description,
-			Type:        gOrg.Type,
-			Metadata: map[string]string{
-				"github_id": strconv.Itoa(gOrg.ID),
-				"type":      gOrg.Type,
-			},
+	// The organizations are read page by page: GitHub answers with 30
+	// of them per page, and every organization after the thirtieth was
+	// never scanned. Its repositories vanished from the site without an
+	// error.
+	orgs := make([]*Organization, 0, 30)
+	for page := 1; ; page++ {
+		endpoint := fmt.Sprintf("/user/orgs?per_page=30&page=%d", page)
+		req, err := c.NewRequest(ctx, "GET", endpoint, nil)
+		if err != nil {
+			return nil, err
 		}
-		orgs = append(orgs, org)
+
+		var githubOrgs []githubOrg
+		if err := c.DoRequest(req, &githubOrgs); err != nil {
+			return nil, err
+		}
+		if len(githubOrgs) == 0 {
+			break
+		}
+
+		for _, gOrg := range githubOrgs {
+			org := &Organization{
+				ID:          strconv.Itoa(gOrg.ID),
+				Name:        gOrg.Login,
+				DisplayName: gOrg.Name,
+				Description: gOrg.Description,
+				Type:        gOrg.Type,
+				Metadata: map[string]string{
+					"github_id": strconv.Itoa(gOrg.ID),
+					"type":      gOrg.Type,
+				},
+			}
+			orgs = append(orgs, org)
+		}
+		if len(githubOrgs) < 30 {
+			break
+		}
 	}
 
 	return orgs, nil

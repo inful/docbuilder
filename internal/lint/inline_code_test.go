@@ -101,7 +101,7 @@ Real image: ![Real](./missing.png)
 	require.NoError(t, os.WriteFile(indexPath, []byte(content), 0o600))
 
 	// Run broken link detection
-	broken, err := detectBrokenLinks(docsDir)
+	broken, err := detectBrokenLinks(docsDir, nil)
 	require.NoError(t, err)
 
 	// Should only find 2 broken links:
@@ -140,7 +140,7 @@ Backtick at end: ` + "`something` [Link](./real-missing.md)" + `
 `
 	require.NoError(t, os.WriteFile(indexPath, []byte(content), 0o600))
 
-	broken, err := detectBrokenLinks(docsDir)
+	broken, err := detectBrokenLinks(docsDir, nil)
 	require.NoError(t, err)
 
 	// Should find 2 broken links: ./missing.md and ./broken.md and ./real-missing.md
