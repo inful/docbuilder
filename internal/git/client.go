@@ -84,6 +84,14 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 }
 
 func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, error) {
+	if repo.Name == "" {
+		// The path of the clone would be the root of the workspace, and
+		// the removal of the old clone would delete every other clone.
+		return CloneResult{}, GitError("the repository has no name").
+			WithContext("url", repo.URL).
+			Build()
+	}
+
 	repoPath := filepath.Join(c.workspaceDir, repo.Name)
 	slog.Debug("Cloning repository", logfields.URL(repo.URL), logfields.Name(repo.Name), slog.String("branch", repo.Branch), logfields.Path(repoPath))
 	if err := os.RemoveAll(repoPath); err != nil {

@@ -28,20 +28,18 @@ func (f *fakeErrorState) EnsureRepositoryState(url, name, branch string) {
 
 // The generator of a build that writes the state of the repositories.
 type fakeErrorGenerator struct {
-	state *fakeErrorState
+	state state.RepositoryMetadataWriter
 }
 
-func (f *fakeErrorGenerator) Config() *config.Config     { return &config.Config{} }
-func (f *fakeErrorGenerator) OutputDir() string          { return "" }
-func (f *fakeErrorGenerator) StageDir() string           { return "" }
-func (f *fakeErrorGenerator) Recorder() metrics.Recorder { return nil }
-func (f *fakeErrorGenerator) StateManager() state.RepositoryMetadataWriter {
-	return f.state
-}
-func (f *fakeErrorGenerator) ComputeConfigHash() string  { return "" }
-func (f *fakeErrorGenerator) GenerateHugoConfig() error  { return nil }
-func (f *fakeErrorGenerator) BuildRoot() string          { return "" }
-func (f *fakeErrorGenerator) CreateHugoStructure() error { return nil }
+func (f *fakeErrorGenerator) Config() *config.Config                       { return &config.Config{} }
+func (f *fakeErrorGenerator) OutputDir() string                            { return "" }
+func (f *fakeErrorGenerator) StageDir() string                             { return "" }
+func (f *fakeErrorGenerator) Recorder() metrics.Recorder                   { return nil }
+func (f *fakeErrorGenerator) StateManager() state.RepositoryMetadataWriter { return f.state }
+func (f *fakeErrorGenerator) ComputeConfigHash() string                    { return "" }
+func (f *fakeErrorGenerator) GenerateHugoConfig() error                    { return nil }
+func (f *fakeErrorGenerator) BuildRoot() string                            { return "" }
+func (f *fakeErrorGenerator) CreateHugoStructure() error                   { return nil }
 func (f *fakeErrorGenerator) CopyContentFilesWithState(context.Context, []docs.DocFile, *models.BuildState) error {
 	return nil
 }

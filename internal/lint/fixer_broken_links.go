@@ -31,7 +31,7 @@ func detectBrokenLinks(rootPath string, excludes []string) ([]BrokenLink, error)
 
 	// Scan each file for broken links
 	for _, file := range filesToScan {
-		broken, err := detectBrokenLinksInFile(file)
+		broken, err := detectBrokenLinksInFile(file, rootPath)
 		if err != nil {
 			// Continue with other files even if one fails
 			continue
@@ -43,7 +43,10 @@ func detectBrokenLinks(rootPath string, excludes []string) ([]BrokenLink, error)
 }
 
 // detectBrokenLinksInFile scans a single markdown file for broken links.
-func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
+//
+// The rootPath is the directory that was linted: the walk that looks
+// for the file of a repository-root-relative link stops there.
+func detectBrokenLinksInFile(sourceFile, rootPath string) ([]BrokenLink, error) {
 	doc, err := docmodel.ParseFile(sourceFile, docmodel.Options{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse file: %w", err)
@@ -90,7 +93,7 @@ func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
 
 		switch link.Kind {
 		case markdown.LinkKindImage:
-			if isBrokenLink(sourceFile, target) {
+			if isBrokenLink(sourceFile, target, rootPath) {
 				brokenLinks = append(brokenLinks, BrokenLink{
 					SourceFile: sourceFile,
 					LineNumber: lineNum,
@@ -99,7 +102,7 @@ func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
 				})
 			}
 		case markdown.LinkKindReferenceDefinition:
-			if isBrokenLink(sourceFile, target) {
+			if isBrokenLink(sourceFile, target, rootPath) {
 				brokenLinks = append(brokenLinks, BrokenLink{
 					SourceFile: sourceFile,
 					LineNumber: lineNum,
@@ -108,7 +111,7 @@ func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
 				})
 			}
 		case markdown.LinkKindInline, markdown.LinkKindAuto, markdown.LinkKindReference:
-			if isBrokenLink(sourceFile, target) {
+			if isBrokenLink(sourceFile, target, rootPath) {
 				brokenLinks = append(brokenLinks, BrokenLink{
 					SourceFile: sourceFile,
 					LineNumber: lineNum,
@@ -153,8 +156,11 @@ func isBareEmailAddress(s string) bool {
 }
 
 // isBrokenLink checks if a link target points to a non-existent file.
-func isBrokenLink(sourceFile, linkTarget string) bool {
-	resolved, err := resolveRelativePath(sourceFile, linkTarget)
+//
+// The rootPath is the directory that was linted: the walk that looks
+// for the file of a repository-root-relative link stops there.
+func isBrokenLink(sourceFile, linkTarget, rootPath string) bool {
+	resolved, err := resolveRelativePath(sourceFile, linkTarget, rootPath)
 	if err != nil {
 		return false
 	}

@@ -161,7 +161,7 @@ func TestInferRenameMappingFromGitHead(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			cache := map[string][]docmodel.LinkRef{srcFile: tc.headRefs}
-			rm, ok := inferRenameMappingFromGitHead(tc.bl, tc.oldAbs, cache)
+			rm, ok := inferRenameMappingFromGitHead(tc.bl, tc.oldAbs, cache, filepath.Dir(srcFile))
 			require.Equal(t, tc.wantOK, ok, "ok flag mismatch")
 			if tc.wantOK {
 				require.Equal(t, tc.oldAbs, rm.OldAbs)

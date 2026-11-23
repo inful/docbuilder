@@ -171,6 +171,7 @@ func (c *GitLabClient) ListOrganizations(ctx context.Context) ([]*Organization, 
 					"gitlab_id": strconv.Itoa(gGroup.ID),
 					"full_path": gGroup.FullPath,
 					"full_name": gGroup.FullName,
+					"path":      gGroup.Path,
 					"kind":      gGroup.Kind,
 				},
 			}
@@ -192,11 +193,26 @@ func (c *GitLabClient) ListRepositories(ctx context.Context, groups []string) ([
 		return nil, nil
 	}
 
-	results := runOrdered(groups, 4, func(group string) ([]*Repository, error) {
+	// The API of GitLab needs the numeric id of a group. The operator
+	// names the group by its path, and the id is looked up.
+	resolved := make([]string, len(groups))
+	for i, group := range groups {
+		id, err := c.resolveGroupID(ctx, group)
+		if err != nil {
+			return nil, err
+		}
+		resolved[i] = id
+	}
+
+	results := runOrdered(resolved, 4, func(group string) ([]*Repository, error) {
 		return c.getGroupProjects(ctx, group)
 	})
 
 	var allRepos []*Repository
+	// A project of a subgroup is in the list of its parent group too:
+	// the same repository twice is built twice, and the second clone
+	// takes the workspace of the first one.
+	seen := make(map[string]struct{})
 	for i, group := range groups {
 		res := results[i]
 		if res.Err != nil {
@@ -205,10 +221,69 @@ func (c *GitLabClient) ListRepositories(ctx context.Context, groups []string) ([
 				WithContext("group", group).
 				Build()
 		}
-		allRepos = append(allRepos, res.Value...)
+		for _, repo := range res.Value {
+			if repo == nil {
+				continue
+			}
+			key := repo.ID
+			if key == "" {
+				key = repo.CloneURL
+			}
+			if _, duplicate := seen[key]; duplicate {
+				continue
+			}
+			seen[key] = struct{}{}
+			allRepos = append(allRepos, repo)
+		}
 	}
 
 	return allRepos, nil
+}
+
+// resolveGroupID returns the numeric id of a group.
+//
+// The API of GitLab needs the numeric id of a group for the projects of
+// the group: a group that the operator names by its path is not found,
+// and the discovery of the whole forge fails.
+func (c *GitLabClient) resolveGroupID(ctx context.Context, group string) (string, error) {
+	if isNumericID(group) {
+		return group, nil
+	}
+
+	orgs, err := c.ListOrganizations(ctx)
+	if err != nil {
+		return "", errors.ForgeError("failed to list the GitLab groups").
+			WithCause(err).
+			Build()
+	}
+
+	for _, org := range orgs {
+		if org == nil {
+			continue
+		}
+		if strings.EqualFold(org.DisplayName, group) ||
+			strings.EqualFold(org.Metadata["full_path"], group) ||
+			strings.EqualFold(org.Metadata["path"], group) {
+			return org.Name, nil
+		}
+	}
+
+	return "", errors.ForgeError("the GitLab group was not found").
+		WithContext("group", group).
+		Build()
+}
+
+// isNumericID reports whether a value is a number.
+func isNumericID(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, r := range value {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // getGroupProjects gets all projects for a group.

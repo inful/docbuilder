@@ -43,7 +43,7 @@ func (f *Fixer) healBrokenLinksFromGitRenames(rootPath string, brokenLinks []Bro
 	mappings = applyFixerRenameDestinations(mappings, fixResult)
 
 	index := indexRenamesByOld(mappings)
-	linksByMapping := collectLinksByMapping(f, brokenLinks, index, fixResult)
+	linksByMapping := collectLinksByMapping(f, brokenLinks, index, fixResult, rootPath)
 	if len(linksByMapping) == 0 {
 		return
 	}
@@ -155,7 +155,7 @@ func normalizePathKey(absPath string) string {
 	return filepath.ToSlash(filepath.Clean(absPath))
 }
 
-func collectLinksByMapping(f *Fixer, brokenLinks []BrokenLink, idx renameIndex, fixResult *FixResult) map[mappingKey][]LinkReference {
+func collectLinksByMapping(f *Fixer, brokenLinks []BrokenLink, idx renameIndex, fixResult *FixResult, rootPath string) map[mappingKey][]LinkReference {
 	linksByMapping := make(map[mappingKey][]LinkReference)
 	linkCache := make(map[string][]LinkReference)
 	gitHeadDocCache := make(map[string][]docmodel.LinkRef)
@@ -170,7 +170,7 @@ func collectLinksByMapping(f *Fixer, brokenLinks []BrokenLink, idx renameIndex, 
 			continue
 		}
 
-		resolved, err := resolveRelativePath(bl.SourceFile, bl.Target)
+		resolved, err := resolveRelativePath(bl.SourceFile, bl.Target, rootPath)
 		if err != nil {
 			continue
 		}
@@ -185,7 +185,7 @@ func collectLinksByMapping(f *Fixer, brokenLinks []BrokenLink, idx renameIndex, 
 			// Fallback (still conservative): look at the HEAD version of the linking
 			// file and, if the corresponding link (same line + kind) pointed somewhere
 			// that *now* resolves to an existing file, heal back to that destination.
-			fallback, okFallback := inferRenameMappingFromGitHead(bl, resolved, gitHeadDocCache)
+			fallback, okFallback := inferRenameMappingFromGitHead(bl, resolved, gitHeadDocCache, rootPath)
 			if !okFallback {
 				continue
 			}
@@ -225,7 +225,7 @@ func collectLinksByMapping(f *Fixer, brokenLinks []BrokenLink, idx renameIndex, 
 	return linksByMapping
 }
 
-func inferRenameMappingFromGitHead(bl BrokenLink, resolvedOldAbs string, headCache map[string][]docmodel.LinkRef) (RenameMapping, bool) {
+func inferRenameMappingFromGitHead(bl BrokenLink, resolvedOldAbs string, headCache map[string][]docmodel.LinkRef, rootPath string) (RenameMapping, bool) {
 	// We only handle markdown-style broken links here.
 	if bl.SourceFile == "" || bl.LineNumber <= 0 {
 		return RenameMapping{}, false
@@ -306,7 +306,7 @@ func inferRenameMappingFromGitHead(bl BrokenLink, resolvedOldAbs string, headCac
 	}
 	// If the HEAD destination now resolves to an existing file, we can safely
 	// heal back to it.
-	newAbs, err := resolveRelativePath(bl.SourceFile, headDest)
+	newAbs, err := resolveRelativePath(bl.SourceFile, headDest, rootPath)
 	if err != nil {
 		return RenameMapping{}, false
 	}

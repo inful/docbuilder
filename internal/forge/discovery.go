@@ -548,6 +548,12 @@ func (ds *DiscoveryService) ConvertToConfigRepositories(repos []*Repository, for
 		}
 
 		configRepo := repo.ToConfigRepository(auth)
+		if configRepo.Name == "" {
+			// The name of the repository was refused: the clone would
+			// go to the root of the workspace, and the removal of the
+			// old clone would delete every other clone.
+			continue
+		}
 		if _, taken := usedNames[strings.ToLower(configRepo.Name)]; taken {
 			configRepo.Name = uniqueRepoName(repo, usedNames)
 		}

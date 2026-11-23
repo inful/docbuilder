@@ -50,69 +50,8 @@ func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 	}
 
 	// Create the pre-commit hook
-	hookContent := `#!/usr/bin/env bash
-# DocBuilder pre-commit hook - Lint staged documentation files
-set -e
 
-# Determine how to run docbuilder
-DOCBUILDER_CMD=""
-if command -v docbuilder &> /dev/null; then
-    DOCBUILDER_CMD="docbuilder"
-elif [ -f "go.mod" ] && grep -q "docbuilder" go.mod; then
-    # In development mode - use go run
-    DOCBUILDER_CMD="go run ./cmd/docbuilder"
-else
-    echo "⚠️  docbuilder not found in PATH"
-    echo "   Install: go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@latest"
-    echo "   Skipping documentation linting..."
-    exit 0
-fi
-
-# Get list of staged markdown and image files (NUL-delimited to support spaces)
-STAGED_DOCS=()
-while IFS= read -r -d '' file; do
-	case "$file" in
-		*.md|*.markdown|*.png|*.jpg|*.jpeg|*.gif|*.svg)
-			STAGED_DOCS+=("$file")
-			;;
-	esac
-done < <(git diff --cached --name-only -z --diff-filter=ACM)
-
-if [ ${#STAGED_DOCS[@]} -eq 0 ]; then
-	# No documentation files staged, skip linting
-	exit 0
-fi
-
-echo "🔍 Linting staged documentation files..."
-
-# Create temporary directory for staged files
-TEMP_DIR=$(mktemp -d)
-trap "rm -rf ${TEMP_DIR}" EXIT
-
-# Copy staged files to temporary directory preserving structure
-for file in "${STAGED_DOCS[@]}"; do
-    mkdir -p "${TEMP_DIR}/$(dirname "$file")"
-    git show ":$file" > "${TEMP_DIR}/${file}"
-done
-
-# Run linter on temporary directory
-if $DOCBUILDER_CMD lint "${TEMP_DIR}" --quiet; then
-    echo "✅ Documentation linting passed"
-    exit 0
-else
-    EXIT_CODE=$?
-    echo ""
-    echo "❌ Documentation linting failed"
-    echo ""
-    echo "To fix automatically:"
-    echo "  $DOCBUILDER_CMD lint --fix"
-    echo ""
-    echo "To bypass this check (not recommended):"
-    echo "  git commit --no-verify"
-    echo ""
-    exit $EXIT_CODE
-fi
-`
+	hookContent := installHookScript()
 
 	// Write hook file with restrictive permissions first
 	if err := os.WriteFile(hookPath, []byte(hookContent), 0o600); err != nil {
@@ -170,4 +109,77 @@ func findGitDir() (string, error) {
 	}
 
 	return string(output), nil
+}
+
+// installHookScript returns the script of the pre-commit hook.
+//
+// The staged files are linted where they are: a copy of them in a
+// temporary directory has no neighbors, and every link to a file that
+// was not staged is a broken link.
+func installHookScript() string {
+	return `# DocBuilder pre-commit hook - Lint staged documentation files
+set -e
+
+# Determine how to run docbuilder
+DOCBUILDER_CMD=""
+if command -v docbuilder &> /dev/null; then
+    DOCBUILDER_CMD="docbuilder"
+elif [ -f "go.mod" ] && grep -q "docbuilder" go.mod; then
+    # In development mode - use go run
+    DOCBUILDER_CMD="go run ./cmd/docbuilder"
+else
+    echo "⚠️  docbuilder not found in PATH"
+    echo "   Install: go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@latest"
+    echo "   Skipping documentation linting..."
+    exit 0
+fi
+
+# Get list of staged markdown and image files (NUL-delimited to support spaces)
+STAGED_DOCS=()
+while IFS= read -r -d '' file; do
+	case "$file" in
+		*.md|*.markdown|*.png|*.jpg|*.jpeg|*.gif|*.svg)
+			STAGED_DOCS+=("$file")
+			;;
+	esac
+done < <(git diff --cached --name-only -z --diff-filter=ACM)
+
+if [ ${#STAGED_DOCS[@]} -eq 0 ]; then
+	# No documentation files staged, skip linting
+	exit 0
+fi
+
+echo "🔍 Linting staged documentation files..."
+
+# The staged files are linted where they are: a copy of them in a
+# temporary directory has no neighbors, and every link to a file that
+# was not staged is a broken link. The hook rejected the commit of
+# every documentation that links to a file of its own repository.
+EXIT_CODE=0
+for file in "${STAGED_DOCS[@]}"; do
+    case "$file" in
+        *.md|*.markdown)
+            if ! $DOCBUILDER_CMD lint "$file" --quiet; then
+                EXIT_CODE=1
+            fi
+            ;;
+    esac
+done
+
+if [ $EXIT_CODE -eq 0 ]; then
+    echo "✅ Documentation linting passed"
+    exit 0
+else
+    echo ""
+    echo "❌ Documentation linting failed"
+    echo ""
+    echo "To fix automatically:"
+    echo "  $DOCBUILDER_CMD lint --fix"
+    echo ""
+    echo "To bypass this check (not recommended):"
+    echo "  git commit --no-verify"
+    echo ""
+    exit $EXIT_CODE
+fi
+`
 }

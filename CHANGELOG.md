@@ -9,6 +9,68 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.4] - 2026-11-23
+
+### Fixed
+- **A readme next to an index is a page of its own.** The discovery
+  maps an index.md to _index.md, and the pipeline renames a README to
+  _index as well: the two of them are the same page, and one of them was
+  lost. The check of the collisions compared the path before the rename,
+  so it stayed quiet - and then the build failed on every repository
+  that has a README and an index in the same directory (issue #147).
+
+- **The rename of a file of a repository moves it with git.** The paths
+  of git are relative to the directory of the -C flag, and the paths of
+  the fixer are relative to the working directory of the process: the
+  rename failed with "fatal: bad source" on every file of a repository,
+  and the lint --fix exited with an error and blocked the commit.
+
+- **A repository without a name is not cloned.** The name of a
+  repository is the name of the directory the clone goes to: a
+  repository whose name was refused was cloned into the root of the
+  workspace, and the removal of the old clone deleted every other clone
+  of the portal.
+
+- **The build does not skip when the site is behind the workspace.** A
+  build that failed after the clone stage left the commits of the next
+  build in the workspace, and the next build saw "no HEAD changes" and
+  skipped: the content never reached the site.
+
+- **A build that did not publish is a failed build.** A clone failure
+  that the classification does not recognize was only a warning, and
+  the report in the site said warning although a repository was missing
+  from it.
+
+- **The password of the NATS URL stays out of the answer of the MCP
+  server.** The link verification redacts that URL in its own logs.
+
+- **The path of a link is cut by the characters of its suffix.** The
+  lowercase of a character can have another length ("İ" is two bytes
+  and "i" is one): the link lost a character of its path.
+
+- **The hook lints the staged files where they are.** The hook copied
+  the staged files into a temporary directory: the copy has no
+  neighbors, and every link to a file that was not staged is a broken
+  link. The hook rejected the commit of every documentation that links
+  to a file of its own repository.
+
+- **The list of the files of the tree follows a rename.** After a rename
+  the list held a path that does not exist any more, and the links
+  inside the renamed file were never rewritten.
+
+- **A replacement of the frontmatter keeps the identity of the page.**
+  The uid and the aliases are what the links of the other pages point
+  at.
+
+- **A link to the readme of the repository is broken.** The readme of
+  the repository is above the documentation, and the site has no page
+  for it.
+
+- **A GitLab group is resolved to its numeric id.** A group that the
+  operator names by its path was not found, and the discovery of the
+  whole forge failed.
+
+
 ## [0.35.3] - 2026-11-23
 
 ### Fixed

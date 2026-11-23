@@ -151,7 +151,7 @@ func (f *Fixer) parsedLinks(sourceFile string) ([]resolvedLink, error) {
 			continue
 		}
 
-		resolved, err := resolveRelativePath(sourceFile, dest)
+		resolved, err := resolveRelativePath(sourceFile, dest, f.rootPath)
 		if err != nil {
 			continue
 		}

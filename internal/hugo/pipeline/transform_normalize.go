@@ -8,6 +8,12 @@ import (
 // normalizeIndexFiles renames README files to _index for Hugo compatibility.
 // This must run early before other transforms depend on the file name.
 func normalizeIndexFiles(doc *Document) ([]*Document, error) {
+	// The directory has an index of its own: the README is a page of
+	// its own, and renaming it would write it to the page of the index.
+	if doc.KeepName {
+		return nil, nil
+	}
+
 	// Check if this is a README file at any level
 	if strings.EqualFold(doc.Name, "README") {
 		// Rename to _index for Hugo

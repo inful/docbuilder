@@ -53,7 +53,7 @@ func TestResolveRelativePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := resolveRelativePath(tt.sourceFile, tt.linkTarget)
+			got, err := resolveRelativePath(tt.sourceFile, tt.linkTarget, "/docs")
 			if tt.wantErr {
 				require.Error(t, err)
 				return

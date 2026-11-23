@@ -465,10 +465,6 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		g.abortStaging()
 		return report, err
 	}
-	// Record the commit each repository was built at. The next build reads
-	// it back to decide whether anything changed, so it must be persisted
-	// here — where the repositories and their commits are both known.
-	g.persistRepoCommits(bs)
 	// IMPORTANT: stages.RunStages may return nil after an early skip (e.g. no repo
 	// HEAD changes and existing output is valid). In that case, we must not promote
 	// the staging directory, otherwise we could replace a valid site with an empty
@@ -509,9 +505,11 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		// let the next build skip - the site is behind the workspace,
 		// and only a build that runs publishes it.
 		// The build failed: a repository is missing from the site that
-		// was published, and the report in the site says so.
-		report.Outcome = models.OutcomeFailed
-		report.DeriveOutcome()
+		// was published, and the report in the site says so. The
+		// outcome is set after the derivation: the derivation looks at
+		// the errors and the warnings, and a clone failure that is not
+		// recognized is only a warning.
+		failedOutcome(report)
 		report.Finish()
 		if err := report.Persist(g.outputDir); err != nil {
 			slog.Warn("Failed to persist build report", "error", err)
@@ -525,6 +523,15 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	if err := g.finalizeStaging(); err != nil {
 		return report, fmt.Errorf("finalize staging: %w", err)
 	}
+
+	// Record the commit each repository was built at. The next build
+	// reads it back to decide whether anything changed, so it must be
+	// persisted here — after the site is published. A build that fails
+	// after the clone stage left the commits of the next build in the
+	// workspace, and the state said that the site was built from them:
+	// the next build skipped, and the content never reached the site.
+	g.persistRepoCommits(bs)
+
 	if err := report.Persist(g.outputDir); err != nil {
 		slog.Warn("Failed to persist build report", "error", err)
 	}
@@ -584,4 +591,18 @@ func (g *Generator) WithRenderer(r models.Renderer) *Generator {
 func (g *Generator) WithDocumentReady(fn func(content []byte, path string)) *Generator {
 	g.onDocumentReady = fn
 	return g
+}
+
+// failedOutcome records that a build failed.
+//
+// The derivation of the outcome looks at the errors and the warnings: a
+// clone failure that the classification does not recognize is only a
+// warning, and the report of the build said warning although a
+// repository was missing from the site that was published.
+func failedOutcome(report *models.BuildReport) {
+	if report == nil {
+		return
+	}
+	report.DeriveOutcome()
+	report.Outcome = models.OutcomeFailed
 }

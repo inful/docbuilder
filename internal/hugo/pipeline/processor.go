@@ -3,6 +3,8 @@ package pipeline
 import (
 	"fmt"
 	"log/slog"
+	"path/filepath"
+	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
@@ -76,6 +78,11 @@ func (p *Processor) ProcessContent(documents []*Document, repoMetadata map[strin
 	// Phase 2: Transformation - Process all documents, including generated ones
 	documents = append(documents, generated...)
 	slog.Info("Pipeline: Starting transformation phase", slog.Int("total_docs", len(documents)))
+
+	// A README whose directory has an index of its own is a page of its
+	// own: the discovery maps an index.md to _index.md, and the rename
+	// of the README would write it to the same page.
+	markReadmesWithAnIndex(documents)
 
 	processedDocs, err := p.processTransforms(documents)
 	if err != nil {
@@ -228,5 +235,35 @@ func defaultTransforms(cfg *config.Config) []FileTransform {
 func defaultStaticAssetGenerators() []StaticAssetGenerator {
 	return []StaticAssetGenerator{
 		generateThemeAssets, // Build the theme's layout overrides (custom CSS, view transitions, template metadata, vendored assets)
+	}
+}
+
+// markReadmesWithAnIndex keeps the name of the README of a directory
+// that has an index of its own.
+//
+// The discovery maps an index.md to _index.md, and the pipeline renames
+// a README to _index as well: the two of them are the same page, and one
+// of them was lost. A repository with a README and an index in the same
+// directory is a common layout, and the build failed on it.
+func markReadmesWithAnIndex(documents []*Document) {
+	indexDirs := make(map[string]struct{})
+
+	for _, doc := range documents {
+		if doc == nil {
+			continue
+		}
+		name := strings.ToLower(doc.Name)
+		if name == "index" || name == indexFileSuffix {
+			indexDirs[filepath.Dir(doc.Path)] = struct{}{}
+		}
+	}
+
+	for _, doc := range documents {
+		if doc == nil || !strings.EqualFold(doc.Name, "README") {
+			continue
+		}
+		if _, hasIndex := indexDirs[filepath.Dir(doc.Path)]; hasIndex {
+			doc.KeepName = true
+		}
 	}
 }

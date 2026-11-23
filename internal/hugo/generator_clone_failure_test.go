@@ -11,6 +11,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
 )
 
@@ -98,6 +99,12 @@ func TestGenerateFullSiteKeepsTheOldSiteWhenACloneFails(t *testing.T) {
 	report, err := gen.GenerateFullSite(t.Context(), repos, filepath.Join(base, "ws"))
 	if err == nil {
 		t.Fatalf("the build did not fail: %+v", report)
+	}
+
+	// The report says that the build failed: the site is missing a
+	// repository, and the report in the site says so.
+	if report.Outcome != models.OutcomeFailed {
+		t.Fatalf("the outcome of the build is %q, want %q", report.Outcome, models.OutcomeFailed)
 	}
 
 	got, err := os.ReadFile(filepath.Join(outDir, "public", "index.html")) // #nosec G304 -- the path is the test's own

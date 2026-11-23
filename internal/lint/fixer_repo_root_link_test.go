@@ -22,7 +22,7 @@ func TestRepositoryRootRelativeLinkIsFound(t *testing.T) {
 	index := filepath.Join(docs, "index.md")
 	require.NoError(t, os.WriteFile(index, []byte("# Index\n\n[guide](/how-to/authentication.md)\n"), 0o600))
 
-	resolved, err := resolveRelativePath(index, "/how-to/authentication.md")
+	resolved, err := resolveRelativePath(index, "/how-to/authentication.md", docs)
 	require.NoError(t, err)
 	require.FileExists(t, resolved)
 }
@@ -33,7 +33,7 @@ func TestRepositoryRootRelativeLinkToNothingIsBroken(t *testing.T) {
 	index := filepath.Join(docs, "index.md")
 	require.NoError(t, os.WriteFile(index, []byte("# Index\n"), 0o600))
 
-	resolved, err := resolveRelativePath(index, "/how-to/nothing.md")
+	resolved, err := resolveRelativePath(index, "/how-to/nothing.md", docs)
 	require.NoError(t, err)
 	require.NoFileExists(t, resolved)
 }

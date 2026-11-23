@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
@@ -272,13 +273,13 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 
 	// Handle README/index special case - these become section URLs with trailing slash
 	if strings.HasSuffix(lowerPath, "/readme") {
-		path = path[:len(path)-len("/README")]
+		path = trimSuffixChars(path, "/README")
 		lowerPath = lowerPath[:len(lowerPath)-len("/readme")]
 		path += "/"
 		lowerPath += "/"
 	}
-	if before, ok := strings.CutSuffix(lowerPath, "/index"); ok {
-		path = path[:len(before)] + "/"
+	if strings.HasSuffix(lowerPath, "/index") {
+		path = trimSuffixChars(path, "/index") + "/"
 	}
 
 	// A sibling README or index is the index of the section: the
@@ -411,7 +412,9 @@ func handleRegularFileLink(path, docPath, repository, forge string, isSingleRepo
 func sectionIndexPath(docPath, repository, forge string, isSingleRepo bool) string {
 	docDir := extractDirectory(docPath, isSingleRepo, forge)
 	if !isSingleRepo && repository != "" {
-		return buildFullPath(forge, repository, docDir, "") + "/"
+		// The path of the helper already ends with a slash: the
+		// address had two of them.
+		return buildFullPath(forge, repository, docDir, "")
 	}
 	if docDir != "" {
 		return "/" + strings.ToLower(docDir) + "/"
@@ -519,3 +522,22 @@ var (
 	imageLinkPattern = regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)\)`)
 	htmlImagePattern = regexp.MustCompile(`<img\s+([^>]*\s+)?src="([^"]+)"([^>]*)>`)
 )
+
+// trimSuffixChars takes a suffix off a path, counting the characters and
+// not the bytes.
+//
+// The lowercase of a character can have another length ("İ" is two
+// bytes and "i" is one): the path was cut at the byte of the lowercased
+// path, in the middle of a character, and the address was not a valid
+// one.
+func trimSuffixChars(path, suffix string) string {
+	count := utf8.RuneCountInString(suffix)
+	if count == 0 {
+		return path
+	}
+	runes := []rune(path)
+	if len(runes) < count {
+		return path
+	}
+	return string(runes[:len(runes)-count])
+}
