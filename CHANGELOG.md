@@ -9,6 +9,54 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.1] - 2026-11-23
+
+### Fixed
+- **A file that cannot be read does not stop the scan for the links of
+  the other files.** The file was renamed and no link was rewritten.
+
+- **The trigger of a build answers that nothing was queued** when no job
+  was queued: the daemon is not running, or the event did not reach the
+  orchestration bus.
+
+- **The stop channel is closed once.** Two concurrent stops closed it
+  twice, and the second close stopped the daemon with a panic.
+
+- **The status of a daemon that was stopped while the loop was ending
+  stays "stopped".**
+
+- **A replacement of the frontmatter with nothing is refused.** It
+  deleted the title, the uid and the aliases of the page.
+
+- **The name of a discovered repository is a single path segment.** The
+  clone directory is built from it, and the removal of the old clone
+  deleted what was outside of the cache.
+
+- **A generated file is written without a window in which it is half
+  written.**
+
+- **The broken link detection uses the excludes of the linter.**
+
+- **A build with `render_mode: always` and no hugo binary fails.** It
+  published a staging tree without a rendered site, and the site that
+  was published was gone.
+
+- **The metadata of a repository carries the forge the discovery gave
+  it.** The generated index landed in another tree than the pages.
+
+- **The guard of a lost repository does not fire for a version.** The
+  versions of a repository share its URL, so the state holds the count
+  of the last one of them.
+
+- **A link with a title is rewritten.** It kept the extension of the
+  file, and Hugo publishes no .md files.
+
+- **The namespace of a repository is a path segment.**
+
+- **The organizations of GitHub are read page by page.** Every
+  organization after the thirtieth was never scanned.
+
+
 ## [0.35.0] - 2026-11-23
 
 ### Fixed
