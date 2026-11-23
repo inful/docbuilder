@@ -9,6 +9,72 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.3] - 2026-11-23
+
+### Fixed
+- **The multiplication of the backoff does not overflow.** The shift of
+  the exponential backoff was capped, but the product of the shift and
+  the initial delay overflows the duration as well: with an initial
+  delay of ten seconds and thirty-one retries the delay was negative,
+  the sleep returned at once, and the retry loop hammered the failing
+  service without a backoff.
+
+- **The preview daemon does not trigger a discovery.** The preview
+  daemon has no discovery runner: the trigger dereferenced a nil
+  pointer inside a spawned goroutine and killed the process.
+
+- **A failed build updates the state.** The state was only updated
+  after a successful build: every repository still reported the result
+  of the last successful build, and the time of the last build stayed
+  the time of the last successful one.
+
+- **The status page shows the repositories of an explicit
+  configuration.** The list was built from the discovery result alone:
+  an explicit configuration has no discovery result, and the page showed
+  no repository at all.
+
+- **The URL of a repository is logged without its credentials.** A
+  repository URL can carry a token, and the log line ends up in a log
+  collector. Ten places logged the URL as it is.
+
+- **The index of a repository lands in the tree of its pages.** The
+  forge of a repository is the one the discovery gave it: the discovery
+  names a repository only when the configuration asks for it.
+
+- **A sibling readme or index points at the section.** The pipeline
+  renames a readme to _index, and the page is published at the
+  directory of the document.
+
+- **A path with brackets is not cut at the first one.** The closing
+  bracket of a link was the first one of the path, so "./guide(2).md"
+  was cut at the bracket of the path, and the extension of the file
+  was never taken off.
+
+- **The error of a repository is written to the state.** The status of
+  a repository whose clone failed was "ok", because the counter of the
+  last successful build was not zero.
+
+- **The metrics of the build are recorded.** The recorder of the build
+  was never given to anybody: every call went to the no-op recorder,
+  and the metrics of the build stayed at zero.
+
+- **The page waits for its links.** The hash of the page says that the
+  links of the page are checked: a page that is marked as checked while
+  its links are still in the pool is never checked again.
+
+- **The attempts to connect to NATS are spaced out.** The cache of every
+  link of every page asked for a connection, and a server that is down
+  was asked thousands of times in one build.
+
+- **The path of the document and its body have one uid.** The builtins
+  were resolved by every render: the path and the body each had their
+  own uuid.
+
+### Refactoring
+- The forge factory of the tests is test code and is not compiled into
+  the binary any more.
+
+
 ## [0.35.2] - 2026-11-23
 
 ### Fixed
