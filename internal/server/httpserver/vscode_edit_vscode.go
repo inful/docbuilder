@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+// vscodeWaitDelay is how long the command waits for its output after
+// the deadline passed, before the pipes are closed.
+const vscodeWaitDelay = 2 * time.Second
+
 // executeVSCodeOpen finds the VS Code CLI and IPC socket, then opens the file.
 func (s *Server) executeVSCodeOpen(parentCtx context.Context, absPath string) error {
 	// Allow some time for transient VS Code IPC reconnects.
@@ -161,11 +165,25 @@ func runVSCodeCLI(ctx context.Context, codeCmd string, args []string, env []stri
 	cmd := exec.CommandContext(ctx, codeCmd, args...)
 	cmd.Env = env
 
+	// The pipes are closed when the deadline passes: the CLI can leave a
+	// process behind that holds the output open, and the command would
+	// never return. The request hung forever and the browser waited
+	// forever.
+	cmd.WaitDelay = vscodeWaitDelay
+
 	var outBuf, errBuf bytes.Buffer
 	cmd.Stdout = &outBuf
 	cmd.Stderr = &errBuf
 
 	err = cmd.Run()
+	if errors.Is(err, exec.ErrWaitDelay) {
+		// The command itself was done - it exited with a zero status -
+		// and a process it left behind holds the output open. The file
+		// was opened all the same.
+		slog.Debug("VS Code CLI left a process behind that holds the output open",
+			slog.String("code_cli", codeCmd))
+		err = nil
+	}
 	return outBuf.String(), errBuf.String(), err
 }
 
@@ -249,6 +267,9 @@ func findCodeCLI(parentCtx context.Context) string {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "bash", "-l", "-c", "which code")
+	// The pipe is closed when the deadline passes: a shell that leaves
+	// a process behind would keep the command from ever returning.
+	cmd.WaitDelay = vscodeWaitDelay
 	output, err := cmd.Output()
 	if err == nil && len(output) > 0 {
 		codePath := strings.TrimSpace(string(output))
