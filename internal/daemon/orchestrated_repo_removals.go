@@ -42,7 +42,7 @@ func (d *Daemon) handleRepoRemoved(evt events.RepoRemoved) {
 
 	if remover, ok := any(d.state.stateManager).(interface{ RemoveRepositoryState(string) }); ok {
 		remover.RemoveRepositoryState(evt.RepoURL)
-		slog.Info("Repository removed from state", slog.String("repo_url", evt.RepoURL), logfields.Name(evt.RepoName))
+		slog.Info("Repository removed from state", slog.String("repo_url", logfields.RedactURL(evt.RepoURL)), logfields.Name(evt.RepoName))
 	}
 
 	// Best-effort: prune any cached remote-head entries for the removed repository.
@@ -50,7 +50,7 @@ func (d *Daemon) handleRepoRemoved(evt events.RepoRemoved) {
 		d.build.repoUpdater.cache.DeleteByURL(evt.RepoURL)
 		if err := d.build.repoUpdater.cache.Save(); err != nil {
 			slog.Warn("Failed to persist remote HEAD cache after repo removal",
-				slog.String("repo_url", evt.RepoURL),
+				slog.String("repo_url", logfields.RedactURL(evt.RepoURL)),
 				logfields.Error(err))
 		}
 	}
@@ -69,7 +69,7 @@ func (d *Daemon) handleRepoRemoved(evt events.RepoRemoved) {
 	target := filepath.Clean(filepath.Join(base, repoName))
 	if target == base {
 		slog.Warn("Skipping repo cache deletion: refusing to delete repo cache base dir",
-			slog.String("repo_url", evt.RepoURL),
+			slog.String("repo_url", logfields.RedactURL(evt.RepoURL)),
 			logfields.Name(evt.RepoName),
 			slog.String("repo_cache_dir", base),
 			slog.String("target", target))
@@ -77,7 +77,7 @@ func (d *Daemon) handleRepoRemoved(evt events.RepoRemoved) {
 	}
 	if !strings.HasPrefix(target, base+string(os.PathSeparator)) {
 		slog.Warn("Skipping repo cache deletion: path escapes repo cache dir",
-			slog.String("repo_url", evt.RepoURL),
+			slog.String("repo_url", logfields.RedactURL(evt.RepoURL)),
 			logfields.Name(evt.RepoName),
 			slog.String("repo_cache_dir", base),
 			slog.String("target", target))
@@ -85,14 +85,14 @@ func (d *Daemon) handleRepoRemoved(evt events.RepoRemoved) {
 	}
 	if err := os.RemoveAll(target); err != nil {
 		slog.Warn("Failed to remove repo cache directory",
-			slog.String("repo_url", evt.RepoURL),
+			slog.String("repo_url", logfields.RedactURL(evt.RepoURL)),
 			logfields.Name(evt.RepoName),
 			logfields.Path(target),
 			logfields.Error(err))
 		return
 	}
 	slog.Info("Repository cache directory removed",
-		slog.String("repo_url", evt.RepoURL),
+		slog.String("repo_url", logfields.RedactURL(evt.RepoURL)),
 		logfields.Name(evt.RepoName),
 		logfields.Path(target))
 }

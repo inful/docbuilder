@@ -107,7 +107,7 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 	}); err != nil {
 		slog.Warn("Failed to publish repo update request",
 			logfields.JobID(evt.JobID),
-			slog.String("repo_url", matchedRepoURL),
+			slog.String("repo_url", logfields.RedactURL(matchedRepoURL)),
 			logfields.Error(err))
 	}
 }
@@ -192,7 +192,7 @@ func (d *Daemon) resolveWebhookRepoFromForge(ctx context.Context, evt events.Web
 		logfields.JobID(evt.JobID),
 		slog.String("forge", evt.ForgeName),
 		slog.String("repo", evt.RepoFullName),
-		slog.String("repo_url", cfgRepo.URL))
+		slog.String("repo_url", logfields.RedactURL(cfgRepo.URL)))
 
 	return cfgRepo.URL, normalizeGitBranchRef(cfgRepo.Branch), docsPaths
 }

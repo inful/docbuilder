@@ -22,6 +22,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
+	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/search"
 	"git.home.luguber.info/inful/docbuilder/internal/server/handlers"
 	"git.home.luguber.info/inful/docbuilder/internal/server/httpserver"
@@ -197,11 +198,16 @@ func (d *Daemon) initBuildStack(cfg *config.Config) {
 		WithWorkspaceFactory(func() *workspace.Manager {
 			// Use persistent workspace for incremental builds (repo_cache_dir/working).
 			return workspace.NewPersistentManager(cfg.Daemon.Storage.RepoCacheDir, "working")
-		})
+		}).
+		// The metrics of the build go into the collector of the daemon.
+		// Without it every metric went to the no-op recorder, and the
+		// metrics of the build stayed at zero.
+		WithRecorder(metrics.CollectorRecorder{Collector: d.serve.metrics})
 
 	d.build.buildQueue = queue.NewBuildQueue(cfg.Daemon.Sync.QueueSize, cfg.Daemon.Sync.ConcurrentBuilds, d)
-	// Configure retry policy from build config. Recorder injection is
-	// handled elsewhere if added later.
+	// The retries of the build are metrics as well.
+	d.build.buildQueue.SetRecorder(metrics.CollectorRecorder{Collector: d.serve.metrics})
+	// Configure retry policy from build config.
 	d.build.buildQueue.ConfigureRetry(cfg.Build)
 }
 

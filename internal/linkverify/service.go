@@ -186,7 +186,14 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 		})
 		linkWorkers.Go(func() {
 			for job := range linkQueue {
-				s.verifyLink(ctx, job.link, job.page)
+				func() {
+					// The page waits for its links: the end is
+					// called even when the check panics.
+					if job.done != nil {
+						defer job.done()
+					}
+					s.verifyLink(ctx, job.link, job.page)
+				}()
 			}
 		})
 	}
@@ -254,6 +261,9 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 		"path", page.RenderedPath,
 		"link_count", len(links))
 
+	// The links of the page, and their end.
+	var verified sync.WaitGroup
+
 	// Verify each link
 	for _, link := range links {
 		select {
@@ -274,11 +284,20 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 		// The link is verified by the workers of the pool. One
 		// goroutine per link spawned tens of thousands of them on a
 		// portal with thousands of pages.
-		linkQueue <- linkJob{link: link, page: page}
+		verified.Add(1)
+		linkQueue <- linkJob{link: link, page: page, done: verified.Done}
 	}
 
-	// All links verified for this page - update page hash in cache
-	if page.ContentHash != "" {
+	// The links of the page are checked by the pool: the page waits for
+	// them, because the hash of the page says that the links are
+	// checked. A page that is marked as checked while its links are
+	// still in the pool is never checked again.
+	verified.Wait()
+
+	// All links verified for this page - update page hash in cache.
+	// The hash is not written when the run was canceled: the links were
+	// not checked, and the page would never be checked again.
+	if page.ContentHash != "" && ctx.Err() == nil {
 		if err := s.nats.SetPageHash(ctx, page.RenderedPath, page.ContentHash); err != nil {
 			slog.Debug("Failed to cache page hash", "path", page.RenderedPath, "error", err)
 		}
@@ -289,6 +308,11 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 type linkJob struct {
 	link *Link
 	page *PageMetadata
+	// done is called when the link is verified. The page waits for its
+	// links: the hash of the page is written when they are all checked,
+	// and a page that is marked as checked before its links are
+	// verified is never checked again.
+	done func()
 }
 
 // verifyLink verifies a single link.

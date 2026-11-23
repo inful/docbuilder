@@ -11,6 +11,10 @@ type RepositoryMetadataWriter interface {
 
 	// SetRepoDocFilesHash stores the computed hash of document files for change detection.
 	SetRepoDocFilesHash(url string, hash string)
+
+	// SetRepoLastError stores the last error of a repository, and
+	// clears it when the message is empty.
+	SetRepoLastError(url string, message string)
 }
 
 // RepositoryMetadataReader provides methods to read repository discovery metadata.

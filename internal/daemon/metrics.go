@@ -17,7 +17,10 @@ import (
 )
 
 // CustomMetric represents user-defined metrics with constrained JSON-friendly types.
-type CustomMetric any
+//
+// It is an alias of any, so the collector satisfies the interface of the
+// metrics package without an adapter.
+type CustomMetric = any
 
 // MetricsCollector aggregates and exposes daemon metrics.
 type MetricsCollector struct {

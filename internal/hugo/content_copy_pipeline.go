@@ -342,8 +342,9 @@ func forgeOfRepository(bs *models.BuildState, repo *config.Repository) string {
 			}
 		}
 	}
-	if repo.Namespace != "" {
-		return repo.Namespace
-	}
-	return repo.Tags["forge_type"]
+	// The discovery names a repository only when the configuration asks
+	// for it. The namespace of the repository is not the answer: the
+	// pages of a repository without a namespace live in the tree of the
+	// repository, and the generated index has to live there as well.
+	return ""
 }

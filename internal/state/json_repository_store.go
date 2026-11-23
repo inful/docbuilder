@@ -181,6 +181,41 @@ func (rs *jsonRepositoryStore) SetLastCommit(_ context.Context, url, commit stri
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
+// SetLastError records the last error of a repository, under the lock
+// of the store.
+//
+// An empty message takes the error away: the repository built fine.
+func (rs *jsonRepositoryStore) SetLastError(_ context.Context, url, message string) foundation.Result[struct{}, error] {
+	if url == "" {
+		return foundation.Err[struct{}, error](
+			errors.ValidationError("url is required").Build(),
+		)
+	}
+
+	rs.store.mu.Lock()
+	defer rs.store.mu.Unlock()
+
+	repo, exists := rs.store.repositories[url]
+	if !exists {
+		return foundation.Err[struct{}, error](
+			errors.NotFoundError("repository").
+				WithContext("url", url).
+				Build(),
+		)
+	}
+
+	if message == "" {
+		repo.LastError = foundation.None[string]()
+	} else {
+		repo.LastError = foundation.Some(message)
+	}
+	repo.UpdatedAt = time.Now()
+
+	rs.store.dirty = true
+
+	return foundation.Ok[struct{}, error](struct{}{})
+}
+
 // SetLastDiscovery records the time of the last discovery of a
 // repository, under the lock of the store.
 func (rs *jsonRepositoryStore) SetLastDiscovery(_ context.Context, url string, at time.Time) foundation.Result[struct{}, error] {

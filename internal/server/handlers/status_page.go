@@ -210,16 +210,31 @@ func GenerateStatusData(_ context.Context, p StatusProvider) (*StatusPageData, e
 
 func generateRepositoryStatus(p StatusProvider) []RepositoryStatus {
 	repositories := make([]RepositoryStatus, 0)
-	res, _ := p.GetDiscoveryResult()
-	if res == nil {
-		return repositories
-	}
 	// The state of the repositories comes from the daemon: a repository
 	// whose clone failed has an error in the state, and showing it as
 	// healthy tells the operator that everything is fine.
 	statuses := make(map[string]string)
 	for _, info := range p.RepositoryStatuses() {
 		statuses[info.URL] = info.Status
+	}
+
+	res, _ := p.GetDiscoveryResult()
+	if res == nil || len(res.Repositories) == 0 {
+		// The repositories of an explicit configuration are not in a
+		// discovery result: the page showed no repository at all.
+		for _, info := range p.RepositoryStatuses() {
+			status := info.Status
+			if status == "" {
+				status = "unknown"
+			}
+			repositories = append(repositories, RepositoryStatus{
+				Name:     info.Name,
+				URL:      info.URL,
+				Status:   status,
+				LastSync: info.LastSync,
+			})
+		}
+		return repositories
 	}
 
 	for _, repo := range res.Repositories {

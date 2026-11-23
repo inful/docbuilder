@@ -72,7 +72,7 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 			if success {
 				recordCloneSuccess(bs, task.repo, res)
 			} else {
-				recordCloneFailure(bs, res)
+				recordCloneFailure(bs, task.repo, res)
 				if firstErr == nil {
 					firstErr = res.Err
 				}
@@ -180,6 +180,10 @@ func classifyGitFailure(err error) models.ReportIssueCode {
 // recordCloneSuccess updates build state after a successful repository clone.
 func recordCloneSuccess(bs *models.BuildState, repo config.Repository, res RepoFetchResult) {
 	bs.Report.ClonedRepositories++
+
+	// The error of the last build is taken away: the repository built
+	// fine.
+	setRepositoryError(bs, repo, "")
 	bs.Git.RepoPaths[repo.Name] = res.Path
 	if res.PostHead != "" {
 		bs.Git.SetPostHead(repo.Name, res.PostHead)
@@ -198,12 +202,51 @@ func recordCloneSuccess(bs *models.BuildState, repo config.Repository, res RepoF
 }
 
 // recordCloneFailure updates build state after a failed repository clone.
-func recordCloneFailure(bs *models.BuildState, res RepoFetchResult) {
+func recordCloneFailure(bs *models.BuildState, repo config.Repository, res RepoFetchResult) {
 	bs.Report.FailedRepositories++
+
+	// The error is written to the state: the status of a repository
+	// whose clone failed was "ok", because the counter of the last
+	// successful build was not zero.
+	message := "the repository could not be cloned"
+	if res.Err != nil {
+		message = res.Err.Error()
+	}
+	setRepositoryError(bs, repo, message)
 	if bs.Report != nil {
 		code := classifyGitFailure(res.Err)
 		if code != "" {
 			bs.Report.AddIssue(code, models.StageName("clone_repos"), models.SeverityError, res.Err.Error(), false, res.Err)
 		}
 	}
+}
+
+// setRepositoryError records the last error of a repository in the
+// state.
+//
+// The error was never written: a repository whose clone failed showed
+// "ok" on the status page, because the counter of the last successful
+// build was not zero.
+func setRepositoryError(bs *models.BuildState, repo config.Repository, message string) {
+	if bs.Generator == nil {
+		return
+	}
+	sm := bs.Generator.StateManager()
+	if sm == nil {
+		return
+	}
+
+	url := repo.URL
+	if url == "" {
+		url = repo.Name
+	}
+
+	// The repository has to be known before its error can be written.
+	if init, ok := sm.(interface {
+		EnsureRepositoryState(url, name, branch string)
+	}); ok {
+		init.EnsureRepositoryState(url, repo.Name, repo.Branch)
+	}
+
+	sm.SetRepoLastError(url, message)
 }
