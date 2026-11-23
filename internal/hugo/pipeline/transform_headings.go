@@ -56,7 +56,7 @@ func extractH1AsTitle(doc *Document) ([]*Document, error) {
 	}
 
 	// Pattern to match H1 heading
-	h1Pattern := regexp.MustCompile(`(?m)^# (.+)$`)
+	h1Pattern := headingPattern
 	matches := h1Pattern.FindStringSubmatchIndex(doc.Content)
 
 	if matches != nil {
@@ -87,7 +87,7 @@ func stripHeading(doc *Document) ([]*Document, error) {
 	}
 
 	// Pattern to match H1 heading at start of content
-	h1Pattern := regexp.MustCompile(`(?m)^# (.+)\n?`)
+	h1Pattern := headingPatternWithNewline
 
 	// Check if H1 is at the start of content (no text before it)
 	matches := h1Pattern.FindStringSubmatchIndex(doc.Content)
@@ -102,3 +102,10 @@ func stripHeading(doc *Document) ([]*Document, error) {
 
 	return nil, nil
 }
+
+// The patterns of the headings are compiled once: they were compiled
+// for every document of every build.
+var (
+	headingPattern            = regexp.MustCompile(`(?m)^# (.+)$`)
+	headingPatternWithNewline = regexp.MustCompile(`(?m)^# (.+)\n?`)
+)

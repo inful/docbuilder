@@ -143,7 +143,7 @@ func isAbsoluteOrSpecialURL(path string) bool {
 // rewriteImageLinks rewrites image paths to work with Hugo.
 func rewriteImageLinks(doc *Document) ([]*Document, error) {
 	// Pattern to match markdown images: ![alt](path)
-	imagePattern := regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)\)`)
+	imagePattern := imageLinkPattern
 
 	lowerPathPreserveQueryAndFragment := func(p string) string {
 		cut := len(p)
@@ -183,7 +183,7 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 	})
 
 	// Also handle HTML img tags: <img src="path" ...>
-	htmlImgPattern := regexp.MustCompile(`<img\s+([^>]*\s+)?src="([^"]+)"([^>]*)>`)
+	htmlImgPattern := htmlImagePattern
 
 	doc.Content = htmlImgPattern.ReplaceAllStringFunc(doc.Content, func(match string) string {
 		submatches := htmlImgPattern.FindStringSubmatch(match)
@@ -463,3 +463,10 @@ func buildFullPath(forge, repository, section, path string) string {
 
 	return strings.Join(parts, "/")
 }
+
+// The patterns of the images are compiled once: they were compiled for
+// every document of every build.
+var (
+	imageLinkPattern = regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)\)`)
+	htmlImagePattern = regexp.MustCompile(`<img\s+([^>]*\s+)?src="([^"]+)"([^>]*)>`)
+)
