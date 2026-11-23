@@ -8,6 +8,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // DiscoverCmd implements the 'discover' command.
@@ -72,7 +73,7 @@ func RunDiscover(cfg *config.Config, specificRepo string) error {
 	repoPaths := make(map[string]string)
 	for i := range reposToProcess {
 		repo := &reposToProcess[i]
-		slog.Info("Cloning repository", "name", repo.Name, "url", repo.URL)
+		slog.Info("Cloning repository", logfields.Name(repo.Name), logfields.URL(repo.URL))
 
 		var result git.CloneResult
 		result, err = gitClient.CloneRepoWithMetadata(*repo)

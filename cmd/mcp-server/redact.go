@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // redactedMarker is the placeholder used to replace secret values anywhere
@@ -44,6 +45,12 @@ func redactConfig(cfg *config.Config) *config.Config {
 	if len(cfg.Repositories) > 0 {
 		clone.Repositories = make([]config.Repository, len(cfg.Repositories))
 		copy(clone.Repositories, cfg.Repositories)
+		// The URL of a repository holds a token in the documentation:
+		// "https://oauth2:${TOKEN}@github.com/org/repo.git". The
+		// credentials are taken off before the answer leaves the server.
+		for i := range clone.Repositories {
+			clone.Repositories[i].URL = logfields.RedactURL(clone.Repositories[i].URL)
+		}
 	}
 	if len(cfg.Forges) > 0 {
 		// Deep-copy each forge: the slice holds pointers, so copying the
