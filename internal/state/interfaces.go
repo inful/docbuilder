@@ -38,9 +38,6 @@ type RepositoryStore interface {
 
 	// SetDocFilesHash updates the document files hash for incremental detection.
 	SetDocFilesHash(ctx context.Context, url string, hash string) foundation.Result[struct{}, error]
-
-	// SetDocFilePaths updates the document file paths for a repository.
-	SetDocFilePaths(ctx context.Context, url string, paths []string) foundation.Result[struct{}, error]
 }
 
 // ScheduleStore handles schedule state persistence and queries.

@@ -197,45 +197,6 @@ func (a *ServiceAdapter) GetRepoDocFilesHash(url string) string {
 	return hashOpt.Unwrap()
 }
 
-// GetRepoDocFilePaths returns the document file paths for a repository.
-func (a *ServiceAdapter) GetRepoDocFilePaths(url string) []string {
-	if url == "" {
-		return nil
-	}
-	ctx := context.Background()
-	store := a.service.GetRepositoryStore()
-	result := store.GetByURL(ctx, url)
-	if result.IsErr() {
-		return nil
-	}
-	opt := result.Unwrap()
-	if opt.IsNone() {
-		return nil
-	}
-	// Return a copy to prevent mutation
-	paths := opt.Unwrap().DocFilePaths
-	if len(paths) == 0 {
-		return nil
-	}
-	cp := make([]string, len(paths))
-	copy(cp, paths)
-	return cp
-}
-
-// --- RepositoryMetadataStore interface (extends Reader + Writer) ---
-
-// SetRepoDocFilePaths sets the document file paths for a repository.
-func (a *ServiceAdapter) SetRepoDocFilePaths(url string, paths []string) {
-	if url == "" {
-		return
-	}
-	ctx := context.Background()
-	store := a.service.GetRepositoryStore()
-	if res := store.SetDocFilePaths(ctx, url, paths); res.IsErr() {
-		logStateError("the doc-file paths", res.UnwrapErr())
-	}
-}
-
 // --- RepositoryCommitTracker interface ---
 
 // SetRepoLastCommit sets the last commit hash for a repository.
@@ -449,7 +410,6 @@ type RepositoryState struct {
 	ErrorCount    int64
 	LastError     string
 	DocFilesHash  string
-	DocFilePaths  []string
 }
 
 // GetRepository retrieves repository state by URL, returning nil if not found.
@@ -478,7 +438,6 @@ func (a *ServiceAdapter) GetRepository(url string) *RepositoryState {
 		DocumentCount: repo.DocumentCount,
 		BuildCount:    repo.BuildCount,
 		ErrorCount:    repo.ErrorCount,
-		DocFilePaths:  repo.DocFilePaths,
 	}
 
 	// Convert Option types to plain types/pointers

@@ -101,12 +101,6 @@ func (*fakeDaemonStateManager) EnsureRepositoryState(string, string, string) {
 }
 func (*fakeDaemonStateManager) SetRepoDocumentCount(string, int)   {}
 func (*fakeDaemonStateManager) SetRepoDocFilesHash(string, string) {}
-func (*fakeDaemonStateManager) GetRepoDocFilePaths(string) []string {
-	return nil
-}
-
-func (*fakeDaemonStateManager) SetRepoDocFilePaths(string, []string) {
-}
 
 func (*fakeDaemonStateManager) IncrementRepoBuild(string, bool) {}
 func (*fakeDaemonStateManager) RecordDiscovery(string, int)     {}

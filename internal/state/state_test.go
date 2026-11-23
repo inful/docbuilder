@@ -82,9 +82,6 @@ func testRepositoryOperations(t *testing.T) {
 	if hashResult := repoStore.SetDocFilesHash(ctx, repo.URL, "abc123"); hashResult.IsErr() {
 		t.Fatalf("Failed to set doc files hash: %v", hashResult.UnwrapErr())
 	}
-	if pathsResult := repoStore.SetDocFilePaths(ctx, repo.URL, []string{"docs/a.md", "docs/b.md"}); pathsResult.IsErr() {
-		t.Fatalf("Failed to set doc file paths: %v", pathsResult.UnwrapErr())
-	}
 
 	metaResult := repoStore.GetByURL(ctx, repo.URL)
 	if metaResult.IsErr() || metaResult.Unwrap().IsNone() {
@@ -93,9 +90,6 @@ func testRepositoryOperations(t *testing.T) {
 	meta := metaResult.Unwrap().Unwrap()
 	if meta.DocFilesHash.IsNone() || meta.DocFilesHash.Unwrap() != "abc123" {
 		t.Fatalf("Doc files hash not stored correctly: %+v", meta.DocFilesHash)
-	}
-	if len(meta.DocFilePaths) != 2 || meta.DocFilePaths[0] != "docs/a.md" || meta.DocFilePaths[1] != "docs/b.md" {
-		t.Fatalf("Doc file paths not stored correctly: %+v", meta.DocFilePaths)
 	}
 
 	t.Run("Repository metadata requires existing repo", func(t *testing.T) {
@@ -127,12 +121,6 @@ func testRepositoryMetadataValidation(t *testing.T, repoStore RepositoryStore) {
 			name: "doc-hash",
 			call: func() foundation.Result[struct{}, error] {
 				return repoStore.SetDocFilesHash(ctx, missingURL, "hash")
-			},
-		},
-		{
-			name: "doc-paths",
-			call: func() foundation.Result[struct{}, error] {
-				return repoStore.SetDocFilePaths(ctx, missingURL, []string{"a"})
 			},
 		},
 	}

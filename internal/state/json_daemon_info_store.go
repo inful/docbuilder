@@ -33,7 +33,6 @@ func (ds *jsonDaemonInfoStore) Update(_ context.Context, info *DaemonInfo) found
 		info,
 		func() { info.LastUpdate = time.Now() },
 		func() { ds.store.daemonInfo = info },
-		"failed to save daemon info",
 	)
 }
 
@@ -50,13 +49,7 @@ func (ds *jsonDaemonInfoStore) UpdateStatus(_ context.Context, status string) fo
 	ds.store.daemonInfo.Status = status
 	ds.store.daemonInfo.LastUpdate = time.Now()
 
-	if ds.store.autoSaveEnabled {
-		if err := ds.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				errors.InternalError("failed to save daemon status").WithCause(err).Build(),
-			)
-		}
-	}
+	ds.store.dirty = true
 
 	return foundation.Ok[struct{}, error](struct{}{})
 }

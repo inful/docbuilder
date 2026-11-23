@@ -17,13 +17,10 @@ type jsonScheduleStore struct {
 func (ss *jsonScheduleStore) Create(_ context.Context, schedule *Schedule) foundation.Result[*Schedule, error] {
 	return createEntity(
 		schedule,
-		"schedule",
 		&ss.store.mu,
 		func(s *Schedule) { s.CreatedAt = time.Now(); s.UpdatedAt = s.CreatedAt },
 		func(s *Schedule) { ss.store.schedules[s.ID] = s },
-		func(s *Schedule) { delete(ss.store.schedules, s.ID) },
-		ss.store.autoSaveEnabled,
-		ss.store.saveToDiskUnsafe,
+		func() { ss.store.dirty = true },
 	)
 }
 
@@ -60,7 +57,6 @@ func (ss *jsonScheduleStore) Update(_ context.Context, schedule *Schedule) found
 					Build(),
 			)
 		},
-		"failed to save schedule update",
 	)
 }
 
@@ -72,14 +68,8 @@ func (ss *jsonScheduleStore) Delete(_ context.Context, id string) foundation.Res
 		id,
 		func() bool { _, exists := ss.store.schedules[id]; return exists },
 		func() { delete(ss.store.schedules, id) },
-		func() error {
-			if ss.store.autoSaveEnabled {
-				return ss.store.saveToDiskUnsafe()
-			}
-			return nil
-		},
 		"schedule",
-		"failed to save schedule deletion",
+		func() { ss.store.dirty = true },
 	)
 }
 

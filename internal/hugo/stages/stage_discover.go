@@ -111,8 +111,8 @@ func persistDiscoveredDocsToState(bs *models.BuildState, docFiles []docs.DocFile
 		}
 		sm.SetRepoDocumentCount(repoURL, len(paths))
 		sm.SetRepoDocFilesHash(repoURL, hash)
-		if setter, ok := sm.(interface{ SetRepoDocFilePaths(string, []string) }); ok {
-			setter.SetRepoDocFilePaths(repoURL, paths)
-		}
+		// The paths of the pages are not stored: the hash of the files of
+		// the repository covers the change detection, and the paths made
+		// the state file grow to megabytes.
 	}
 }

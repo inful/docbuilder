@@ -42,13 +42,7 @@ func (cs *jsonConfigurationStore) Set(_ context.Context, key string, value any) 
 
 	cs.store.configuration[key] = value
 
-	if cs.store.autoSaveEnabled {
-		if err := cs.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				errors.InternalError("failed to save configuration").WithCause(err).Build(),
-			)
-		}
-	}
+	cs.store.dirty = true
 
 	return foundation.Ok[struct{}, error](struct{}{})
 }
@@ -61,14 +55,8 @@ func (cs *jsonConfigurationStore) Delete(_ context.Context, key string) foundati
 		key,
 		func() bool { _, exists := cs.store.configuration[key]; return exists },
 		func() { delete(cs.store.configuration, key) },
-		func() error {
-			if cs.store.autoSaveEnabled {
-				return cs.store.saveToDiskUnsafe()
-			}
-			return nil
-		},
 		"configuration key",
-		"failed to save configuration deletion",
+		func() { cs.store.dirty = true },
 	)
 }
 

@@ -21,15 +21,19 @@ const healthyStatus = "healthy"
 // This demonstrates how to implement the state interfaces while maintaining
 // the same persistence format as the original StateManager.
 type JSONStore struct {
-	dataDir         string
-	mu              sync.RWMutex
-	repositories    map[string]*Repository
-	schedules       map[string]*Schedule
-	statistics      *Statistics
-	configuration   map[string]any
-	daemonInfo      *DaemonInfo
-	lastSaved       *time.Time
-	autoSaveEnabled bool
+	dataDir       string
+	mu            sync.RWMutex
+	repositories  map[string]*Repository
+	schedules     map[string]*Schedule
+	statistics    *Statistics
+	configuration map[string]any
+	daemonInfo    *DaemonInfo
+	lastSaved     *time.Time
+	// dirty records that the state changed and that the file has to be
+	// written. The changes are written when the state is saved: a build
+	// writes the state of every repository, and writing the whole file
+	// for each of them rewrote it hundreds of times.
+	dirty bool
 }
 
 const stateSnapshotFormatVersion = "1"
@@ -60,11 +64,10 @@ func NewJSONStore(dataDir string) foundation.Result[*JSONStore, error] {
 	}
 
 	store := &JSONStore{
-		dataDir:         dataDir,
-		repositories:    make(map[string]*Repository),
-		schedules:       make(map[string]*Schedule),
-		configuration:   make(map[string]any),
-		autoSaveEnabled: true,
+		dataDir:       dataDir,
+		repositories:  make(map[string]*Repository),
+		schedules:     make(map[string]*Schedule),
+		configuration: make(map[string]any),
 		statistics: &Statistics{
 			LastStatReset: time.Now(),
 			LastUpdated:   time.Now(),
@@ -167,6 +170,11 @@ func (js *JSONStore) Flush(_ context.Context) foundation.Result[struct{}, error]
 	js.mu.Lock()
 	defer js.mu.Unlock()
 
+	if !js.dirty {
+		// Nothing changed since the last write.
+		return foundation.Ok[struct{}, error](struct{}{})
+	}
+
 	if err := js.saveToDiskUnsafe(); err != nil {
 		return foundation.Err[struct{}, error](
 			errors.InternalError("failed to flush state").
@@ -264,6 +272,7 @@ func (js *JSONStore) saveToDiskUnsafe() error {
 	}
 
 	js.lastSaved = &now
+	js.dirty = false
 	return nil
 }
 

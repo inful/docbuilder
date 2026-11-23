@@ -75,24 +75,9 @@ func TestServiceAdapter(t *testing.T) {
 		}
 	})
 
-	t.Run("RepositoryMetadataStore interface", func(t *testing.T) {
-		url := testRepoURL
-		paths := []string{"docs/index.md", "docs/guide.md", "docs/api.md"}
-
-		// Set doc file paths
-		adapter.SetRepoDocFilePaths(url, paths)
-
-		// Get doc file paths
-		gotPaths := adapter.GetRepoDocFilePaths(url)
-		if len(gotPaths) != len(paths) {
-			t.Errorf("Expected %d paths, got %d", len(paths), len(gotPaths))
-		}
-		for i, p := range paths {
-			if gotPaths[i] != p {
-				t.Errorf("Path mismatch at index %d: expected %s, got %s", i, p, gotPaths[i])
-			}
-		}
-	})
+	// The paths of the pages are not stored any more: the hash of the
+	// files of the repository covers the change detection, and the paths
+	// made the state file grow to megabytes.
 
 	t.Run("RepositoryCommitTracker interface", func(t *testing.T) {
 		url := testRepoURL
@@ -164,7 +149,6 @@ func TestServiceAdapter(t *testing.T) {
 		adapter.EnsureRepositoryState("", "name", "branch")
 		adapter.SetRepoDocumentCount("", 10)
 		adapter.SetRepoDocFilesHash("", "hash")
-		adapter.SetRepoDocFilePaths("", []string{"path"})
 		adapter.SetRepoLastCommit("", "name", "branch", "commit")
 		adapter.IncrementRepoBuild("", true)
 		adapter.RecordDiscovery("", 10)
@@ -172,9 +156,6 @@ func TestServiceAdapter(t *testing.T) {
 		// Getters should return empty/nil for empty URL
 		if got := adapter.GetRepoDocFilesHash(""); got != "" {
 			t.Errorf("Expected empty string for empty URL, got: %s", got)
-		}
-		if got := adapter.GetRepoDocFilePaths(""); got != nil {
-			t.Errorf("Expected nil for empty URL, got: %v", got)
 		}
 		if got := adapter.GetRepoLastCommit(""); got != "" {
 			t.Errorf("Expected empty string for empty URL, got: %s", got)
@@ -187,9 +168,6 @@ func TestServiceAdapter(t *testing.T) {
 		// Getters should return empty/nil for non-existent repos
 		if got := adapter.GetRepoDocFilesHash(nonExistentURL); got != "" {
 			t.Errorf("Expected empty string for non-existent repo, got: %s", got)
-		}
-		if got := adapter.GetRepoDocFilePaths(nonExistentURL); got != nil {
-			t.Errorf("Expected nil for non-existent repo, got: %v", got)
 		}
 		if got := adapter.GetRepoLastCommit(nonExistentURL); got != "" {
 			t.Errorf("Expected empty string for non-existent repo, got: %s", got)
