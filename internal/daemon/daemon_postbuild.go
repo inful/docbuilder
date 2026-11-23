@@ -22,16 +22,21 @@ import (
 // updateStateAfterBuild updates the state manager with build metadata for skip evaluation.
 // This ensures subsequent builds can correctly detect when nothing has changed.
 func (d *Daemon) updateStateAfterBuild(report *models.BuildReport) {
-	// Update config hash
-	if report.ConfigHash != "" {
-		d.state.stateManager.SetLastConfigHash(report.ConfigHash)
-		slog.Debug("Updated config hash in state", "hash", report.ConfigHash)
-	}
+	// The hashes are written for a successful build only: a failed build
+	// has partial documents, and the hash of a partial build would make
+	// the next build skip a change.
+	if report.Outcome == models.OutcomeSuccess {
+		// Update config hash
+		if report.ConfigHash != "" {
+			d.state.stateManager.SetLastConfigHash(report.ConfigHash)
+			slog.Debug("Updated config hash in state", "hash", report.ConfigHash)
+		}
 
-	// Update global doc files hash
-	if report.DocFilesHash != "" {
-		d.state.stateManager.SetLastGlobalDocFilesHash(report.DocFilesHash)
-		slog.Debug("Updated global doc files hash in state", "hash", report.DocFilesHash)
+		// Update global doc files hash
+		if report.DocFilesHash != "" {
+			d.state.stateManager.SetLastGlobalDocFilesHash(report.DocFilesHash)
+			slog.Debug("Updated global doc files hash in state", "hash", report.DocFilesHash)
+		}
 	}
 
 	// Update repository commits and hashes.

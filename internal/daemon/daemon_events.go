@@ -57,14 +57,19 @@ func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, repor
 			"skip_reason", report.SkipReason)
 	}
 
-	// Update state manager after successful builds.
-	// This is critical for skip evaluation to work correctly on subsequent builds.
-	if report != nil && report.Outcome == models.OutcomeSuccess && d.state.stateManager != nil && d.config != nil {
+	// The state is updated after every build, also after a failed one:
+	// the counters of the repositories and the time of the last build
+	// have to show the failed build, or every repository keeps
+	// reporting the result of the last successful build.
+	if report != nil && d.state.stateManager != nil && d.config != nil {
 		d.updateStateAfterBuild(report)
-		// The search index holds the pages of the last build. It is
-		// written in the background, the way the link verification
-		// runs: on a big site the walk over every page takes seconds,
-		// and the next build must not wait for it.
+	}
+
+	// The search index holds the pages of the last build. It is
+	// written in the background, the way the link verification runs: on
+	// a big site the walk over every page takes seconds, and the next
+	// build must not wait for it.
+	if report != nil && report.Outcome == models.OutcomeSuccess && d.state.stateManager != nil && d.config != nil {
 		d.startIndexSearch(ctx, resolveOutputDir(d.config))
 	}
 
