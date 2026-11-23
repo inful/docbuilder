@@ -33,6 +33,12 @@ type NATSClient struct {
 	kvBucket     string
 	mu           sync.RWMutex
 	reconnecting atomic.Bool
+	// The times to live of the cache entries, read once: they were
+	// parsed on every lookup, and a value that does not parse left the
+	// time to live at zero, so every link was checked again on every
+	// build.
+	successTTL time.Duration
+	failureTTL time.Duration
 }
 
 // NewNATSClient creates a new NATS client for link verification.
@@ -47,9 +53,11 @@ func NewNATSClient(cfg *config.LinkVerificationConfig) (*NATSClient, error) {
 	}
 
 	client := &NATSClient{
-		cfg:      cfg,
-		subject:  cfg.Subject,
-		kvBucket: cfg.KVBucket,
+		cfg:        cfg,
+		subject:    cfg.Subject,
+		kvBucket:   cfg.KVBucket,
+		successTTL: parseTTL(cfg.CacheTTL, defaultSuccessTTL),
+		failureTTL: parseTTL(cfg.CacheTTLFailures, defaultFailureTTL),
 	}
 
 	// Attempt initial connection (non-fatal if fails)
@@ -409,11 +417,9 @@ func (c *NATSClient) IsCacheValid(entry *CacheEntry) bool {
 		return false
 	}
 
-	var ttl time.Duration
-	if entry.IsValid {
-		ttl, _ = time.ParseDuration(c.cfg.CacheTTL)
-	} else {
-		ttl, _ = time.ParseDuration(c.cfg.CacheTTLFailures)
+	ttl := c.successTTL
+	if !entry.IsValid {
+		ttl = c.failureTTL
 	}
 
 	return time.Since(entry.LastChecked) < ttl
@@ -507,4 +513,28 @@ func redactURL(raw string) string {
 	}
 	parsed.User = nil
 	return parsed.String()
+}
+
+// The times to live of the cache entries, and the defaults of the
+// configuration.
+const (
+	defaultSuccessTTL = 24 * time.Hour
+	defaultFailureTTL = time.Hour
+)
+
+// parseTTL reads a time to live. A value that does not parse falls back
+// to the default: the entry is checked again after the default, and not
+// after every build.
+func parseTTL(value string, fallback time.Duration) time.Duration {
+	if value == "" {
+		return fallback
+	}
+	parsed, err := time.ParseDuration(value)
+	if err != nil || parsed <= 0 {
+		slog.Warn("The time to live of the cache is not a duration; the default is used",
+			slog.String("value", value),
+			slog.Duration("default", fallback))
+		return fallback
+	}
+	return parsed
 }

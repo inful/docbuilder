@@ -152,6 +152,17 @@ func GenerateStatusData(_ context.Context, p StatusProvider) (*StatusPageData, e
 	data.BuildStatus.LastBuildTime = p.GetLastBuildTime()
 
 	if proj := p.GetBuildProjection(); proj != nil {
+		// The builds that ran and the ones that failed: the fields were
+		// serialized and never filled, so the page reported zero of both
+		// while the daemon was building and failing.
+		for _, build := range proj.GetHistory() {
+			switch build.Status {
+			case "completed":
+				data.BuildStatus.CompletedBuilds++
+			case "failed":
+				data.BuildStatus.FailedBuilds++
+			}
+		}
 		if last := proj.GetLastCompletedBuild(); last != nil && last.ReportData != nil {
 			rd := last.ReportData
 			if len(rd.StageDurations) > 0 {

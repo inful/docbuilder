@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
+	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
 // RepositoryStatuses returns the repositories the daemon knows about and
@@ -49,13 +50,18 @@ func (d *Daemon) RepositoryStatuses() []responses.RepositoryInfo {
 	infos := make([]responses.RepositoryInfo, 0, len(urls))
 	for _, url := range urls {
 		info := responses.RepositoryInfo{URL: url}
-		if state := d.state.stateManager.GetRepository(url); state != nil {
-			info.Name = state.Name
-			info.Branch = state.Branch
-			info.LastSync = state.LastBuild
-			info.LastCommit = state.LastCommit
-			info.DocCount = state.DocumentCount
-			info.Status = repositoryStatus(state.BuildCount, state.ErrorCount, state.LastError)
+		// The preview has no state: there is nothing to read.
+		var repoState *state.RepositoryState
+		if d.state.stateManager != nil {
+			repoState = d.state.stateManager.GetRepository(url)
+		}
+		if repoState != nil {
+			info.Name = repoState.Name
+			info.Branch = repoState.Branch
+			info.LastSync = repoState.LastBuild
+			info.LastCommit = repoState.LastCommit
+			info.DocCount = repoState.DocumentCount
+			info.Status = repositoryStatus(repoState.BuildCount, repoState.ErrorCount, repoState.LastError)
 		} else {
 			info.Status = "unknown"
 		}
