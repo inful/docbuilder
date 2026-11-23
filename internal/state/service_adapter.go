@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // ServiceAdapter wraps a state.Service and implements the narrow interfaces
@@ -142,7 +143,7 @@ func (a *ServiceAdapter) RemoveRepositoryState(url string) {
 	res := store.Delete(ctx, url)
 	if res.IsErr() {
 		slog.Warn("Failed to delete repository state",
-			slog.String("url", url),
+			slog.String("url", logfields.RedactURL(url)),
 			slog.Any("error", res.UnwrapErr()))
 	}
 }

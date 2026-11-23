@@ -52,7 +52,7 @@ func (d *Daemon) onDiscoveryRepoRemoved(ctx context.Context, repoURL, repoName s
 	if pubErr != nil {
 		slog.Warn("Failed to publish repo removed event",
 			slog.String("repo", repoName),
-			slog.String("repo_url", repoURL),
+			slog.String("repo_url", logfields.RedactURL(repoURL)),
 			logfields.Error(pubErr))
 	}
 }

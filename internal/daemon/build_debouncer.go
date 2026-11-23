@@ -9,6 +9,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	ferrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 type BuildDebouncerConfig struct {
@@ -347,7 +348,7 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 			slog.String("job_id", jobID),
 			slog.String("cause", cause),
 			slog.String("reason", reason),
-			slog.String("repo_url", repoURL),
+			slog.String("repo_url", logfields.RedactURL(repoURL)),
 			slog.String("branch", branch),
 			slog.Any("error", err))
 
