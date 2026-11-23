@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
@@ -258,16 +257,11 @@ func (a *ServiceAdapter) SetRepoLastCommit(url, name, branch, commit string) {
 		a.EnsureRepositoryState(url, name, branch)
 	}
 
-	// Update the repository with the new commit
-	result = store.GetByURL(ctx, url)
-	if result.IsErr() || result.Unwrap().IsNone() {
-		return
-	}
-	repo := result.Unwrap().Unwrap()
-	repo.LastCommit = foundation.Some(commit)
-	repo.UpdatedAt = time.Now()
-	if res := store.Update(ctx, repo); res.IsErr() {
-		logStateError("the repository", res.UnwrapErr())
+	// Update the repository with the new commit. The store changes the
+	// entry under its lock: a read of the entry and a write of it back
+	// lose the changes that another writer made in between.
+	if res := store.SetLastCommit(ctx, url, commit, time.Now()); res.IsErr() {
+		logStateError("the commit", res.UnwrapErr())
 	}
 }
 
@@ -430,22 +424,12 @@ func (a *ServiceAdapter) RecordDiscovery(repoURL string, documentCount int) {
 	statsStore := a.service.GetStatisticsStore()
 	_ = statsStore.RecordDiscovery(ctx, documentCount)
 
-	// Update repository state
+	// Update repository state. The store changes the entry under its
+	// lock, so the discovery does not write over the commit that the
+	// build recorded in the meantime.
 	repoStore := a.service.GetRepositoryStore()
-	result := repoStore.GetByURL(ctx, repoURL)
-	if result.IsOk() {
-		if opt := result.Unwrap(); opt.IsSome() {
-			repo := opt.Unwrap()
-			now := time.Now()
-			repo.LastDiscovery = foundation.Some(now)
-			repo.UpdatedAt = now
-			// The number of documents is not written here: the
-			// discovery does not know it, and the build writes the real
-			// number. Writing the zero of the discovery emptied it.
-			if res := repoStore.Update(ctx, repo); res.IsErr() {
-				logStateError("the repository", res.UnwrapErr())
-			}
-		}
+	if res := repoStore.SetLastDiscovery(ctx, repoURL, time.Now()); res.IsErr() {
+		logStateError("the time of the last discovery", res.UnwrapErr())
 	}
 }
 

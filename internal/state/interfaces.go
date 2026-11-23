@@ -30,6 +30,12 @@ type RepositoryStore interface {
 	// SetDocumentCount updates the document count for a repository.
 	SetDocumentCount(ctx context.Context, url string, count int) foundation.Result[struct{}, error]
 
+	// SetLastCommit records the commit a repository was built at.
+	SetLastCommit(ctx context.Context, url, commit string, updatedAt time.Time) foundation.Result[struct{}, error]
+
+	// SetLastDiscovery records the time of the last discovery of a repository.
+	SetLastDiscovery(ctx context.Context, url string, at time.Time) foundation.Result[struct{}, error]
+
 	// SetDocFilesHash updates the document files hash for incremental detection.
 	SetDocFilesHash(ctx context.Context, url string, hash string) foundation.Result[struct{}, error]
 

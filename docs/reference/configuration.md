@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 060709d08b63210ed35abaf163e96fdd16bb55454af2a0779000f500d9e8bcb0
+fingerprint: 7c8e38168d8d46f947c20dc5c9ccd6f308fc5002fed88ac9e15fc5c4f853fa8e
 lastmod: "2026-11-22"
 tags:
   - configuration
@@ -203,7 +203,7 @@ DocBuilder stores link verification results and page hashes in a JetStream KV bu
 | rate_limit_delay | duration | 100ms | Delay between link verification requests. |
 | verify_external_only | bool | false | Verify only external links (skip internal links). |
 | skip_edit_links | bool | true | Skip edit links that require authentication. |
-| follow_redirects | bool | true | Follow HTTP redirects during verification. |
+| follow_redirects | bool | true | Follow HTTP redirects during verification. An explicit `false` is honoured. |
 | max_redirects | int | 3 | Maximum number of redirects to follow. |
 
 ### Link Verification Examples

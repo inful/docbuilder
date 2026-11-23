@@ -172,6 +172,83 @@ func (rs *jsonRepositoryStore) IncrementBuildCount(_ context.Context, url string
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
+// SetLastCommit records the commit a repository was built at.
+//
+// The entry is changed under the lock of the store: a read of the
+// entry, a change of the copy and a write of it back lose the changes
+// that another writer made in between.
+func (rs *jsonRepositoryStore) SetLastCommit(_ context.Context, url, commit string, updatedAt time.Time) foundation.Result[struct{}, error] {
+	if url == "" || commit == "" {
+		return foundation.Err[struct{}, error](
+			errors.ValidationError("url and commit are required").Build(),
+		)
+	}
+
+	rs.store.mu.Lock()
+	defer rs.store.mu.Unlock()
+
+	repo, exists := rs.store.repositories[url]
+	if !exists {
+		return foundation.Err[struct{}, error](
+			errors.NotFoundError("repository").
+				WithContext("url", url).
+				Build(),
+		)
+	}
+
+	repo.LastCommit = foundation.Some(commit)
+	repo.UpdatedAt = updatedAt
+
+	if rs.store.autoSaveEnabled {
+		if err := rs.store.saveToDiskUnsafe(); err != nil {
+			return foundation.Err[struct{}, error](
+				errors.InternalError("failed to save the commit").
+					WithCause(err).
+					Build(),
+			)
+		}
+	}
+
+	return foundation.Ok[struct{}, error](struct{}{})
+}
+
+// SetLastDiscovery records the time of the last discovery of a
+// repository, under the lock of the store.
+func (rs *jsonRepositoryStore) SetLastDiscovery(_ context.Context, url string, at time.Time) foundation.Result[struct{}, error] {
+	if url == "" {
+		return foundation.Err[struct{}, error](
+			errors.ValidationError("url is required").Build(),
+		)
+	}
+
+	rs.store.mu.Lock()
+	defer rs.store.mu.Unlock()
+
+	repo, exists := rs.store.repositories[url]
+	if !exists {
+		return foundation.Err[struct{}, error](
+			errors.NotFoundError("repository").
+				WithContext("url", url).
+				Build(),
+		)
+	}
+
+	repo.LastDiscovery = foundation.Some(at)
+	repo.UpdatedAt = at
+
+	if rs.store.autoSaveEnabled {
+		if err := rs.store.saveToDiskUnsafe(); err != nil {
+			return foundation.Err[struct{}, error](
+				errors.InternalError("failed to save the time of the last discovery").
+					WithCause(err).
+					Build(),
+			)
+		}
+	}
+
+	return foundation.Ok[struct{}, error](struct{}{})
+}
+
 func (rs *jsonRepositoryStore) SetDocumentCount(_ context.Context, url string, count int) foundation.Result[struct{}, error] {
 	if count < 0 {
 		return foundation.Err[struct{}, error](
