@@ -254,6 +254,13 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 		path = path[:len(before)] + "/"
 	}
 
+	// A sibling README or index is the index of the section: the
+	// pipeline renames it to _index, and the page is published at the
+	// directory of the document.
+	if lowerPath == "readme" || lowerPath == "index" {
+		return sectionIndexPath(docPath, repository, forge, isSingleRepo) + suffix
+	}
+
 	// Handle repository-root-relative links (start with /): normalize case and namespace.
 	if rel, ok := strings.CutPrefix(path, "/"); ok {
 		rel = strings.ToLower(rel)
@@ -368,6 +375,21 @@ func handleRegularFileLink(path, docPath, repository, forge string, isSingleRepo
 		return "/" + strings.ToLower(docDir+"/"+path)
 	}
 	return "/" + strings.ToLower(path)
+}
+
+// sectionIndexPath returns the address of the section of a document.
+//
+// The README of a section is renamed to _index, and the page is
+// published at the directory of the document.
+func sectionIndexPath(docPath, repository, forge string, isSingleRepo bool) string {
+	docDir := extractDirectory(docPath, isSingleRepo, forge)
+	if !isSingleRepo && repository != "" {
+		return buildFullPath(forge, repository, docDir, "") + "/"
+	}
+	if docDir != "" {
+		return "/" + strings.ToLower(docDir) + "/"
+	}
+	return "/"
 }
 
 // extractDirectory extracts the directory part of a Hugo path.
