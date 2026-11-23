@@ -74,10 +74,19 @@ func tryProcessLink(content string, i int, repository, forge string, isIndex boo
 	text := content[i+1 : closeBracket]
 	path := content[closeBracket+2 : closeParen]
 
-	// A link may carry a title: "[text](path "title")". The title is
-	// split off the path, and it is put back after the rewrite.
+	// The angle bracket form: "[text](<path with spaces>)". The path is
+	// everything up to the closing bracket.
+	angleForm := false
 	title := ""
-	if space := strings.IndexAny(path, " \t"); space != -1 {
+	if strings.HasPrefix(path, "<") {
+		if end := strings.Index(path, ">"); end >= 0 {
+			angleForm = true
+			title = path[end+1:]
+			path = path[1:end]
+		}
+	} else if space := strings.IndexAny(path, " \t"); space != -1 {
+		// A link may carry a title: "[text](path "title")". The title
+		// is split off the path, and it is put back after the rewrite.
 		title = path[space:]
 		path = path[:space]
 	}
@@ -93,7 +102,13 @@ func tryProcessLink(content string, i int, repository, forge string, isIndex boo
 	result.WriteByte('[')
 	result.WriteString(text)
 	result.WriteString("](")
+	if angleForm {
+		result.WriteByte('<')
+	}
 	result.WriteString(newPath)
+	if angleForm {
+		result.WriteByte('>')
+	}
 	result.WriteString(title)
 	result.WriteByte(')')
 	return closeParen + 1, true
@@ -116,18 +131,30 @@ func findClosingBracket(content string, start int) int {
 	return -1
 }
 
-// findClosingParen finds the next unescaped ) character.
+// findClosingParen finds the closing ) of a link.
+//
+// The brackets are counted: a path may hold a pair of them
+// ("./guide(2).md"), and the first ) of the path is not the end of the
+// link. The URL was cut there, and the extension of the file was never
+// taken off.
 func findClosingParen(content string, start int) int {
+	depth := 0
 	for i := start; i < len(content); i++ {
-		if content[i] == ')' {
-			return i
-		}
-		// URLs shouldn't span multiple lines
-		if content[i] == '\n' {
+		switch content[i] {
+		case '\\':
+			// An escaped character is not a bracket.
+			i++
+		case '(':
+			depth++
+		case ')':
+			if depth == 0 {
+				return i
+			}
+			depth--
+		case '\n':
+			// URLs shouldn't span multiple lines
 			return -1
 		}
-		// A link may carry a title: "[text](path "title")". The space
-		// does not end the link, and the title is split off below.
 	}
 	return -1
 }
