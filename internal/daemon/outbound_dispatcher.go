@@ -66,12 +66,13 @@ type OutboundDispatcher struct {
 	// routes through a different host. Empty means preflight is disabled.
 	preflightBase string
 
+	// mu guards the queue: Stop closes it and a later Start opens a new
+	// one, so a send and a close cannot race.
+	mu       sync.Mutex
 	queue    chan ingestJob
+	closed   bool
 	workers  int
 	queueCap int
-
-	// closeOnce guards the single close of the job channel.
-	closeOnce sync.Once
 
 	// uploaded remembers the fingerprint this dispatcher last uploaded
 	// for a document uid. A document whose fingerprint did not change
@@ -230,9 +231,18 @@ func (d *OutboundDispatcher) Start(ctx context.Context) {
 	if d == nil {
 		return
 	}
+	d.mu.Lock()
+	if d.closed {
+		// The dispatcher ran and was stopped: the queue of that run is
+		// closed and its workers are gone. A new queue for the new run.
+		d.queue = make(chan ingestJob, d.queueCap)
+		d.closed = false
+	}
+	queue := d.queue
+	d.mu.Unlock()
 	for range d.workers {
 		d.wg.Add(1)
-		go d.worker(ctx)
+		go d.worker(ctx, queue)
 	}
 	slog.Info("outbound dispatcher started",
 		slog.String("base_url", d.baseURL),
@@ -254,7 +264,12 @@ func (d *OutboundDispatcher) Stop() {
 	// We intentionally do not close d.queue while workers might still be
 	// sending on it — but workers only send to ragabast (external), never
 	// back into d.queue, so a single close is safe.
-	d.closeQueueOnce()
+	d.mu.Lock()
+	if !d.closed {
+		d.closed = true
+		close(d.queue)
+	}
+	d.mu.Unlock()
 	d.wg.Wait()
 	slog.Info("outbound dispatcher stopped",
 		slog.Int64("sends_total", d.sendsTotal.Load()),
@@ -262,14 +277,6 @@ func (d *OutboundDispatcher) Stop() {
 		slog.Int64("fails_total", d.failsTotal.Load()),
 		slog.Int64("preflight_skips_total", d.preflightSkipsTotal.Load()),
 		slog.Int64("preflight_errors_total", d.preflightErrorsTotal.Load()))
-}
-
-// closeQueueOnce closes the job channel exactly once. Stop can be called
-// from several paths, so the guard lives on the dispatcher itself.
-func (d *OutboundDispatcher) closeQueueOnce() {
-	d.closeOnce.Do(func() {
-		close(d.queue)
-	})
 }
 
 // Enqueue submits a document for async ingest. Non-blocking: if the queue is
@@ -281,6 +288,18 @@ func (d *OutboundDispatcher) Enqueue(content []byte, path string) {
 		return
 	}
 	if len(content) == 0 {
+		return
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.closed {
+		// The queue is closed. A send on a closed channel panics, and the
+		// panic happens in a build worker: it would take the whole daemon
+		// down. The document is dropped instead.
+		n := d.dropsTotal.Add(1)
+		slog.Warn("outbound dispatcher is stopped, dropping doc",
+			slog.String("path", path),
+			slog.Int64("queue_drops_total", n))
 		return
 	}
 	select {
@@ -345,9 +364,9 @@ func (d *OutboundDispatcher) UnchangedTotal() int64 {
 	return d.unchangedTotal.Load()
 }
 
-func (d *OutboundDispatcher) worker(ctx context.Context) {
+func (d *OutboundDispatcher) worker(ctx context.Context, queue chan ingestJob) {
 	defer d.wg.Done()
-	for job := range d.queue {
+	for job := range queue {
 		d.send(ctx, job)
 	}
 }
