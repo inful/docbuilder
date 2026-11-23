@@ -9,6 +9,31 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.12] - 2026-11-24
+
+### Fixed
+- **The prune keeps the `.docignore` of the repository.** The file is read
+  from the clone: it is what keeps a repository out of the site. The prune
+  removed it like every other top-level entry, so a repository the
+  operator excluded was published.
+- **A percent-encoded link target is decoded.** A link target is a URL:
+  the space of a file name is written as `%20`. The target was looked for
+  as it was written and never found, so every link to a file with a space
+  in its name was a broken link - and the fixer could not heal it.
+- **The link updater keeps the mode of the file.** It wrote the file with
+  the mode `0600`, unlike every other write path of the fixer. A document
+  that another user could read became one only its owner could read.
+- **The clock of the fixer is UTC.** It returned the local time while its
+  own documentation says UTC, and the dates it writes are documented as
+  UTC. The same document got a different date - and a different
+  fingerprint - on two machines.
+- **A history that cannot be read is aligned to the remote.** The update
+  failed before it even asked for `hard_reset_on_diverge`, a setting that
+  is on by default and says that the local branch is aligned to the
+  remote. A shallow clone whose deepening fetch failed failed the whole
+  build instead.
+
+
 ## [0.35.11] - 2026-11-24
 
 ### Fixed
