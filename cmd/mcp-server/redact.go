@@ -40,6 +40,18 @@ func redactConfig(cfg *config.Config) *config.Config {
 		return &config.Config{}
 	}
 	clone := *cfg
+
+	// The URL of NATS holds a password in the documentation, and the
+	// link verification redacts it in its own logs. The answer of the
+	// server carries it as it is.
+	if cfg.Daemon != nil && cfg.Daemon.LinkVerification != nil {
+		daemon := *cfg.Daemon
+		linkVerification := *cfg.Daemon.LinkVerification
+		linkVerification.NATSURL = logfields.RedactURL(linkVerification.NATSURL)
+		daemon.LinkVerification = &linkVerification
+		clone.Daemon = &daemon
+	}
+
 	// Allocate fresh slices so we can mutate Auth pointers without bleeding
 	// changes back to the caller's Repositories / Forges backing array.
 	if len(cfg.Repositories) > 0 {
