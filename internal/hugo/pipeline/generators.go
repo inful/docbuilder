@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"strings"
 
@@ -182,6 +183,13 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 
 	generated := make([]*Document, 0)
 
+	// The documents that publish at a page of their own. A document
+	// with the name of a section publishes at the page of that section.
+	documentsAtPage := make(map[string]bool, len(ctx.Discovered))
+	for _, doc := range ctx.Discovered {
+		documentsAtPage[strings.ToLower(doc.Path)] = true
+	}
+
 	// Generate indexes for missing sections
 
 	for key := range allSections {
@@ -216,6 +224,21 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 		// them, and the metadata of a name cannot say which of the
 		// repositories of that name it describes.
 		sectionPath := docs.HugoContentPath(key.forge, repo, sectionName, indexFileSuffix, markdownExtension, ctx.IsSingleRepo)
+
+		// The index publishes at the page of the section, and a
+		// document with the name of the section publishes at the same
+		// page. Hugo keeps one of the two and says nothing about the
+		// other: the index would be a file in the content tree that
+		// publishes nowhere, and it can take the page of the document
+		// away. The document is the page of the section.
+		sectionDir := filepath.Dir(sectionPath)
+		documentAtPage := filepath.Join(filepath.Dir(sectionDir), filepath.Base(sectionDir)+markdownExtension)
+		if documentsAtPage[strings.ToLower(documentAtPage)] {
+			slog.Warn("The section has a document with the same name: the document is the page of the section",
+				slog.String("document", documentAtPage),
+				slog.String("section", sectionPath))
+			continue
+		}
 
 		// Use a deterministic epoch date so reproducible builds don't churn
 		// the fingerprint across runs. Auto-generated section indexes are
