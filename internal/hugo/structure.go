@@ -42,6 +42,14 @@ func (g *Generator) beginStaging() error {
 		// When base_directory is set, create staging as {base}/staging
 		// and output will be at {base}/{directory}
 		stage = filepath.Join(g.config.Output.BaseDirectory, "staging")
+
+		// The staging directory is emptied before the build. It must not
+		// be the output directory: the site would be deleted before the
+		// build writes it.
+		if sameDirectory(stage, g.outputDir) {
+			return fmt.Errorf("the staging directory %q is the output directory: the output directory must not be named staging", stage)
+		}
+
 		slog.Debug("Using base_directory for staging",
 			slog.String("base_directory", g.config.Output.BaseDirectory),
 			slog.String("staging", stage))
@@ -248,4 +256,14 @@ func (g *Generator) removeOldBackup(prev string) {
 			// Continue anyway - rename will fail if prev still exists
 		}
 	}
+}
+
+// sameDirectory reports whether two paths are the same directory.
+func sameDirectory(a, b string) bool {
+	absA, errA := filepath.Abs(a)
+	absB, errB := filepath.Abs(b)
+	if errA != nil || errB != nil {
+		return false
+	}
+	return filepath.Clean(absA) == filepath.Clean(absB)
 }

@@ -46,8 +46,16 @@ func NewDefaultRepoFetcher(workspace string, buildCfg *config.BuildConfig) RepoF
 	return &defaultRepoFetcher{workspace: workspace, buildCfg: buildCfg}
 }
 
-func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrategy, repo config.Repository) RepoFetchResult {
+func (f *defaultRepoFetcher) Fetch(ctx context.Context, strategy config.CloneStrategy, repo config.Repository) RepoFetchResult {
 	res := RepoFetchResult{Name: repo.Name}
+
+	// A build that is canceled or that times out does not keep cloning
+	// every repository: the work of the queue waits for it.
+	if err := ctx.Err(); err != nil {
+		res.Err = err
+		return res
+	}
+
 	client := git.NewClient(f.workspace)
 	if f.buildCfg != nil {
 		client = client.WithBuildConfig(f.buildCfg)
