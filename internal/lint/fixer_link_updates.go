@@ -106,8 +106,13 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			}
 			backupPaths = append(backupPaths, backupPath)
 
-			// Write updated content
-			err = foundation.WriteFileAtomic(sourceFile, content, 0o600)
+			// Write updated content. The mode of the file is kept: a
+			// document that another user could read stays readable.
+			mode := os.FileMode(0o600)
+			if info, statErr := os.Stat(sourceFile); statErr == nil {
+				mode = info.Mode().Perm()
+			}
+			err = foundation.WriteFileAtomic(sourceFile, content, mode)
 			if err != nil {
 				// Rollback previous changes
 				f.rollbackLinkUpdates(backupPaths)
