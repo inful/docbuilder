@@ -14,6 +14,13 @@ import (
 // sleeps - leaves the old file alone. A write that truncates the file
 // first leaves it empty, and the content is gone.
 func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
+	// A file that the owner marked read-only is not replaced. The write
+	// of the old way failed on it, and the mark says that the file is
+	// not to be changed.
+	if info, err := os.Stat(path); err == nil && info.Mode().Perm()&0o200 == 0 {
+		return fmt.Errorf("the file %s is read-only", path)
+	}
+
 	dir := filepath.Dir(path)
 
 	// The temporary file is in the same directory, so the rename does

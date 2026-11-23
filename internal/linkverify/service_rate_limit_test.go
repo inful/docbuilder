@@ -30,14 +30,11 @@ func TestVerifyLinkWaitsTheRateLimitDelay(t *testing.T) {
 		cfg:        cfg,
 		nats:       nats,
 		httpClient: srv.Client(),
-		semaphore:  make(chan struct{}, 1),
 		rateDelay:  150 * time.Millisecond,
 	}
 
 	page := &PageMetadata{BaseURL: "https://example.com/"}
 	for range 2 {
-		svc.semaphore <- struct{}{}
-		svc.wg.Add(1)
 		start := time.Now()
 		svc.verifyLink(context.Background(), &Link{URL: srv.URL + "/page"}, page)
 		if elapsed := time.Since(start); elapsed < 150*time.Millisecond {

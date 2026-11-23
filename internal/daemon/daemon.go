@@ -787,18 +787,20 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		outboundDispatcher.Stop()
 	}
 
-	// Save state
-	if stateManager != nil {
-		if err := stateManager.Save(); err != nil {
-			slog.Error("Failed to save state", "error", err)
-		}
-	}
-
 	// Stop the workers before the event store and the index go: a
 	// worker may still be writing to them, and an event that is written
 	// after the close is lost from the build history.
 	if err := d.lifecycle.workers.StopAndWait(ctx); err != nil {
 		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(err))
+	}
+
+	// Save the state after the workers stopped: a worker that changed
+	// it during the shutdown - a repository that was removed - must not
+	// lose the change.
+	if stateManager != nil {
+		if err := stateManager.Save(); err != nil {
+			slog.Error("Failed to save state", "error", err)
+		}
 	}
 
 	// Close event store (Phase B)

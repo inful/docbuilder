@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/markdown"
 )
 
@@ -96,7 +97,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 		if modified {
 			// Create backup before writing
 			backupPath := sourceFile + ".backup"
-			//nolint:gosec // backupPath is derived from a controlled sourceFile under the docs root
+			//nolint:gosec // the backup sits next to the file it copies
 			err := os.WriteFile(backupPath, originalContent, 0o600)
 			if err != nil {
 				// Rollback previous changes
@@ -106,8 +107,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			backupPaths = append(backupPaths, backupPath)
 
 			// Write updated content
-			//nolint:gosec // sourceFile is derived from a controlled discovery walk under the docs root
-			err = os.WriteFile(sourceFile, content, 0o600)
+			err = foundation.WriteFileAtomic(sourceFile, content, 0o600)
 			if err != nil {
 				// Rollback previous changes
 				f.rollbackLinkUpdates(backupPaths)
@@ -208,7 +208,8 @@ func (f *Fixer) rollbackLinkUpdates(backupPaths []string) {
 
 		// #nosec G304 -- backupPath created internally, not user input
 		if content, err := os.ReadFile(backupPath); err == nil {
-			_ = os.WriteFile(originalFile, content, 0o600) //nolint:gosec // best-effort restore within repo workspace
+			//nolint:gosec // the file is the one the link update changed
+			_ = os.WriteFile(originalFile, content, 0o600)
 		}
 		_ = os.Remove(backupPath) // Best effort cleanup
 	}

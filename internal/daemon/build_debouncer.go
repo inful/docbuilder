@@ -367,11 +367,16 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 	}
 
 	d.mu.Lock()
-	d.pending = false
-	d.pendingAfterRun = false
-	d.pollingAfterRun = false
-	d.lastEmittedJobID = jobID
-	d.snapshot = nil
+	// The pending flag is only cleared when no request arrived while the
+	// event was published: a request that came in the meantime is the
+	// newest commit, and it has to be built.
+	if d.requestCount == count {
+		d.pending = false
+		d.pendingAfterRun = false
+		d.pollingAfterRun = false
+		d.lastEmittedJobID = jobID
+		d.snapshot = nil
+	}
 	d.mu.Unlock()
 
 	if d.metrics != nil {

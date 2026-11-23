@@ -17,6 +17,11 @@ func NewPreviewDaemon(cfg *config.Config) *Daemon {
 		serve: &serveStack{
 			metrics: NewMetricsCollector(),
 		},
+		// The stacks are there, empty: the monitoring endpoints read
+		// them, and a nil stack is a panic in the preview.
+		build:    &buildStack{},
+		state:    &stateStack{},
+		discover: &discoveryStack{},
 		optional: &optionalStack{
 			liveReload: NewLiveReloadHub(nil),
 		},

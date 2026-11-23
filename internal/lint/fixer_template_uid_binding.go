@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 )
@@ -165,8 +166,7 @@ func (f *Fixer) writeUpdatedBody(filePath, text string, bodyStart, bodyEnd int, 
 		op.Error = fmt.Errorf("stat file for template-uid-binding fix: %w", statErr)
 		return op
 	}
-	//nolint:gosec // filePath is derived from the lint target set
-	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil {
+	if writeErr := foundation.WriteFileAtomic(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil {
 		op.Success = false
 		op.Error = fmt.Errorf("write file for template-uid-binding fix: %w", writeErr)
 		return op

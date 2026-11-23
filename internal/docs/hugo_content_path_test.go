@@ -61,9 +61,12 @@ func TestHugoContentPath_LowercasesAllComponents(t *testing.T) {
 			want: filepath.Join("content", "drift", "page.md"),
 		},
 		{
-			name:  "extension is preserved as given",
+			// The extension is lowercased like the name: the links to
+			// the file are lowercased as well, and Hugo only renders the
+			// markdown files whose extension is lowercased.
+			name:  "extension is lowercased like the name",
 			forge: "", repository: "Drift", section: "img", fileName: "pic", ext: ".PNG", isSingle: false,
-			want: filepath.Join("content", "drift", "img", "pic.PNG"),
+			want: filepath.Join("content", "drift", "img", "pic.png"),
 		},
 		{
 			name:  "no namespace, no section, root-level file",

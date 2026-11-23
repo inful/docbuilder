@@ -63,7 +63,12 @@ func (c *LocalClient) GetRepository(ctx context.Context, owner, repo string) (*R
 }
 
 func (c *LocalClient) CheckDocumentation(ctx context.Context, repo *Repository) error {
-	// No-op; discovery will inspect paths during DocBuilder discovery phase.
+	// The documentation of a local forge is in the working tree, and
+	// the discovery inspects it during the build. The check says so:
+	// without it the filter drops the repository as one without
+	// documentation, and its pages never reach the site.
+	repo.HasDocs = true
+	repo.DocsCheckFailed = false
 	return nil
 }
 

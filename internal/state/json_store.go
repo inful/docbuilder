@@ -240,8 +240,10 @@ func (js *JSONStore) saveToDiskUnsafe() error {
 	// Atomic write using temporary file
 	// #nosec G306 -- state file needs to be readable by the process, 0644 is acceptable
 	// #nosec G304 -- the path is the state file of the data directory
-	//nolint:gosec // the state file is read by the process, 0644 is acceptable
-	file, err := os.OpenFile(tempPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	// The state file holds the URL of the repositories, and the URL can
+	// hold a token. The file is private to its owner.
+	//nolint:gosec // the state file is read by the process, 0600 is acceptable
+	file, err := os.OpenFile(tempPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to open temporary state file: %w", err)
 	}
