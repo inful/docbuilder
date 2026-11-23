@@ -9,6 +9,27 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.34.8] - 2026-11-23
+
+### Fixed
+- **Two files that land on the same page are refused.** The pipeline
+  renames a README to _index, so a repository with a README and an
+  index in the same directory sends two documents to the same page and
+  one of them is lost. The check of the collisions compared the path
+  before the rename, and it stayed quiet.
+
+- **A repository that lost its documentation fails the build.** The
+  number of documents a repository had in the last build is in the
+  state, and the build compares it with the number it found: a
+  repository whose directory was renamed would have taken its pages out
+  of the site, and the site that still had them was replaced.
+
+- **The git commands of the fixer run in the repository of the file.**
+  The fixer looked for the file in the index of the working directory of
+  the process and moved it there: an MCP server started in another
+  repository than the docs directory renamed the wrong file.
+
+
 ## [0.34.7] - 2026-11-23
 
 ### Fixed

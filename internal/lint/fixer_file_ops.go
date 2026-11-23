@@ -55,7 +55,7 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 	}
 
 	// Perform the rename
-	if f.gitAware && f.shouldUseGitMv(oldPath) {
+	if f.shouldUseGitMv(oldPath) {
 		// Use git mv to preserve history
 		err := f.gitMv(oldPath, newPath)
 		if err != nil {
@@ -76,14 +76,20 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 }
 
 // shouldUseGitMv checks if a file is under Git version control.
+//
+// The commands run in the repository of the file and not in the working
+// directory of the process: the fixer runs where the host started it,
+// and that is not necessarily the repository of the documentation. The
+// rename would land in the wrong repository.
 func (f *Fixer) shouldUseGitMv(filePath string) bool {
-	if !f.gitAware {
+	dir := filepath.Dir(filePath)
+	if !isGitRepository(dir) {
 		return false
 	}
 
 	// Check if file is tracked by Git
 	//nolint:gosec // command is executed without a shell; args are passed as separate parameters
-	cmd := exec.CommandContext(context.Background(), "git", "ls-files", "--error-unmatch", filePath)
+	cmd := exec.CommandContext(context.Background(), "git", "-C", dir, "ls-files", "--error-unmatch", filepath.Base(filePath))
 	err := cmd.Run()
 	return err == nil
 }
@@ -91,7 +97,7 @@ func (f *Fixer) shouldUseGitMv(filePath string) bool {
 // gitMv performs a git mv operation.
 func (f *Fixer) gitMv(oldPath, newPath string) error {
 	//nolint:gosec // command is executed without a shell; args are passed as separate parameters
-	cmd := exec.CommandContext(context.Background(), "git", "mv", oldPath, newPath)
+	cmd := exec.CommandContext(context.Background(), "git", "-C", filepath.Dir(oldPath), "mv", oldPath, newPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%w: %s", err, string(output))

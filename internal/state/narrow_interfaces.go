@@ -17,6 +17,10 @@ type RepositoryMetadataWriter interface {
 type RepositoryMetadataReader interface {
 	// GetRepoDocFilesHash returns the stored document files hash for a repository.
 	GetRepoDocFilesHash(url string) string
+
+	// GetRepoDocumentCount returns the number of documents a repository
+	// had in the last build.
+	GetRepoDocumentCount(url string) int
 }
 
 // RepositoryMetadataStore combines read and write operations for repository metadata.

@@ -155,9 +155,6 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 		filesAfterRepo := len(d.docFiles)
 		if filesAfterRepo == filesBeforeRepo {
 			reason := "no_docs_files_found"
-			if len(repo.Paths) > 0 && missingDocsPaths == len(repo.Paths) {
-				reason = "docs_paths_missing"
-			}
 			slog.Info("Repository filtered during docs discovery",
 				logfields.Repository(repoName),
 				slog.String("forge", repo.Tags["forge_type"]),
@@ -422,6 +419,12 @@ func (d *Discovery) detectPathCollisions() error {
 	for i := range d.docFiles {
 		file := &d.docFiles[i]
 		hugoPath := file.GetHugoPath(d.isSingleRepo)
+		// The pipeline renames a README to _index, so two files that are
+		// written to different paths land on the same one: the check has
+		// to compare the path the file is published at.
+		if strings.EqualFold(file.Name, "README") {
+			hugoPath = filepath.Join(filepath.Dir(hugoPath), "_index"+file.Extension)
+		}
 		sourcePath := filepath.Join(file.Repository, file.RelativePath)
 		seen[hugoPath] = append(seen[hugoPath], sourcePath)
 	}
