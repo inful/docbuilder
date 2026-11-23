@@ -33,7 +33,6 @@ func (ss *jsonStatisticsStore) Update(_ context.Context, stats *Statistics) foun
 		stats,
 		func() { stats.LastUpdated = time.Now() },
 		func() { ss.store.statistics = stats },
-		"failed to save statistics",
 	)
 }
 
@@ -51,13 +50,7 @@ func (ss *jsonStatisticsStore) RecordDiscovery(_ context.Context, documentCount 
 	ss.store.statistics.DocumentsFound += int64(documentCount)
 	ss.store.statistics.LastUpdated = time.Now()
 
-	if ss.store.autoSaveEnabled {
-		if err := ss.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				errors.InternalError("failed to save discovery statistics").WithCause(err).Build(),
-			)
-		}
-	}
+	ss.store.dirty = true
 
 	return foundation.Ok[struct{}, error](struct{}{})
 }
@@ -72,13 +65,7 @@ func (ss *jsonStatisticsStore) Reset(_ context.Context) foundation.Result[struct
 		LastUpdated:   now,
 	}
 
-	if ss.store.autoSaveEnabled {
-		if err := ss.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				errors.InternalError("failed to save statistics reset").WithCause(err).Build(),
-			)
-		}
-	}
+	ss.store.dirty = true
 
 	return foundation.Ok[struct{}, error](struct{}{})
 }

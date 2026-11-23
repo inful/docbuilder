@@ -12,9 +12,8 @@ func deleteEntity(
 	key string,
 	exists func() bool,
 	deleter func(),
-	save func() error,
 	notFoundName string,
-	saveErrorMessage string,
+	markDirty func(),
 ) foundation.Result[struct{}, error] {
 	if key == "" {
 		return foundation.Err[struct{}, error](
@@ -32,11 +31,8 @@ func deleteEntity(
 
 	deleter()
 
-	if err := save(); err != nil {
-		return foundation.Err[struct{}, error](
-			errors.InternalError(saveErrorMessage).WithCause(err).Build(),
-		)
-	}
+	// The file is written when the state is saved.
+	markDirty()
 
 	return foundation.Ok[struct{}, error](struct{}{})
 }

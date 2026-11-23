@@ -47,17 +47,9 @@ func (rs *jsonRepositoryStore) Create(_ context.Context, repo *Repository) found
 	rs.store.repositories[repo.URL] = repo
 
 	// Auto-save if enabled
-	if rs.store.autoSaveEnabled {
-		if err := rs.store.saveToDiskUnsafe(); err != nil {
-			// Remove from memory if save failed
-			delete(rs.store.repositories, repo.URL)
-			return foundation.Err[*Repository, error](
-				errors.InternalError("failed to save repository").
-					WithCause(err).
-					Build(),
-			)
-		}
-	}
+	// The file is written when the state is saved: a write for every
+	// change rewrote the whole file hundreds of times per build.
+	rs.store.dirty = true
 
 	return foundation.Ok[*Repository, error](repo)
 }
@@ -96,7 +88,6 @@ func (rs *jsonRepositoryStore) Update(_ context.Context, repo *Repository) found
 					Build(),
 			)
 		},
-		"failed to save repository update",
 	)
 }
 
@@ -125,14 +116,8 @@ func (rs *jsonRepositoryStore) Delete(_ context.Context, url string) foundation.
 		url,
 		func() bool { _, exists := rs.store.repositories[url]; return exists },
 		func() { delete(rs.store.repositories, url) },
-		func() error {
-			if rs.store.autoSaveEnabled {
-				return rs.store.saveToDiskUnsafe()
-			}
-			return nil
-		},
 		"repository",
-		"failed to save repository deletion",
+		func() { rs.store.dirty = true },
 	)
 }
 
@@ -159,15 +144,7 @@ func (rs *jsonRepositoryStore) IncrementBuildCount(_ context.Context, url string
 	repo.UpdatedAt = now
 
 	// Auto-save if enabled
-	if rs.store.autoSaveEnabled {
-		if err := rs.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				errors.InternalError("failed to save build count update").
-					WithCause(err).
-					Build(),
-			)
-		}
-	}
+	rs.store.dirty = true
 
 	return foundation.Ok[struct{}, error](struct{}{})
 }
@@ -199,15 +176,7 @@ func (rs *jsonRepositoryStore) SetLastCommit(_ context.Context, url, commit stri
 	repo.LastCommit = foundation.Some(commit)
 	repo.UpdatedAt = updatedAt
 
-	if rs.store.autoSaveEnabled {
-		if err := rs.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				errors.InternalError("failed to save the commit").
-					WithCause(err).
-					Build(),
-			)
-		}
-	}
+	rs.store.dirty = true
 
 	return foundation.Ok[struct{}, error](struct{}{})
 }
@@ -236,15 +205,7 @@ func (rs *jsonRepositoryStore) SetLastDiscovery(_ context.Context, url string, a
 	repo.LastDiscovery = foundation.Some(at)
 	repo.UpdatedAt = at
 
-	if rs.store.autoSaveEnabled {
-		if err := rs.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				errors.InternalError("failed to save the time of the last discovery").
-					WithCause(err).
-					Build(),
-			)
-		}
-	}
+	rs.store.dirty = true
 
 	return foundation.Ok[struct{}, error](struct{}{})
 }
@@ -272,15 +233,7 @@ func (rs *jsonRepositoryStore) SetDocumentCount(_ context.Context, url string, c
 	repo.UpdatedAt = time.Now()
 
 	// Auto-save if enabled
-	if rs.store.autoSaveEnabled {
-		if err := rs.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				errors.InternalError("failed to save document count update").
-					WithCause(err).
-					Build(),
-			)
-		}
-	}
+	rs.store.dirty = true
 
 	return foundation.Ok[struct{}, error](struct{}{})
 }
@@ -302,15 +255,7 @@ func (rs *jsonRepositoryStore) SetDocFilesHash(_ context.Context, url, hash stri
 	repo.UpdatedAt = time.Now()
 
 	// Auto-save if enabled
-	if rs.store.autoSaveEnabled {
-		if err := rs.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				errors.InternalError("failed to save doc files hash update").
-					WithCause(err).
-					Build(),
-			)
-		}
-	}
+	rs.store.dirty = true
 
 	return foundation.Ok[struct{}, error](struct{}{})
 }
@@ -333,15 +278,7 @@ func (rs *jsonRepositoryStore) SetDocFilePaths(_ context.Context, url string, pa
 	repo.UpdatedAt = time.Now()
 
 	// Auto-save if enabled
-	if rs.store.autoSaveEnabled {
-		if err := rs.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				errors.InternalError("failed to save doc file paths update").
-					WithCause(err).
-					Build(),
-			)
-		}
-	}
+	rs.store.dirty = true
 
 	return foundation.Ok[struct{}, error](struct{}{})
 }

@@ -23,13 +23,10 @@ type ptrValidatable[T any] interface {
 // T must be a pointer type to an entity with ID, CreatedAt, and UpdatedAt fields.
 func createEntity[T Validatable](
 	entity T,
-	entityName string,
 	mu *sync.RWMutex,
 	setTimestamps func(T),
 	addToStore func(T),
-	removeFromStore func(T),
-	autoSaveEnabled bool,
-	saveToDisk func() error,
+	markDirty func(),
 ) foundation.Result[T, error] {
 	if validationResult := entity.Validate(); !validationResult.Valid {
 		return foundation.Err[T, error](validationResult.ToError())
@@ -41,14 +38,9 @@ func createEntity[T Validatable](
 	setTimestamps(entity)
 	addToStore(entity)
 
-	if autoSaveEnabled {
-		if err := saveToDisk(); err != nil {
-			removeFromStore(entity)
-			return foundation.Err[T, error](
-				errors.InternalError("failed to save " + entityName).WithCause(err).Build(),
-			)
-		}
-	}
+	// The file is written when the state is saved: a write for every
+	// change rewrote the whole file hundreds of times per build.
+	markDirty()
 
 	return foundation.Ok[T, error](entity)
 }
@@ -68,7 +60,6 @@ func updateValidatableEntity[T any, P ptrValidatable[T]](
 	setUpdatedAt func(),
 	write func(),
 	onNotFound func() foundation.Result[P, error],
-	saveErrMsg string,
 ) foundation.Result[P, error] {
 	if entity == nil {
 		return foundation.Err[P, error](
@@ -91,13 +82,8 @@ func updateValidatableEntity[T any, P ptrValidatable[T]](
 
 	write()
 
-	if js.autoSaveEnabled {
-		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[P, error](
-				errors.InternalError(saveErrMsg).WithCause(err).Build(),
-			)
-		}
-	}
+	// The file is written when the state is saved.
+	js.dirty = true
 
 	return foundation.Ok[P, error](entity)
 }
@@ -109,7 +95,6 @@ func updateSimpleEntity[T any](
 	obj *T,
 	updateTimestamp func(),
 	write func(),
-	saveErrMsg string,
 ) foundation.Result[*T, error] {
 	js.mu.Lock()
 	defer js.mu.Unlock()
@@ -117,13 +102,8 @@ func updateSimpleEntity[T any](
 	updateTimestamp()
 	write()
 
-	if js.autoSaveEnabled {
-		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[*T, error](
-				errors.InternalError(saveErrMsg).WithCause(err).Build(),
-			)
-		}
-	}
+	// The file is written when the state is saved.
+	js.dirty = true
 
 	return foundation.Ok[*T, error](obj)
 }
