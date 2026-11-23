@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
@@ -37,7 +38,15 @@ func (s *Server) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 		slog.Warn("VS Code edit handler: request from another host refused",
 			slog.String("path", r.URL.Path),
 			slog.String("remote_addr", r.RemoteAddr))
-		http.Error(w, "VS Code edit links are only available from the machine that runs the preview server", http.StatusForbidden)
+		// The address of the request is in the answer: the page in the
+		// browser is what the developer sees, and the address says
+		// where the request came from.
+		http.Error(w, "VS Code edit links are only available from the machine that runs the preview server\n\n"+
+			formatEditErrorDetails([]any{
+				slog.String("remote_addr", r.RemoteAddr),
+				slog.String("path", r.URL.Path),
+				slog.String("hint", "the request has to come from the machine that runs the preview"),
+			}), http.StatusForbidden)
 		return
 	}
 
@@ -126,9 +135,32 @@ func (s *Server) handleEditError(w http.ResponseWriter, err error) {
 		} else {
 			slog.Warn("VS Code edit handler: "+editErr.message, editErr.logFields...)
 		}
-		http.Error(w, editErr.message, editErr.statusCode)
+		// The details are part of the answer: the page in the browser
+		// is what the developer sees, and the message alone ("the IPC
+		// socket was not found") does not say which one.
+		http.Error(w, editErr.message+"\n\n"+formatEditErrorDetails(editErr.logFields), editErr.statusCode)
 	} else {
 		slog.Error("VS Code edit handler: unexpected error", slog.String("error", err.Error()))
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
+}
+
+// formatEditErrorDetails renders the details of a failed edit for the
+// page in the browser.
+func formatEditErrorDetails(fields []any) string {
+	if len(fields) == 0 {
+		return ""
+	}
+
+	var details []string
+	for _, field := range fields {
+		attr, ok := field.(slog.Attr)
+		if !ok {
+			details = append(details, fmt.Sprintf("%v", field))
+			continue
+		}
+		details = append(details, fmt.Sprintf("%s: %s", attr.Key, attr.Value.String()))
+	}
+
+	return strings.Join(details, "\n")
 }
