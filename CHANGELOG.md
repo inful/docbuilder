@@ -9,6 +9,25 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.34.3] - 2026-11-23
+
+### Fixed
+- **The pages are verified by a fixed number of workers.** One goroutine
+  per page: a portal with thousands of pages spawned thousands of
+  goroutines, and every one of them held the links of its page in
+  memory while it waited for its turn.
+
+- **An explicit `follow_redirects: false` is honoured.** The default
+  turned every false into a true, so the check that reads the value
+  could never be false.
+
+- **The entries of the state are changed under the lock of the store.**
+  The adapter read a repository, changed the copy and wrote it back, and
+  a write of another field that landed in between was silently reverted:
+  the build wrote the commit of a repository while the discovery wrote
+  the time of its last discovery.
+
+
 ## [0.34.2] - 2026-11-23
 
 ### Fixed
