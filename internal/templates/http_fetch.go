@@ -163,3 +163,28 @@ func validateTemplateURL(raw string) (*url.URL, error) {
 	}
 	return parsed, nil
 }
+
+// CheckTemplateHost refuses a template URL that is not on the host of
+// the site the templates come from.
+//
+// The discovery page names the templates, and the page is fetched from
+// the site the operator configured. A template of another host would be
+// written into the documentation of the operator.
+func CheckTemplateHost(baseURL, rawURL string) error {
+	if baseURL == "" {
+		return errors.New("no template base URL configured")
+	}
+
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return fmt.Errorf("invalid template base URL %q: %w", baseURL, err)
+	}
+	target, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid template URL %q: %w", rawURL, err)
+	}
+	if !strings.EqualFold(target.Host, base.Host) {
+		return fmt.Errorf("template URL %q is not on the template host %q", rawURL, base.Host)
+	}
+	return nil
+}

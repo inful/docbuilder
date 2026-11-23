@@ -846,18 +846,7 @@ func checkTemplateHost(state *serverState, rawURL string) error {
 		return errors.New("no template base URL configured; pass --base-url or DOCBUILDER_TEMPLATE_BASE_URL, or set hugo.base_url in config.yaml")
 	}
 
-	base, err := url.Parse(state.baseURL)
-	if err != nil {
-		return fmt.Errorf("invalid template base URL %q: %w", state.baseURL, err)
-	}
-	target, err := url.Parse(rawURL)
-	if err != nil {
-		return fmt.Errorf("invalid template URL %q: %w", rawURL, err)
-	}
-	if !strings.EqualFold(target.Host, base.Host) {
-		return fmt.Errorf("template URL %q is not on the template host %q", rawURL, base.Host)
-	}
-	return nil
+	return templating.CheckTemplateHost(state.baseURL, rawURL)
 }
 
 // buildSequenceResolver mirrors the CLI's logic: pull the page's sequence

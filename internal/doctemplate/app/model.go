@@ -365,6 +365,30 @@ func (m *model) updateBaseURL(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// fetchTemplate fetches the template that was selected.
+//
+// The template has to come from the site the templates were discovered
+// on: the page that names them could point anywhere.
+func (m *model) fetchTemplate(selected service.TemplateRef) tea.Msg {
+	if hostErr := templating.CheckTemplateHost(m.baseURL, selected.URL); hostErr != nil {
+		return pageMsg{err: hostErr}
+	}
+
+	page, err := m.service.FetchPage(context.Background(), selected.URL)
+	if err != nil {
+		return pageMsg{err: err}
+	}
+	schema, err := m.service.ParseSchema(page.Meta.Schema)
+	if err != nil {
+		return pageMsg{err: err}
+	}
+	defaults, err := m.service.ParseDefaults(page.Meta.Defaults)
+	if err != nil {
+		return pageMsg{err: err}
+	}
+	return pageMsg{page: page, schema: schema, defaults: defaults}
+}
+
 func (m *model) updateSelect(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.tplList, cmd = m.tplList.Update(msg)
@@ -378,19 +402,7 @@ func (m *model) updateSelect(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.loading = true
 		m.err = ""
 		return m, func() tea.Msg {
-			page, err := m.service.FetchPage(context.Background(), selected.URL)
-			if err != nil {
-				return pageMsg{err: err}
-			}
-			schema, err := m.service.ParseSchema(page.Meta.Schema)
-			if err != nil {
-				return pageMsg{err: err}
-			}
-			defaults, err := m.service.ParseDefaults(page.Meta.Defaults)
-			if err != nil {
-				return pageMsg{err: err}
-			}
-			return pageMsg{page: page, schema: schema, defaults: defaults}
+			return m.fetchTemplate(selected)
 		}
 	}
 	return m, cmd
