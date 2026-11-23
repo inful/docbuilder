@@ -39,7 +39,16 @@ type NATSClient struct {
 	// build.
 	successTTL time.Duration
 	failureTTL time.Duration
+	// lastAttempt is the time of the last attempt to connect. The
+	// attempts are spaced out: every operation of the cache asked for a
+	// connection, and a server that is down was asked thousands of
+	// times in one build.
+	lastAttempt atomic.Int64
 }
+
+// connectBackoff is how long the client waits before it tries to
+// connect again.
+const connectBackoff = 30 * time.Second
 
 // NewNATSClient creates a new NATS client for link verification.
 // Connection failures are non-fatal; the client will attempt to reconnect automatically.
@@ -178,11 +187,23 @@ func (c *NATSClient) ensureConnected(ctx context.Context) error {
 		return nil
 	}
 
+	// The attempts are spaced out: the cache of every link of every
+	// page asked for a connection, and a server that is down was asked
+	// thousands of times in one build.
+	last := c.lastAttempt.Load()
+	if last != 0 && time.Since(time.Unix(0, last)) < connectBackoff {
+		return errors.New("the connection to NATS is not retried yet")
+	}
+
 	// Avoid multiple concurrent reconnection attempts
 	if c.reconnecting.Swap(true) {
 		return errors.New("reconnection already in progress")
 	}
 	defer c.reconnecting.Store(false)
+
+	if !c.lastAttempt.CompareAndSwap(last, time.Now().UnixNano()) {
+		return errors.New("reconnection already in progress")
+	}
 
 	slog.Info("Attempting to reconnect to NATS", "url", redactURL(c.cfg.NATSURL))
 	return c.connectWithContext(ctx)
