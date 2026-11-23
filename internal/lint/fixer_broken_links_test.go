@@ -36,7 +36,7 @@ func TestDetectBrokenLinks(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run broken link detection
-	broken, err := detectBrokenLinks(docsDir)
+	broken, err := detectBrokenLinks(docsDir, nil)
 	require.NoError(t, err)
 
 	// Should find 2 broken links (missing.md and missing.png)
@@ -77,7 +77,7 @@ func TestDetectBrokenLinks_CaseInsensitive(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run broken link detection
-	broken, err := detectBrokenLinks(docsDir)
+	broken, err := detectBrokenLinks(docsDir, nil)
 	require.NoError(t, err)
 
 	// On case-insensitive filesystems (macOS/Windows), these should NOT be broken
@@ -112,7 +112,7 @@ func TestDetectBrokenLinks_IgnoresLinksInTildeFencedCodeBlocks(t *testing.T) {
 	err = os.WriteFile(indexFile, []byte(indexContent), 0o600)
 	require.NoError(t, err)
 
-	broken, err := detectBrokenLinks(docsDir)
+	broken, err := detectBrokenLinks(docsDir, nil)
 	require.NoError(t, err)
 
 	// Only the normal link should be considered; the link in the tilde-fenced

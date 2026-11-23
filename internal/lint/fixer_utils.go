@@ -144,8 +144,11 @@ func findContentRoot(sourceFile string) string {
 
 // collectMarkdownFiles walks a directory tree and returns all markdown files,
 // skipping hidden directories and files matched by DefaultExcludes.
-func collectMarkdownFiles(rootPath string) ([]string, error) {
-	globs := compileGlobs(DefaultExcludes)
+func collectMarkdownFiles(rootPath string, excludes []string) ([]string, error) {
+	if excludes == nil {
+		excludes = DefaultExcludes
+	}
+	globs := compileGlobs(excludes)
 	var filesToScan []string
 	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

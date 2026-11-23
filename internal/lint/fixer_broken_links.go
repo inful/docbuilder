@@ -10,7 +10,7 @@ import (
 )
 
 // detectBrokenLinks scans all markdown files in a path for links to non-existent files.
-func detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
+func detectBrokenLinks(rootPath string, excludes []string) ([]BrokenLink, error) {
 	var brokenLinks []BrokenLink
 
 	// Determine if rootPath is a file or directory
@@ -21,7 +21,7 @@ func detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
 
 	var filesToScan []string
 	if info.IsDir() {
-		filesToScan, err = collectMarkdownFiles(rootPath)
+		filesToScan, err = collectMarkdownFiles(rootPath, excludes)
 		if err != nil {
 			return nil, err
 		}
