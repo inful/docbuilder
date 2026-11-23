@@ -93,7 +93,14 @@ func (s *TemplateService) BuildSequenceResolver(page *templating.TemplatePage, d
 }
 
 // RenderPreview computes output path and rendered body.
+//
+// The builtins are resolved once: the path and the body are rendered
+// with the same map, and every render that resolves them again has its
+// own uuid. The path of the document and the uid in its body were two
+// different identifiers.
 func (s *TemplateService) RenderPreview(page *templating.TemplatePage, data map[string]any, nextInSequence func(string) (int, error)) (string, string, error) {
+	data = templating.WithBuiltinTemplateData(data)
+
 	outputPath, err := templating.RenderOutputPath(page.Meta.OutputPath, data, nextInSequence)
 	if err != nil {
 		return "", "", err
