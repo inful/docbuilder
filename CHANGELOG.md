@@ -9,6 +9,59 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.34.7] - 2026-11-23
+
+### Fixed
+- **The pool of the links of the verification does not block and does not
+  crash.** The defer that released the semaphore released a semaphore
+  nothing acquired any more: every link worker blocked in it after its
+  first link, the verification never ended, and one goroutine leaked per
+  build. The queue of the links is closed after the pages are done with
+  it: a page that still had links sent to a closed channel, and the
+  daemon died.
+
+- **The fixer writes the files of the user without a window in which they
+  are half written.** The write goes through a file next to it and a
+  rename now, the way the MCP server writes. A file that the owner
+  marked read-only is not replaced.
+
+- **Three crashes and a lost repository in the clone.** The head of the
+  repository and the reference of the branch were read without their
+  error: a workspace with an unreadable .git/HEAD stopped the daemon
+  with a panic. The prune of the paths took the first segment of the
+  path: a repository whose documentation is at its root had every top
+  level entry removed. The local forge said that it has no
+  documentation, and the filter dropped the repository.
+
+- **The extension of a file is lowercased** like the name: a markdown
+  file with .MD was never rendered by Hugo, and a file published at
+  /repo/diagram.PNG was not found at /repo/diagram.png, which is where
+  the link points.
+
+- **The state file is private to its owner.** It holds the URL of the
+  repositories, and the URL can hold a token.
+
+- **A build that is canceled stops.** The fetcher threw the context
+  away: a build that was canceled or that timed out kept cloning every
+  repository, and the queue waited for it.
+
+- **The debouncer keeps the newest request.** It cleared its pending
+  flag after it published the event: a request that arrived during the
+  publish was dropped.
+
+- **The preview does not panic and the state survives the shutdown.**
+  The preview daemon left the build, the state and the discovery stacks
+  nil, and the monitoring endpoints read them. The state was saved
+  before the workers stopped.
+
+- **The pipes of Hugo are closed when the deadline of the build
+  passes:** a child of Hugo keeps them open, and the build waited for it
+  past the deadline.
+
+- **The staging directory must not be the output directory:** it is
+  emptied before the build, and the site would be deleted.
+
+
 ## [0.34.6] - 2026-11-23
 
 ### Fixed
