@@ -9,6 +9,17 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.10] - 2026-11-24
+
+### Fixed
+- **The `--data-dir` flag of the daemon decides where the state lives.**
+  The flag was dead: the daemon only logged it and always wrote its state
+  to the `state_dir` of the configuration. `docbuilder daemon -d ./elsewhere`
+  wrote its state somewhere else entirely, and a daemon in a read-only
+  working directory failed to start. The flag now wins over the
+  configuration; without it the configuration decides, as before.
+
+
 ## [0.35.9] - 2026-11-23
 
 ### Fixed
