@@ -172,35 +172,48 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 
 	queue := make(chan *PageMetadata)
 	linkQueue := make(chan linkJob)
+
+	// The pages and the links are verified by two pools. The pages
+	// hand their links to the second pool: it is closed after the pages
+	// are done, or a page that still has links would send to a closed
+	// channel.
+	var pageWorkers, linkWorkers sync.WaitGroup
 	for range workers {
-		s.wg.Go(func() {
+		pageWorkers.Go(func() {
 			for page := range queue {
 				s.verifyPage(ctx, page, linkQueue)
 			}
 		})
-		s.wg.Go(func() {
+		linkWorkers.Go(func() {
 			for job := range linkQueue {
 				s.verifyLink(ctx, job.link, job.page)
 			}
 		})
 	}
 
+	canceled := false
 	for _, page := range pages {
 		select {
 		case <-ctx.Done():
 			slog.Info("Link verification canceled")
-			close(queue)
-			close(linkQueue)
-			s.wg.Wait()
-			return ctx.Err()
+			canceled = true
 		case queue <- page:
+		}
+		if canceled {
+			break
 		}
 	}
 	close(queue)
-	close(linkQueue)
 
-	// Wait for all verifications to complete
+	// The pages are done: no more links are handed over.
+	pageWorkers.Wait()
+	close(linkQueue)
+	linkWorkers.Wait()
+
 	s.wg.Wait()
+	if canceled {
+		return ctx.Err()
+	}
 	slog.Info("Link verification completed")
 
 	return nil
@@ -280,8 +293,6 @@ type linkJob struct {
 
 // verifyLink verifies a single link.
 func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *PageMetadata) {
-	defer func() { <-s.semaphore }()
-
 	// Resolve relative URLs
 	absoluteURL := link.URL
 	if link.IsInternal && !strings.HasPrefix(link.URL, "http") {
