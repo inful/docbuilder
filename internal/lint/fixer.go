@@ -35,6 +35,13 @@ type Fixer struct {
 	// file's size and modification time, so an entry that no longer
 	// matches the file is read again.
 	linkCache map[string]cachedLinks
+
+	// scannedFiles holds the markdown files of the last walk of the
+	// tree. The fixer looks for the links to every renamed file, and the
+	// walk was repeated for each of them: a run that renames a hundred
+	// files walked the tree a hundred times.
+	scannedFiles []string
+	scannedRoot  string
 }
 
 // cachedLinks holds the links of one markdown file, with the state of

@@ -32,32 +32,59 @@ func (f *Fixer) findLinksToFile(targetPath, rootPath string) ([]LinkReference, e
 		searchRoot = filepath.Dir(rootPath)
 	}
 
-	err = filepath.Walk(searchRoot, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
+	// The files of the tree are collected once: the fixer looks for the
+	// links to every renamed file, and the walk was repeated for each of
+	// them.
+	files, err := f.markdownFilesOf(searchRoot)
+	if err != nil {
+		return nil, err
+	}
 
-		// Only process markdown files
-		if info.IsDir() || !IsDocFile(path) {
-			return nil
-		}
-
+	for _, path := range files {
 		// Don't search the target file itself
 		if path == targetPath {
-			return nil
+			continue
 		}
 
 		// Find links in this file
 		fileLinks, err := f.findLinksInFile(path, absTarget)
 		if err != nil {
-			return fmt.Errorf("failed to scan %s: %w", path, err)
+			return nil, fmt.Errorf("failed to scan %s: %w", path, err)
 		}
 
 		links = append(links, fileLinks...)
+	}
+
+	return links, nil
+}
+
+// markdownFilesOf returns the markdown files of a directory tree.
+//
+// The list is kept: the fixer looks for the links to every renamed
+// file, and the walk of the tree was repeated for each of them.
+func (f *Fixer) markdownFilesOf(root string) ([]string, error) {
+	if f.scannedRoot == root && f.scannedFiles != nil {
+		return f.scannedFiles, nil
+	}
+
+	var files []string
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() || !IsDocFile(path) {
+			return nil
+		}
+		files = append(files, path)
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	return links, err
+	f.scannedRoot = root
+	f.scannedFiles = files
+	return files, nil
 }
 
 // resolvedLink is one link from a markdown file, with the path it
