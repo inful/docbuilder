@@ -9,6 +9,45 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.34.4] - 2026-11-23
+
+### Fixed
+- **The credentials of a repository URL stay out of the answer of the
+  MCP server and out of the logs.** The URL of a repository holds a
+  token in the documentation, and the answer of the `get_config` tool
+  and of the `config` resource carried it as it is.
+
+- **The link of a renamed file is rewritten.** The path of the walk of
+  the lint is relative and the resolved link is absolute, so the
+  precise rewrite was skipped and the link kept the old name of the
+  file that was renamed.
+
+- **Two versions do not share a name.** The path of a version is a
+  lossy version of its name, and the second clone of a name deleted the
+  workspace of the first one.
+
+- **The short hash of a commit does not panic** when the stored hash is
+  short or empty.
+
+- **The links of a page are verified by the workers of the pool** and
+  not by one goroutine per link.
+
+- **The event bus delivers and shuts down without a race.** The bus
+  held its read lock while it sent to a subscriber whose channel was
+  full: the write lock that unsubscribe and Close need was never
+  given, and the daemon did not stop.
+
+- **The event store is closed after the workers.** An event that a
+  worker wrote after the close was lost from the build history.
+
+- **A build that lost a repository fails also when there is no site
+  yet.** A portal without one of its repositories is worse than no
+  portal.
+
+- **A repository without a commit counts as a failure** in the status
+  of the repositories.
+
+
 ## [0.34.3] - 2026-11-23
 
 ### Fixed
