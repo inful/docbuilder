@@ -9,6 +9,19 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.34.5] - 2026-11-23
+
+### Fixed
+- **A build of Hugo has a deadline.** A Hugo that hangs - a module
+  download that never answers - held the build of the daemon forever,
+  and every later build queued behind it until the queue was full.
+
+### Tests
+- **A stage that is fast enough measures zero.** The clock of the
+  machine is the limit, and the test of the timings failed the build of
+  the project every few runs.
+
+
 ## [0.34.4] - 2026-11-23
 
 ### Fixed

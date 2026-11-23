@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 )
@@ -25,6 +26,10 @@ import (
 //	  renderer-level gating beyond global build.render_mode semantics)
 //
 // Errors returned are surfaced as warnings (non-fatal) unless future policy changes.
+
+// hugoBuildTimeout is how long a build of Hugo may take. A site with
+// thousands of pages takes minutes; a build that takes longer is stuck.
+const hugoBuildTimeout = 30 * time.Minute
 
 // BinaryRenderer invokes the `hugo` binary present on PATH.
 type BinaryRenderer struct{}
@@ -143,8 +148,14 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	// Hugo writes a lot at debug level - tens of megabytes for a big
 	// site - and the daemon drops those lines at the usual log level
 	// anyway. Ask for them only when the daemon logs at debug level.
+	// The build has a deadline. A Hugo that hangs - a module download
+	// that never answers - held the build of the daemon forever, and
+	// every later build queued behind it until the queue was full.
+	renderCtx, cancelRender := context.WithTimeout(ctx, hugoBuildTimeout)
+	defer cancelRender()
+
 	//nolint:gosec // the log level is one of two constants this file picks
-	cmd := exec.CommandContext(ctx, "hugo", "--logLevel", hugoLogLevelArg(ctx))
+	cmd := exec.CommandContext(renderCtx, "hugo", "--logLevel", hugoLogLevelArg(ctx))
 	cmd.Dir = rootDir
 	// Be explicit about environment inheritance. Also, ensure PATH contains the
 	// resolved go binary directory so Hugo Modules can reliably execute `go`.

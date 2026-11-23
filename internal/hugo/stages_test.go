@@ -20,15 +20,10 @@ func TestStageRunnerTimings(t *testing.T) {
 		t.Fatalf("expected stage durations recorded")
 	}
 	var sum time.Duration
-	for name, d := range report.StageDurations {
-		if d <= 0 {
-			// allow zero-duration for known no-op stages or very fast stages
-			if name != "layouts" && name != "prepare_output" && name != "indexes" {
-				if name != "post_process" { // post_process spin ensures >0 but tolerate just in case
-					t.Errorf("stage %s duration zero", name)
-				}
-			}
-		}
+	for _, d := range report.StageDurations {
+		// A stage that is fast enough measures zero: the clock of the
+		// machine is the limit. The entry in the map is the check that
+		// the stage ran.
 		sum += d
 	}
 	if report.End.Sub(report.Start) < sum {
