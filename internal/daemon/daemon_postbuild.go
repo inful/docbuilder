@@ -274,7 +274,16 @@ func (d *Daemon) raiseRepositoryBuildCounters() {
 	if !ok {
 		return
 	}
+	commits, ok := d.state.stateManager.(interface {
+		GetRepoLastCommit(url string) string
+	})
 	for _, url := range reader.RepositoryURLs() {
-		d.state.stateManager.IncrementRepoBuild(url, true)
+		// A repository without a commit was not built: it counts as a
+		// failure, and the status page says so.
+		built := true
+		if ok {
+			built = commits.GetRepoLastCommit(url) != ""
+		}
+		d.state.stateManager.IncrementRepoBuild(url, built)
 	}
 }

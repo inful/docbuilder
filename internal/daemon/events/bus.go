@@ -152,12 +152,12 @@ func (b *Bus) Publish(ctx context.Context, evt any) error {
 
 	evtType := reflect.TypeOf(evt)
 
-	// Hold the read lock for the duration of delivery to ensure that
-	// unsubscribe/Close (which take the write lock and close channels)
-	// cannot race with channel sends.
+	// The subscribers are read under the lock and the event is sent
+	// outside of it: a send that blocks on a full channel held the read
+	// lock, and the write lock that unsubscribe and Close need was
+	// never given - the daemon did not stop.
 	b.mu.RLock()
-	defer b.mu.RUnlock()
-
+	matched := make([]*subscriber, 0, 4)
 	for subType, typeSubs := range b.subs {
 		match := subType == evtType
 		if !match && subType.Kind() == reflect.Interface {
@@ -166,10 +166,15 @@ func (b *Bus) Publish(ctx context.Context, evt any) error {
 		if !match {
 			continue
 		}
-		for _, s := range typeSubs {
-			if err := s.send(ctx, evt); err != nil {
-				return err
-			}
+		for _, sub := range typeSubs {
+			matched = append(matched, sub)
+		}
+	}
+	b.mu.RUnlock()
+
+	for _, sub := range matched {
+		if err := sub.send(ctx, evt); err != nil {
+			return err
 		}
 	}
 
