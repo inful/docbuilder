@@ -56,7 +56,11 @@ func (p Policy) Delay(retryCount int) time.Duration {
 	case config.RetryBackoffFixed:
 		return p.Initial
 	case config.RetryBackoffExponential:
-		d := p.Initial * (1 << (retryCount - 1))
+		// The shift is capped: a shift of 63 overflows the duration, and
+		// the delay became negative, so the retry loop spun without a
+		// backoff.
+		shift := min(retryCount-1, 30)
+		d := p.Initial * (1 << shift)
 		if d > p.Max {
 			return p.Max
 		}
