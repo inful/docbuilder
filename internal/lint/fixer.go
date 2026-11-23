@@ -583,9 +583,22 @@ func (f *Fixer) CreateBackup(result *FixResult, rootPath string) (string, error)
 // each of them. After a rename the list holds a path that does not
 // exist any more.
 func (f *Fixer) replaceScannedFile(oldPath, newPath string) {
+	oldAbs, err := filepath.Abs(oldPath)
+	if err != nil {
+		oldAbs = oldPath
+	}
+	newAbs, err := filepath.Abs(newPath)
+	if err != nil {
+		newAbs = newPath
+	}
+
 	for i := range f.scannedFiles {
-		if f.scannedFiles[i] == oldPath {
-			f.scannedFiles[i] = newPath
+		entry, entryErr := filepath.Abs(f.scannedFiles[i])
+		if entryErr != nil {
+			entry = f.scannedFiles[i]
+		}
+		if entry == oldAbs {
+			f.scannedFiles[i] = newAbs
 			return
 		}
 	}
