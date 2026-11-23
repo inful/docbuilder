@@ -9,6 +9,22 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.7] - 2026-11-23
+
+### Fixed
+- **The "Edit this page" link of the preview works again.** The VS Code
+  CLI can leave a process behind that holds its output open: the command
+  was then never finished, the request hung forever, and the browser
+  waited forever. The command itself was done - it exited with a zero
+  status - and the file was opened all the same. The pipes are closed
+  after the deadline, and a command that was done is a success.
+
+- **The failure of the edit handler says what failed.** The message
+  alone ("the IPC socket was not found") does not say which one, and the
+  page in the browser is what the developer sees: the details are part
+  of the answer now.
+
+
 ## [0.35.6] - 2026-11-23
 
 ### Fixed
