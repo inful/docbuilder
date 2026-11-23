@@ -45,7 +45,10 @@ func pathsEqualCaseInsensitive(path1, path2 string) bool {
 }
 
 // resolveRelativePath resolves a relative link path from a source file to an absolute path.
-func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
+//
+// The rootPath is the directory that was linted: the walk that looks
+// for the file of a repository-root-relative link stops there.
+func resolveRelativePath(sourceFile, linkTarget, rootPath string) (string, error) {
 	// Remove any URL fragments (#section).
 	targetPath, _, _ := strings.Cut(linkTarget, "#")
 
@@ -57,7 +60,7 @@ func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
 		// The link points at the root of the repository of the
 		// documentation, so the file is looked for in the directory of
 		// the source file and in the directories above it.
-		if found, foundOK := resolveRepositoryRootPath(sourceFile, root); foundOK {
+		if found, foundOK := resolveRepositoryRootPath(sourceFile, root, rootPath); foundOK {
 			resolvedPath = found
 		} else if contentRoot := findContentRoot(sourceFile); contentRoot != "" {
 			// Join with the content root
@@ -105,11 +108,18 @@ func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
 // directories above it. The first one that holds the file is the one
 // the link points at.
 //
-// The walk stops at the root of the repository: a file above it is not
-// part of the documentation.
-func resolveRepositoryRootPath(sourceFile, target string) (string, bool) {
+// The walk stops at the root of the documentation: a file above it is
+// not published, and a link to it is broken. The walk stops at the root
+// of the repository as well.
+func resolveRepositoryRootPath(sourceFile, target, rootPath string) (string, bool) {
 	dir := filepath.Dir(sourceFile)
 	for {
+		// The walk does not leave the documentation: the readme of the
+		// repository is above it, and the site has no page for it.
+		if rootPath != "" && !isInside(rootPath, dir) {
+			return "", false
+		}
+
 		candidate := filepath.Join(dir, filepath.FromSlash(strings.TrimPrefix(target, "/")))
 		if fileExists(candidate) || fileExists(candidate+".md") || fileExists(candidate+".markdown") {
 			return candidate, true
@@ -123,6 +133,15 @@ func resolveRepositoryRootPath(sourceFile, target string) (string, bool) {
 		}
 		dir = parent
 	}
+}
+
+// isInside reports whether a path is inside a directory.
+func isInside(root, path string) bool {
+	rel, err := filepath.Rel(root, path)
+	if err != nil {
+		return false
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
 // findContentRoot finds the content directory by walking up from the source file.

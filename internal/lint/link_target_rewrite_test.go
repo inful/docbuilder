@@ -24,7 +24,7 @@ func TestComputeUpdatedLinkTarget_RelativeAcrossDirectories(t *testing.T) {
 	require.True(t, changed)
 	require.Equal(t, "../new/target.md#section", updated)
 
-	resolved, err := resolveRelativePath(sourceFile, updated)
+	resolved, err := resolveRelativePath(sourceFile, updated, repoRoot)
 	require.NoError(t, err)
 	require.Equal(t, newAbs, resolved)
 }
@@ -44,7 +44,7 @@ func TestComputeUpdatedLinkTarget_SameDir_PreservesDotSlash(t *testing.T) {
 	require.True(t, changed)
 	require.Equal(t, "./new.md", updated)
 
-	resolved, err := resolveRelativePath(sourceFile, updated)
+	resolved, err := resolveRelativePath(sourceFile, updated, repoRoot)
 	require.NoError(t, err)
 	require.Equal(t, newAbs, resolved)
 }
@@ -64,7 +64,7 @@ func TestComputeUpdatedLinkTarget_SiteAbsolute_PreservesLeadingSlash(t *testing.
 	require.True(t, changed)
 	require.Equal(t, "/en/api/new.md", updated)
 
-	resolved, err := resolveRelativePath(sourceFile, updated)
+	resolved, err := resolveRelativePath(sourceFile, updated, repoRoot)
 	require.NoError(t, err)
 	require.Equal(t, newAbs, resolved)
 }
@@ -84,7 +84,7 @@ func TestComputeUpdatedLinkTarget_Extensionless_PreservesNoExtension(t *testing.
 	require.True(t, changed)
 	require.Equal(t, "/en/api/new", updated)
 
-	resolved, err := resolveRelativePath(sourceFile, updated)
+	resolved, err := resolveRelativePath(sourceFile, updated, repoRoot)
 	require.NoError(t, err)
 	require.Equal(t, newAbs, resolved)
 }

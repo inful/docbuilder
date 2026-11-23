@@ -138,7 +138,7 @@ func TestDetectBrokenLinksInFile_SkipsCodeBlocksAndInlineCode_ForLineNumbers(t *
 	err = os.WriteFile(indexFile, []byte(content), 0o600)
 	require.NoError(t, err)
 
-	broken, err := detectBrokenLinksInFile(indexFile)
+	broken, err := detectBrokenLinksInFile(indexFile, docsDir)
 	require.NoError(t, err)
 	require.Len(t, broken, 1)
 	assert.Equal(t, 5, broken[0].LineNumber)
@@ -159,7 +159,7 @@ func TestDetectBrokenLinksInFile_WithFrontmatter_ReportsFileLineNumber(t *testin
 	err = os.WriteFile(indexFile, []byte(indexContent), 0o600)
 	require.NoError(t, err)
 
-	broken, err := detectBrokenLinksInFile(indexFile)
+	broken, err := detectBrokenLinksInFile(indexFile, docsDir)
 	require.NoError(t, err)
 	require.Len(t, broken, 1)
 
@@ -179,7 +179,7 @@ func TestDetectBrokenLinks_IgnoresFootnotes(t *testing.T) {
 	err = os.WriteFile(mdFile, []byte(content), 0o600)
 	require.NoError(t, err)
 
-	broken, err := detectBrokenLinksInFile(mdFile)
+	broken, err := detectBrokenLinksInFile(mdFile, docsDir)
 	require.NoError(t, err)
 	assert.Empty(t, broken)
 }
@@ -197,7 +197,7 @@ func TestDetectBrokenLinks_IgnoresBareEmailAutolinks(t *testing.T) {
 	err = os.WriteFile(mdFile, []byte(content), 0o600)
 	require.NoError(t, err)
 
-	broken, err := detectBrokenLinksInFile(mdFile)
+	broken, err := detectBrokenLinksInFile(mdFile, docsDir)
 	require.NoError(t, err)
 	assert.Empty(t, broken)
 }

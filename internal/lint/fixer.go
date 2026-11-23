@@ -42,6 +42,12 @@ type Fixer struct {
 	// files walked the tree a hundred times.
 	scannedFiles []string
 	scannedRoot  string
+
+	// rootPath is the directory that was linted. The walk that looks
+	// for the file of a repository-root-relative link stops there: the
+	// readme of the repository is above the documentation, and the site
+	// has no page for it.
+	rootPath string
 }
 
 // cachedLinks holds the links of one markdown file, with the state of
@@ -157,6 +163,7 @@ func (f *Fixer) applyFixes(path string, result *Result) (*FixResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get absolute path: %w", err)
 	}
+	f.rootPath = rootPath
 
 	// The lint run already found the broken links, and they are the
 	// worklist for ADR-012 healing. Scanning the tree again here would

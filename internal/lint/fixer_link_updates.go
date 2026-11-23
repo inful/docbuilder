@@ -177,7 +177,7 @@ func findLineByteRange(content []byte, lineNumber int) (int, int, bool) {
 // - Link style (relative vs absolute within repo).
 func (f *Fixer) updateLinkTarget(link LinkReference, oldPath, newPath string) string {
 	originalTarget := link.Target + link.Fragment
-	resolved, resErr := resolveRelativePath(link.SourceFile, originalTarget)
+	resolved, resErr := resolveRelativePath(link.SourceFile, originalTarget, f.rootPath)
 	// The path of the walk is relative and the resolved link is
 	// absolute: without the same shape the precise rewrite is skipped
 	// and the link keeps the old name.

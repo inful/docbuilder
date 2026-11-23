@@ -26,7 +26,7 @@ func TestDocmodelParity_BrokenAndLinkDetection_AgreeOnLineNumbers(t *testing.T) 
 	require.NoError(t, os.WriteFile(sourceFile, []byte(src), 0o600))
 
 	// Broken-link detection should report file-coordinate line numbers.
-	broken, err := detectBrokenLinksInFile(sourceFile)
+	broken, err := detectBrokenLinksInFile(sourceFile, docsDir)
 	require.NoError(t, err)
 	require.Len(t, broken, 1)
 	require.Equal(t, 8, broken[0].LineNumber)
