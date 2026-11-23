@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // ragabastUploadPath and ragabastPreflightPath are the stable endpoint
@@ -615,5 +616,5 @@ func (d *OutboundDispatcher) String() string {
 		return "<nil>"
 	}
 	return fmt.Sprintf("OutboundDispatcher(base_url=%s, workers=%d, queue_capacity=%d, preflight=%v)",
-		d.baseURL, d.workers, d.queueCap, d.preflightBase != "")
+		logfields.RedactURL(d.baseURL), d.workers, d.queueCap, d.preflightBase != "")
 }
