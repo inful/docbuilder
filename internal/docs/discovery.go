@@ -422,6 +422,12 @@ func (d *Discovery) detectPathCollisions() error {
 	for i := range d.docFiles {
 		file := &d.docFiles[i]
 		hugoPath := file.GetHugoPath(d.isSingleRepo)
+		// The pipeline renames a README to _index, so two files that are
+		// written to different paths land on the same one: the check has
+		// to compare the path the file is published at.
+		if strings.EqualFold(file.Name, "README") {
+			hugoPath = filepath.Join(filepath.Dir(hugoPath), "_index"+file.Extension)
+		}
 		sourcePath := filepath.Join(file.Repository, file.RelativePath)
 		seen[hugoPath] = append(seen[hugoPath], sourcePath)
 	}

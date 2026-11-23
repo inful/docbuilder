@@ -36,7 +36,7 @@ func TestDocumentationDiscovery(t *testing.T) {
 		"docs/api/overview.md":           "# API Overview\n\nAPI documentation.",
 		"docs/api/reference.md":          "# API Reference\n\nDetailed API reference.",
 		"docs/guides/getting-started.md": "# Getting Started\n\nHow to get started.",
-		testDocsReadmePath:               "# Repository README\n\nThis should be ignored.",
+		"docs/guides/README.md":          "# Repository README\n\nThis is a readme of a section.",
 		"docs/non-markdown.txt":          "This is not markdown and should be ignored.",
 	}
 
@@ -73,7 +73,7 @@ func TestDocumentationDiscovery(t *testing.T) {
 	// Verify results (now including README.md)
 	expectedFiles := []string{
 		"index.md",
-		readmeFilename,
+		"guides/" + readmeFilename,
 		"api/overview.md",
 		"api/reference.md",
 		"guides/getting-started.md",
@@ -485,7 +485,7 @@ func testMultiPlatformDiscoveryValidation(t *testing.T) {
 		switch forgeType {
 		case "github":
 			docFiles = map[string]string{
-				"docs/README.md":          "# " + repo.Name + " (GitHub)\n\nShould be ignored",
+				"docs/actions/README.md":  "# " + repo.Name + " (GitHub)\n\nA readme of the actions",
 				"docs/index.md":           "# " + repo.Name + " Documentation\n\nGitHub repository docs.",
 				"docs/actions/ci.md":      "# GitHub Actions\n\nCI/CD with GitHub Actions.",
 				"docs/security/policy.md": "# Security Policy\n\nSecurity guidelines.",
@@ -606,8 +606,9 @@ func testDocumentationFilteringWithTestForge(t *testing.T) {
 
 		// Create a mix of files to test filtering
 		testFiles := map[string]string{
-			// Valid markdown files
-			"docs/index.md":             "# Index",
+			// Valid markdown files. There is no index.md: the README is
+			// the index of the repository, and both of them would be
+			// written to the same page.
 			"docs/guide.markdown":       "# Guide",
 			"docs/api.mdown":            "# API",
 			"docs/reference.mkd":        "# Reference",
@@ -656,7 +657,7 @@ func testDocumentationFilteringWithTestForge(t *testing.T) {
 	}
 
 	// Verify filtering results
-	expectedMarkdownFiles := 7 // index.md, README.md, guide.markdown, api.mdown, reference.mkd, basics.md, advanced.md
+	expectedMarkdownFiles := 6 // README.md, guide.markdown, api.mdown, reference.mkd, basics.md, advanced.md
 	expectedAssetFiles := 2    // data.json, image.png
 	expectedTotalFiles := len(repositories) * (expectedMarkdownFiles + expectedAssetFiles)
 
