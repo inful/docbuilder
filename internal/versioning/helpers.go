@@ -47,6 +47,13 @@ func ExpandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) (
 			continue
 		}
 
+		// The names of the versions must be unique: the path of a version
+		// is a lossy version of its name, and two versions can share it
+		// ("release/1.0" and "release-1.0"). The second clone of a name
+		// deletes the workspace of the first one, and the pages of the
+		// first version vanish from the site.
+		usedNames := make(map[string]int)
+
 		// Create a repository entry for each discovered version
 		if len(result.Repository.Versions) == 0 {
 			slog.Warn("No versions found for repository, using default branch",
@@ -80,6 +87,10 @@ func ExpandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) (
 			// slash. The name of a repository is a path, and two
 			// versions that share one overwrote each other.
 			versionedRepo.Name = fmt.Sprintf("%s-%s", repo.Name, version.Path)
+			if count, taken := usedNames[versionedRepo.Name]; taken {
+				versionedRepo.Name = fmt.Sprintf("%s-%d", versionedRepo.Name, count+1)
+			}
+			usedNames[versionedRepo.Name]++
 
 			// Add version metadata to tags. The map is copied: the base
 			// repository and every version would otherwise share it, and
