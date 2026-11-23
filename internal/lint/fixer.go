@@ -293,6 +293,12 @@ func (f *Fixer) processFileWithIssues(filePath string, issues []Issue, rootPath 
 	// continue to reference the original on-disk path.
 	if !f.dryRun {
 		currentPath = op.NewPath
+
+		// The list of the files of the tree holds the old name: the
+		// file was read from a path that does not exist any more, the
+		// scan of it failed, and the links inside it were never
+		// rewritten.
+		f.replaceScannedFile(filePath, op.NewPath)
 	}
 
 	// If this file needs a fingerprint fix, make sure we track the final path
@@ -560,4 +566,20 @@ func (f *Fixer) CreateBackup(result *FixResult, rootPath string) (string, error)
 	}
 
 	return backupDir, nil
+}
+
+// replaceScannedFile takes the old name of a renamed file out of the
+// list of the files of the tree, and puts the new name in its place.
+//
+// The list is collected once per run: the fixer looks for the links to
+// every file it renames, and the walk of the tree was repeated for
+// each of them. After a rename the list holds a path that does not
+// exist any more.
+func (f *Fixer) replaceScannedFile(oldPath, newPath string) {
+	for i := range f.scannedFiles {
+		if f.scannedFiles[i] == oldPath {
+			f.scannedFiles[i] = newPath
+			return
+		}
+	}
 }
