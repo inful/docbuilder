@@ -320,8 +320,10 @@ func HugoContentPath(forge, repository, section, name, ext string, isSingleRepo 
 		filename = "_index"
 	}
 
-	// Lowercase the filename for URL compatibility
-	parts = append(parts, filename+ext)
+	// Lowercase the filename and the extension for URL compatibility: the
+	// links to the file are lowercased as well, and a file that is
+	// published at /repo/diagram.PNG is not found at /repo/diagram.png.
+	parts = append(parts, filename+strings.ToLower(ext))
 	return filepath.Join(parts...)
 }
 

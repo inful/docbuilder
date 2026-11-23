@@ -157,6 +157,10 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	//nolint:gosec // the log level is one of two constants this file picks
 	cmd := exec.CommandContext(renderCtx, "hugo", "--logLevel", hugoLogLevelArg(ctx))
 	cmd.Dir = rootDir
+	// The pipes are closed when the deadline passes: a child of Hugo -
+	// a module download - keeps them open, and the build would wait for
+	// it past the deadline.
+	cmd.WaitDelay = 30 * time.Second
 	// Be explicit about environment inheritance. Also, ensure PATH contains the
 	// resolved go binary directory so Hugo Modules can reliably execute `go`.
 	env := ensurePATHContainsDir(os.Environ(), goDir)
