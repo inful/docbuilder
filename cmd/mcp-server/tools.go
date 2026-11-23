@@ -772,7 +772,25 @@ func handleUpdateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 			// page would be gone.
 			return toolErrMsg("the frontmatter patch is empty; a replace would delete the frontmatter of the page")
 		}
-		yaml, yerr := marshalYAML(patch, writeStyle)
+
+		// The identity of the page stays: the uid and the aliases are
+		// what the links of the other pages point at, and the lint
+		// gives the page another uid when it has none.
+		identity := map[string]any{}
+		if had {
+			parsed, perr := frontmatter.ParseYAML(oldFM)
+			if perr != nil {
+				return toolErrMsg(fmt.Sprintf("the frontmatter of %s cannot be parsed, so it was not changed: %v", relPath, perr))
+			}
+			for _, key := range []string{"uid", "aliases"} {
+				if value, found := parsed[key]; found {
+					identity[key] = value
+				}
+			}
+		}
+		maps.Copy(identity, patch)
+
+		yaml, yerr := marshalYAML(identity, writeStyle)
 		if yerr != nil {
 			return toolErr("write the frontmatter", yerr)
 		}
