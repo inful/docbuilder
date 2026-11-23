@@ -171,10 +171,16 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 	workers := min(maxConcurrent(s.cfg.MaxConcurrent), max(len(pages), 1))
 
 	queue := make(chan *PageMetadata)
+	linkQueue := make(chan linkJob)
 	for range workers {
 		s.wg.Go(func() {
 			for page := range queue {
-				s.verifyPage(ctx, page)
+				s.verifyPage(ctx, page, linkQueue)
+			}
+		})
+		s.wg.Go(func() {
+			for job := range linkQueue {
+				s.verifyLink(ctx, job.link, job.page)
 			}
 		})
 	}
@@ -184,12 +190,14 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 		case <-ctx.Done():
 			slog.Info("Link verification canceled")
 			close(queue)
+			close(linkQueue)
 			s.wg.Wait()
 			return ctx.Err()
 		case queue <- page:
 		}
 	}
 	close(queue)
+	close(linkQueue)
 
 	// Wait for all verifications to complete
 	s.wg.Wait()
@@ -199,7 +207,7 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 }
 
 // verifyPage verifies all links in a single page.
-func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata) {
+func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata, linkQueue chan linkJob) {
 	// Check if page content has changed using MD5 hash
 	if page.ContentHash != "" {
 		if cachedHash, err := s.nats.GetPageHash(ctx, page.RenderedPath); err == nil && cachedHash == page.ContentHash {
@@ -250,10 +258,10 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 			continue
 		}
 
-		// Acquire semaphore
-		s.semaphore <- struct{}{}
-		s.wg.Add(1)
-		go s.verifyLink(ctx, link, page)
+		// The link is verified by the workers of the pool. One
+		// goroutine per link spawned tens of thousands of them on a
+		// portal with thousands of pages.
+		linkQueue <- linkJob{link: link, page: page}
 	}
 
 	// All links verified for this page - update page hash in cache
@@ -264,9 +272,14 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 	}
 }
 
+// linkJob is a link to verify and the page it belongs to.
+type linkJob struct {
+	link *Link
+	page *PageMetadata
+}
+
 // verifyLink verifies a single link.
 func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *PageMetadata) {
-	defer s.wg.Done()
 	defer func() { <-s.semaphore }()
 
 	// Resolve relative URLs
