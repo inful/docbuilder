@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 )
 
@@ -460,8 +461,7 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 		return op
 	}
 
-	//nolint:gosec // filePath comes from controlled lint/discovery walk; no untrusted path input
-	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil {
+	if writeErr := foundation.WriteFileAtomic(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil {
 		op.Success = false
 		op.Error = fmt.Errorf("write file for fingerprint update: %w", writeErr)
 		return op

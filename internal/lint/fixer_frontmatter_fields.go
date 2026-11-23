@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 )
 
@@ -158,7 +159,7 @@ func (f *Fixer) fillFrontmatterFields(filePath string) FrontmatterFieldsUpdate {
 		return op
 	}
 
-	if writeErr := os.WriteFile(filePath, updated, info.Mode().Perm()); writeErr != nil { //nolint:gosec // filePath is derived from the lint target set
+	if writeErr := foundation.WriteFileAtomic(filePath, updated, info.Mode().Perm()); writeErr != nil {
 		op.Success = false
 		op.Error = fmt.Errorf("write file for frontmatter-fields update: %w", writeErr)
 		return op
