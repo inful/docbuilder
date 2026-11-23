@@ -160,8 +160,11 @@ func (bq *BuildQueue) Start(ctx context.Context) {
 	}
 }
 
-// Stop gracefully shuts down the build queue.
-func (bq *BuildQueue) Stop(_ context.Context) {
+// Stop gracefully shuts down the build queue. The context bounds the wait:
+// a build that does not stop (a clone to a host that never answers) must
+// not keep the daemon from shutting down - the state file is written after
+// the queue is stopped, and a daemon that never stops never writes it.
+func (bq *BuildQueue) Stop(ctx context.Context) {
 	// Stop can be called twice (a signal handler and a deferred
 	// shutdown), and closing a closed channel panics.
 	bq.stopOnce.Do(func() {
@@ -177,7 +180,19 @@ func (bq *BuildQueue) Stop(_ context.Context) {
 	}
 	bq.mu.Unlock()
 
-	bq.wg.Wait()
+	stopped := make(chan struct{})
+	go func() {
+		bq.wg.Wait()
+		close(stopped)
+	}()
+
+	select {
+	case <-stopped:
+	case <-ctx.Done():
+		slog.Warn("the build queue did not stop in time",
+			slog.String("error", ctx.Err().Error()),
+			slog.Int("active_jobs", bq.ActiveCount()))
+	}
 }
 
 // Length returns the current queue length.
