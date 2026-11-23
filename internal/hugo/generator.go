@@ -508,6 +508,9 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		// may skip. A report of a build that did not publish must not
 		// let the next build skip - the site is behind the workspace,
 		// and only a build that runs publishes it.
+		// The build failed: a repository is missing from the site that
+		// was published, and the report in the site says so.
+		report.Outcome = models.OutcomeFailed
 		report.DeriveOutcome()
 		report.Finish()
 		if err := report.Persist(g.outputDir); err != nil {

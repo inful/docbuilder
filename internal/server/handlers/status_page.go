@@ -15,6 +15,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
+	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
@@ -39,6 +40,10 @@ type StatusProvider interface {
 
 	GetLastDiscovery() *time.Time
 	GetDiscoveryResult() (*forge.DiscoveryResult, error)
+
+	// RepositoryStatuses returns the repositories the daemon knows about
+	// with their state: a repository whose clone failed is not healthy.
+	RepositoryStatuses() []responses.RepositoryInfo
 }
 
 // DaemonStatus is rendered on the status page.
@@ -198,11 +203,23 @@ func generateRepositoryStatus(p StatusProvider) []RepositoryStatus {
 	if res == nil {
 		return repositories
 	}
+	// The state of the repositories comes from the daemon: a repository
+	// whose clone failed has an error in the state, and showing it as
+	// healthy tells the operator that everything is fine.
+	statuses := make(map[string]string)
+	for _, info := range p.RepositoryStatuses() {
+		statuses[info.URL] = info.Status
+	}
+
 	for _, repo := range res.Repositories {
+		status := statuses[repo.CloneURL]
+		if status == "" {
+			status = "unknown"
+		}
 		repoStatus := RepositoryStatus{
 			Name:   repo.Name,
 			URL:    repo.CloneURL,
-			Status: "healthy",
+			Status: status,
 		}
 		if lastDiscovery := p.GetLastDiscovery(); lastDiscovery != nil {
 			repoStatus.LastSync = lastDiscovery

@@ -340,6 +340,13 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 	}
 
 	if verifyErr != nil {
+		if isTimeoutError(verifyErr) {
+			// The link did not answer: it is not known to be broken and
+			// it is not known to be good. It is not published as broken
+			// and it is not cached, so it is checked again later.
+			slog.Warn("The check of a link timed out", "url", absoluteURL)
+			return
+		}
 		cacheEntry.Error = verifyErr.Error()
 		s.updateFailureTracking(cacheEntry, cached)
 		s.handleBrokenLink(ctx, absoluteURL, link, page, status, verifyErr.Error(), cacheEntry)
@@ -495,7 +502,10 @@ func (s *VerificationService) checkExternalLink(ctx context.Context, linkURL str
 		return status, nil
 	}
 	if isTimeoutError(err) {
-		return status, nil
+		// The link did not answer: it is not known to be broken and it
+		// is not known to be good. It is reported as an error, so it is
+		// checked again later instead of being cached as valid.
+		return status, fmt.Errorf("the request for %s timed out: %w", linkURL, err)
 	}
 
 	// Treat rate limiting as "not broken". These responses indicate the URL likely exists,

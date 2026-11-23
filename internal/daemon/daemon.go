@@ -778,13 +778,6 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		liveReload.Shutdown()
 	}
 
-	// Close link verification service
-	if linkVerifier != nil {
-		if err := linkVerifier.Close(); err != nil {
-			slog.Error("Failed to close link verifier", logfields.Error(err))
-		}
-	}
-
 	// Stop the outbound dispatcher last among workers — it has its own
 	// drain semantics (workers process remaining queue items, then exit).
 	// Canceling runCtx above cancels in-flight POSTs; Stop then drains.
@@ -797,6 +790,15 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	// after the close is lost from the build history.
 	if err := d.lifecycle.workers.StopAndWait(ctx); err != nil {
 		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(err))
+	}
+
+	// Close the link verification service after the workers: the
+	// verification is one of them, and it opens a connection to NATS
+	// that nobody closes when the service is closed under it.
+	if linkVerifier != nil {
+		if err := linkVerifier.Close(); err != nil {
+			slog.Error("Failed to close link verifier", logfields.Error(err))
+		}
 	}
 
 	// Save the state after the workers stopped: a worker that changed
