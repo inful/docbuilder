@@ -59,6 +59,12 @@ func (c *Client) pruneNonDocTopLevel(repoPath string, repo appcfg.Repository) er
 		if name == ".git" {
 			continue
 		}
+		// The .docignore of the repository is read from the clone: it is
+		// the file that keeps a repository out of the site. Pruning it
+		// would publish the repository the operator excluded.
+		if name == ".docignore" {
+			continue
+		}
 		if _, isDoc := docRoots[name]; isDoc {
 			continue
 		}
