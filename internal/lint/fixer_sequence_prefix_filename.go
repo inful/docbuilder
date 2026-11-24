@@ -120,16 +120,18 @@ func (f *Fixer) applySequencePrefixFilenameFixes(targets map[string]struct{}, is
 // sequence is used.
 func buildSequenceName(prefix string, seq int, original string) string {
 	base := strings.TrimSuffix(original, ".md")
-	slug := base
-	if i := strings.Index(base, "-"); i >= 0 {
-		// Strip an existing leading "<digits>-" prefix if present.
-		head := base[:i]
-		if isAllDigits(head) {
-			if j := strings.Index(base[i+1:], "-"); j >= 0 {
-				slug = base[i+j+2:]
-			}
-		}
+
+	// The prefix of the directory is part of the name: the sequence
+	// number brings it back. Without this the name read
+	// "adr-001-adr-something.md".
+	slug := strings.TrimPrefix(base, prefix)
+
+	// An existing sequence number is dropped: the new one takes its
+	// place.
+	if i := strings.Index(slug, "-"); i >= 0 && isAllDigits(slug[:i]) {
+		slug = slug[i+1:]
 	}
+
 	if slug == "" {
 		slug = base
 	}
