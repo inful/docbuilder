@@ -19,6 +19,10 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
+// DefaultConfigFileName is the name of the configuration file every
+// command reads.
+const DefaultConfigFileName = "config.yaml"
+
 // Global context passed to subcommands if we need to share global state later.
 type Global struct {
 	Logger *slog.Logger

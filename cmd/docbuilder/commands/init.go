@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -14,10 +15,14 @@ type InitCmd struct {
 }
 
 func (i *InitCmd) Run(_ *Global, root *CLI) error {
-	// If the user specified an output directory, place the config there as "docbuilder.yaml".
+	// If the user specified an output directory, place the config
+	// there. The directory is made: the operator named a directory that
+	// does not exist yet.
 	if i.Output != "" {
-		cfgPath := filepath.Join(i.Output, "docbuilder.yaml")
-		return RunInit(cfgPath, i.Force)
+		if err := os.MkdirAll(i.Output, 0o750); err != nil {
+			return fmt.Errorf("create the output directory: %w", err)
+		}
+		return RunInit(filepath.Join(i.Output, DefaultConfigFileName), i.Force)
 	}
 	return RunInit(root.Config, i.Force)
 }

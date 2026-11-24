@@ -135,10 +135,13 @@ type ForgeConfig struct {
 
 // WebhookConfig represents webhook configuration for a forge, including secret, path, and events.
 type WebhookConfig struct {
-	Secret       string   `yaml:"secret"`        // Webhook secret for validation
-	Path         string   `yaml:"path"`          // Webhook endpoint path
-	Events       []string `yaml:"events"`        // Events to listen for
-	RegisterAuto bool     `yaml:"register_auto"` // Auto-register webhooks
+	Secret string   `yaml:"secret"` // Webhook secret for validation
+	Path   string   `yaml:"path"`   // Webhook endpoint path
+	Events []string `yaml:"events"` // Events to listen for
+	// RegisterAuto is accepted for the configurations that set it. The
+	// daemon does not register a webhook with the forge: the forge
+	// calls the endpoint, and the operator creates the webhook there.
+	RegisterAuto bool `yaml:"register_auto"`
 }
 
 // DaemonConfig represents daemon-specific configuration, including HTTP, sync, and storage settings.
@@ -335,7 +338,12 @@ type MonitoringHealth struct {
 	Path string `yaml:"path"`
 }
 
-// MonitoringLogging represents configuration for logging level and format.
+// MonitoringLogging represents configuration for logging level and
+// format.
+//
+// The two fields are reserved: the level of the daemon comes from
+// DOCBUILDER_LOG_LEVEL or from --verbose, and the format is always
+// the text format of slog.
 type MonitoringLogging struct {
 	Level  LogLevel  `yaml:"level"`
 	Format LogFormat `yaml:"format"`

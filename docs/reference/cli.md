@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: aaf585282fbb7ebda153e4f0167076d861ab67893e76528eed319e364a982fc4
-lastmod: "2026-11-23"
+fingerprint: 4bd61bcf34cb87025068023559161fe3bb085dae8046fe885f667e54046b52fe
+lastmod: "2026-11-24"
 tags:
   - cli
   - commands
@@ -119,7 +119,9 @@ docbuilder init [flags]
 
 | Flag | Description |
 |------|-------------|
-| `-c, --config FILE` | Output filename (default: `config.yaml`) |
+| `-c, --config FILE` | Configuration file that is written (default: `config.yaml`) |
+| `-o, --output DIR` | Directory the configuration file is written to (default: the directory of the configuration file) |
+| `--force` | Overwrite an existing configuration file |
 
 ## Discover Command
 
@@ -300,9 +302,13 @@ docbuilder preview [flags]
 | Flag | Description |
 |------|-------------|
 | `-d, --docs-dir DIR` | Documentation directory to watch (default: `./docs`) |
-| `-o, --output DIR` | Hugo site directory (default: `./site`) |
-| `-p, --port PORT` | Server port (default: 1313) |
-| `--no-livereload` | Disable live reload |
+| `-o, --output DIR` | Output directory for the generated site (default: a temporary directory) |
+| `--port PORT` | Docs server port (default: 1316) |
+| `--livereload-port PORT` | LiveReload server port (default: the docs port + 3) |
+| `--no-live-reload` | Disable the LiveReload stream and the script that opens it |
+| `--title TITLE` | Site title (default: the name of the parent directory) |
+| `--base-url URL` | Base URL of the site (default: `http://localhost:1316`) |
+| `--vscode` | Enable the VS Code edit links (the files open in the editor) |
 
 ## Build Report
 
