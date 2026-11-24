@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: d8089658e48627b2eb3ea78470c69f0cd879f367cfa187fdef322a0796558cd2
-lastmod: "2026-11-22"
+fingerprint: 535ec36f5ab5f525794d73c89492c7abb30489ca7d9c819c1f7b677028c94b74
+lastmod: "2026-11-24"
 tags:
   - optimization
   - performance
@@ -25,7 +25,7 @@ A build will be **skipped** (reusing previous `public/` output) when **all** of 
 2. **No configuration changes**: Hugo config hash is identical to previous build
 3. **No version changes**: DocBuilder and Hugo versions match previous build
 4. **Previous build exists**: Valid `build-report.json` and `public/` directory exist
-5. **Content integrity**: All content files and their hashes match previous build
+5. **The repositories are the same**: The repositories of the build are the ones of the last build, and the published commits are the ones of the workspace
 
 ## When Builds Are Forced
 
@@ -86,6 +86,10 @@ The pipeline skips the remaining stages when all of these hold:
 4. **The previous output is still usable.** The last build was not a
    failure, it found documentation files, and the output directory holds
    a rendered `public/index.html` and markdown content.
+5. **The repositories are the same.** The repositories of the build are
+   the ones of the last build - a repository that was removed from the
+   configuration is not in the list of the commits any more - and the
+   commits of the published site are the ones of the workspace.
 
 Anything else - a moved repository, a changed configuration, a new
 version, a broken output directory - means the build runs.
@@ -93,9 +97,10 @@ version, a broken output directory - means the build runs.
 ### What the state holds
 
 The daemon's state file records the commit each repository was built at,
-the configuration hash of that build, and the hashes of the document
-files. The pipeline writes them after a build and reads them back to
-make the decision.
+the configuration hash of that build, the number of documents of each
+repository and the hashes of the document files. The pipeline writes
+them after a build and reads the commits, the configuration hash and
+the repositories back to make the decision.
 
 ## Configuration
 
