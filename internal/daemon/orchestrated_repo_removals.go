@@ -40,6 +40,10 @@ func (d *Daemon) handleRepoRemoved(evt events.RepoRemoved) {
 		return
 	}
 
+	// The build that follows takes the pages of the removed
+	// repository away. It has to run even when no repository is left.
+	d.build.afterRemoval.Store(true)
+
 	if remover, ok := any(d.state.stateManager).(interface{ RemoveRepositoryState(string) }); ok {
 		remover.RemoveRepositoryState(evt.RepoURL)
 		slog.Info("Repository removed from state", slog.String("repo_url", logfields.RedactURL(evt.RepoURL)), logfields.Name(evt.RepoName))

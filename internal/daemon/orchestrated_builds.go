@@ -40,8 +40,15 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 
 	reposForBuild := d.currentReposForOrchestratedBuild()
 	if len(reposForBuild) == 0 {
-		slog.Warn("Skipping orchestrated build: no repositories available")
-		return
+		if !d.build.afterRemoval.Swap(false) {
+			slog.Warn("Skipping orchestrated build: no repositories available")
+			return
+		}
+		// A repository was removed and no repository is left. The
+		// build runs with an empty set: the pages of the removed
+		// repository are still published, and only a build takes them
+		// away.
+		slog.Info("Building the site without a repository: a repository was removed")
 	}
 
 	if evt.LastRepoURL != "" && evt.LastBranch != "" {
