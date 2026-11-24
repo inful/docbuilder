@@ -43,3 +43,8 @@ func (ss *Service) GetStatisticsStore() StatisticsStore {
 func (ss *Service) GetConfigurationStore() ConfigurationStore {
 	return ss.store.Configuration()
 }
+
+// GetDaemonInfoStore provides typed access to the metadata of the daemon.
+func (ss *Service) GetDaemonInfoStore() DaemonInfoStore {
+	return ss.store.DaemonInfo()
+}

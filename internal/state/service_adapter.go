@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
@@ -327,6 +328,11 @@ func (a *ServiceAdapter) SetLastConfigHash(hash string) {
 	if res := store.Set(ctx, "last_config_hash", hash); res.IsErr() {
 		logStateError("the config hash", res.UnwrapErr())
 	}
+}
+
+// UpdateStatus records the status of the daemon in its state.
+func (a *ServiceAdapter) UpdateStatus(ctx context.Context, status string) foundation.Result[struct{}, error] {
+	return a.service.GetDaemonInfoStore().UpdateStatus(ctx, status)
 }
 
 // GetLastConfigHash returns the last config hash.

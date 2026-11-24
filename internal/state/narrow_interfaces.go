@@ -1,6 +1,11 @@
 package state
 
-import "time"
+import (
+	"context"
+	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+)
 
 // RepositoryMetadataWriter provides methods to update repository discovery/build metadata.
 // This is the minimal interface Hugo generator needs for state persistence.
@@ -91,6 +96,12 @@ type LifecycleManager interface {
 	LastSaved() *time.Time
 }
 
+// DaemonStatusStore records the status of the daemon in its state.
+type DaemonStatusStore interface {
+	// UpdateStatus records the status of the daemon.
+	UpdateStatus(ctx context.Context, status string) foundation.Result[struct{}, error]
+}
+
 // DiscoveryRecorder records discovery operations for repositories.
 type DiscoveryRecorder interface {
 	// RecordDiscovery records a discovery operation for a repository.
@@ -102,6 +113,7 @@ type DiscoveryRecorder interface {
 // Implemented by state.ServiceAdapter.
 type DaemonStateManager interface {
 	LifecycleManager
+	DaemonStatusStore
 	RepositoryInitializer
 	RepositoryMetadataStore
 	RepositoryCommitTracker
