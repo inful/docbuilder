@@ -105,7 +105,6 @@ func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 		fmt.Println("Preview output directory:", outDir)
 	}
 	cfg.Output.Directory = outDir
-	cfg.Output.Clean = true
 
 	// Derive title from parent directory of DocsDir if not provided
 	title := p.Title
