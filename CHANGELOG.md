@@ -44,6 +44,13 @@ commits; pin to a SHA for reproducibility per the README.
 - **The Forgejo repositories keep their order.** The list was built by
   walking a map, so the same repository changed its name - and its
   place in the site - from one run to the next.
+- **The build error page escapes the error.** The message of a build
+  failure went into the page as markup, so a file whose name holds a
+  script ran it in the browser of the reader.
+- **The webhook answers what it did.** A body that is too large was
+  answered with 400 and a wrong signature with 400 as well; they say
+  413 and 401 now. A request that triggered no build answered
+  "received": the forge believed the build was on its way.
 
 
 ## [0.35.13] - 2026-11-24
