@@ -48,7 +48,8 @@ func TestTheVersionOfTheBinary(t *testing.T) {
 	}
 	dir := t.TempDir()
 	binary := filepath.Join(dir, "docbuilder")
-	cmd := exec.Command("go", "build",
+	// #nosec G204 -- the flags of the test are fixed.
+	cmd := exec.CommandContext(t.Context(), "go", "build",
 		"-ldflags", "-X git.home.luguber.info/inful/docbuilder/internal/version.Version=9.9.9",
 		"-o", binary, "./cmd/docbuilder")
 	cmd.Dir = "../.."
@@ -56,7 +57,8 @@ func TestTheVersionOfTheBinary(t *testing.T) {
 		t.Fatalf("build: %v\n%s", err, out)
 	}
 
-	out, err := exec.Command(binary, "--version").CombinedOutput()
+	// #nosec G204 -- the binary is the one the test built.
+	out, err := exec.CommandContext(t.Context(), binary, "--version").CombinedOutput()
 	if err != nil {
 		t.Fatalf("version: %v\n%s", err, out)
 	}
