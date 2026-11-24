@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -45,8 +46,8 @@ func (c *Client) WithRemoteHeadCache(cache *RemoteHeadCache) *Client {
 // Returns the local filesystem path and any error.
 //
 // Deprecated: Use CloneRepoWithMetadata for commit metadata.
-func (c *Client) CloneRepo(repo appcfg.Repository) (string, error) {
-	result, err := c.CloneRepoWithMetadata(repo)
+func (c *Client) CloneRepo(ctx context.Context, repo appcfg.Repository) (string, error) {
+	result, err := c.CloneRepoWithMetadata(ctx, repo)
 	if err != nil {
 		return "", err
 	}
@@ -55,35 +56,35 @@ func (c *Client) CloneRepo(repo appcfg.Repository) (string, error) {
 
 // UpdateRepo updates an existing repository in the workspace.
 // If retry is enabled, it wraps the operation with retry logic.
-func (c *Client) UpdateRepo(repo appcfg.Repository) (string, error) {
+func (c *Client) UpdateRepo(ctx context.Context, repo appcfg.Repository) (string, error) {
 	if c.inRetry {
-		return c.updateOnce(repo)
+		return c.updateOnce(ctx, repo)
 	}
-	return c.withRetry("update", repo.Name, func() (string, error) {
-		return c.updateOnce(repo)
+	return c.withRetry(ctx, "update", repo.Name, func() (string, error) {
+		return c.updateOnce(ctx, repo)
 	})
 }
 
 // CloneRepoWithMetadata clones a repository and returns metadata including commit date.
 // If retry is enabled, it wraps the operation with retry logic.
-func (c *Client) CloneRepoWithMetadata(repo appcfg.Repository) (CloneResult, error) {
+func (c *Client) CloneRepoWithMetadata(ctx context.Context, repo appcfg.Repository) (CloneResult, error) {
 	if c.inRetry {
-		return c.cloneOnceWithMetadata(repo)
+		return c.cloneOnceWithMetadata(ctx, repo)
 	}
-	return c.withRetryMetadata("clone", repo.Name, func() (CloneResult, error) {
-		return c.cloneOnceWithMetadata(repo)
+	return c.withRetryMetadata(ctx, "clone", repo.Name, func() (CloneResult, error) {
+		return c.cloneOnceWithMetadata(ctx, repo)
 	})
 }
 
-func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
-	result, err := c.cloneOnceWithMetadata(repo)
+func (c *Client) cloneOnce(ctx context.Context, repo appcfg.Repository) (string, error) {
+	result, err := c.cloneOnceWithMetadata(ctx, repo)
 	if err != nil {
 		return "", err
 	}
 	return result.Path, nil
 }
 
-func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, error) {
+func (c *Client) cloneOnceWithMetadata(ctx context.Context, repo appcfg.Repository) (CloneResult, error) {
 	if repo.Name == "" {
 		// The path of the clone would be the root of the workspace, and
 		// the removal of the old clone would delete every other clone.
@@ -128,7 +129,7 @@ func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, err
 		}
 		cloneOptions.Auth = auth
 	}
-	repository, err := git.PlainClone(repoPath, false, cloneOptions)
+	repository, err := git.PlainCloneContext(ctx, repoPath, false, cloneOptions)
 	if err != nil {
 		return CloneResult{}, ClassifyGitError(err, "clone", repo.URL)
 	}
@@ -166,11 +167,11 @@ func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, err
 	return result, nil
 }
 
-func (c *Client) updateOnce(repo appcfg.Repository) (string, error) {
+func (c *Client) updateOnce(ctx context.Context, repo appcfg.Repository) (string, error) {
 	repoPath := filepath.Join(c.workspaceDir, repo.Name)
 	if _, err := os.Stat(filepath.Join(repoPath, ".git")); err != nil { // missing => clone
 		slog.Debug("Repository missing, cloning", logfields.Name(repo.Name))
-		return c.cloneOnce(repo)
+		return c.cloneOnce(ctx, repo)
 	}
 	// A tag never moves, so the clone that is there is the one that is
 	// wanted. The update fetches a branch, and a tag is not one: the
@@ -179,7 +180,7 @@ func (c *Client) updateOnce(repo appcfg.Repository) (string, error) {
 	if repo.IsTag {
 		return repoPath, nil
 	}
-	path, err := c.updateExistingRepo(repoPath, repo)
+	path, err := c.updateExistingRepo(ctx, repoPath, repo)
 	if err != nil && isCorruptionError(err) {
 		// Self-heal: corrupt on-disk git state (e.g. truncated pack, bad
 		// index checksum) cannot be repaired by re-fetching — go-git's
@@ -202,7 +203,7 @@ func (c *Client) updateOnce(repo appcfg.Repository) (string, error) {
 		if c.remoteHeadCache != nil {
 			c.remoteHeadCache.DeleteByURL(repo.URL)
 		}
-		return c.cloneOnce(repo)
+		return c.cloneOnce(ctx, repo)
 	}
 	return path, err
 }

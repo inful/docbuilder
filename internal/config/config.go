@@ -253,6 +253,30 @@ type VersioningConfig struct {
 	BranchPatterns     []string           `yaml:"branch_patterns"`       // Branch patterns to include
 	TagPatterns        []string           `yaml:"tag_patterns"`          // Tag patterns to include
 	MaxVersionsPerRepo int                `yaml:"max_versions_per_repo"` // Maximum versions to keep per repo
+
+	// enabledSpecified is set internally during load when the YAML
+	// explicitly sets enabled. It lets the defaults enable versioning
+	// only when the operator left the field out entirely: an operator
+	// who wrote "enabled: false" means it.
+	enabledSpecified bool `yaml:"-"`
+}
+
+// UnmarshalYAML is a custom unmarshal to detect if enabled was
+// explicitly set by the operator.
+func (v *VersioningConfig) UnmarshalYAML(unmarshal func(any) error) error {
+	type raw VersioningConfig
+	var aux raw
+	if err := unmarshal(&aux); err != nil {
+		return err
+	}
+	*v = VersioningConfig(aux)
+	var m map[string]any
+	if err := unmarshal(&m); err == nil {
+		if _, ok := m["enabled"]; ok {
+			v.enabledSpecified = true
+		}
+	}
+	return nil
 }
 
 // MonitoringConfig represents monitoring and observability configuration, including metrics, health, and logging.
@@ -291,7 +315,11 @@ type LinkVerificationConfig struct {
 	RequestTimeout     string `yaml:"request_timeout"`      // HTTP request timeout
 	RateLimitDelay     string `yaml:"rate_limit_delay"`     // Delay between requests
 	VerifyExternalOnly bool   `yaml:"verify_external_only"` // Only verify external links
-	SkipEditLinks      bool   `yaml:"skip_edit_links"`      // Skip edit links (require auth, default: true)
+	// SkipEditLinks is a pointer: "not set" means that the edit links
+	// are skipped, and an explicit false means that they are checked.
+	// A plain bool cannot tell the two apart, and the default turned
+	// every false into a true.
+	SkipEditLinks *bool `yaml:"skip_edit_links"` // Skip edit links (require auth, default: true)
 	// FollowRedirects is a pointer: "not set" means that the redirects
 	// are followed, and an explicit false means that they are not. A
 	// plain bool cannot tell the two apart, and the default turned
@@ -418,7 +446,7 @@ func Init(configPath string, force bool) error {
 				RequestTimeout:     defaultDuration10s,
 				RateLimitDelay:     "100ms",
 				VerifyExternalOnly: false,
-				SkipEditLinks:      true,
+				SkipEditLinks:      new(true),
 				FollowRedirects:    new(true),
 				MaxRedirects:       3,
 			},
@@ -446,6 +474,7 @@ func Init(configPath string, force bool) error {
 			IgnoreFiles:   []string{defaultIgnoreFileDocignore},
 		},
 		Versioning: &VersioningConfig{
+			Enabled:            true,
 			Strategy:           StrategyBranchesAndTags,
 			DefaultBranchOnly:  false,
 			BranchPatterns:     []string{"main", "master", "develop"},

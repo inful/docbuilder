@@ -273,7 +273,7 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 		}
 
 		// Skip edit links if configured
-		if s.cfg.SkipEditLinks && isEditLink(link.URL) {
+		if s.cfg.SkipEditLinks != nil && *s.cfg.SkipEditLinks && isEditLink(link.URL) {
 			continue
 		}
 

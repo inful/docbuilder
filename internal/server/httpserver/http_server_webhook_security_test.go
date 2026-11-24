@@ -111,3 +111,31 @@ func TestWebhookMux_OversizedBody_IsRejected(t *testing.T) {
 	require.NotEqual(t, http.StatusAccepted, rr.Code)
 	require.False(t, runtime.called, "an oversized payload must not start a build")
 }
+
+// A webhook path with a wildcard takes the process down when the HTTP
+// router is built. The daemon has to refuse to start with a clear
+// error instead.
+func TestWebhookMux_ForgeWithAWildcardPath_RefusesToStart(t *testing.T) {
+	cfg := &config.Config{
+		Forges: []*config.ForgeConfig{
+			{
+				Name: "company-github",
+				Type: config.ForgeGitHub,
+				Webhook: &config.WebhookConfig{
+					Secret: "secret",
+					Path:   "/webhooks/{",
+				},
+			},
+		},
+		Daemon: &config.DaemonConfig{
+			HTTP: config.HTTPConfig{WebhookPort: 0, DocsPort: 0, AdminPort: 0},
+		},
+	}
+
+	srv := New(cfg, &webhookRuntimeStub{}, Options{})
+
+	mux, err := srv.webhookMux()
+	require.Error(t, err)
+	require.Nil(t, mux)
+	require.Contains(t, err.Error(), "invalid webhook path")
+}

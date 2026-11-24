@@ -36,6 +36,14 @@ func (s *Server) webhookMux() (*http.ServeMux, error) {
 			path = "/webhooks/" + string(forgeCfg.Type)
 		}
 
+		// A path with braces is a wildcard of the HTTP router. It never
+		// matches the path the forge calls, and a malformed one takes
+		// the process down when the router is built. Refuse it here,
+		// like the duplicate path.
+		if strings.ContainsAny(path, "{}") {
+			return nil, fmt.Errorf("invalid webhook path %q for forge %q: a path may not hold a wildcard", path, forgeCfg.Name)
+		}
+
 		if prev, ok := seen[path]; ok {
 			return nil, fmt.Errorf("duplicate webhook path %q for forges %q and %q", path, prev, forgeCfg.Name)
 		}

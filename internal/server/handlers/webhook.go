@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	stdErrors "errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -103,6 +104,15 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 		derr := errors.ValidationError("failed to read request body").
 			WithContext("error", err.Error()).
 			Build()
+		// A body that is too large is not a bad request: the sender
+		// sent more than the endpoint takes.
+		if _, isTooLarge := stdErrors.AsType[*http.MaxBytesError](err); isTooLarge {
+			payload := h.errorAdapter.FormatErrorResponse(derr)
+			if writeErr := writeJSONPretty(w, r, http.StatusRequestEntityTooLarge, payload); writeErr != nil {
+				slog.Warn("Failed to write the webhook response", "error", writeErr.Error())
+			}
+			return
+		}
 		h.errorAdapter.WriteErrorResponse(w, r, derr)
 		return
 	}
@@ -133,10 +143,16 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 	// Trigger build for the repository if event was parsed successfully
 	jobID := h.triggerBuildFromEvent(event, forgeName)
 
+	// The answer tells the forge what happened: a request that
+	// triggered no build says so, instead of pretending it did.
+	status := "ignored"
+	if jobID != "" {
+		status = "received"
+	}
 	resp := map[string]any{
-		"status":    "received",
+		"status":    status,
 		"timestamp": time.Now().UTC(),
-		"event":     eventType,
+		"event":     eventName(eventType),
 		"source":    forgeName,
 	}
 	if jobID != "" {
@@ -193,13 +209,37 @@ func (h *WebhookHandlers) validateWebhookSignature(forgeName, signatureHeader st
 		slog.Warn("Webhook signature validation failed",
 			"forge", forgeName,
 			"event", r.Header.Get("X-GitHub-Event"))
-		return errors.ValidationError("webhook signature validation failed").
+		// The signature did not match: the request did not come from
+		// the forge. The forge retries a 5xx, and a proxy in front of
+		// the daemon has to see that it was not the daemon that
+		// refused the request.
+		return errors.AuthError("webhook signature validation failed").
 			WithContext("forge", forgeName).
 			Build()
 	}
 
 	slog.Debug("Webhook signature validated", "forge", forgeName)
 	return nil
+}
+
+// eventName keeps the event type of a request header to the shape a
+// forge event name has: letters, digits, dashes, dots and underscores.
+// The header holds whatever the sender wants, and the answer repeats
+// it: a header that holds markup would put markup in the answer.
+func eventName(eventType string) string {
+	const maxLen = 64
+	if eventType == "" || len(eventType) > maxLen {
+		return ""
+	}
+	for _, r := range eventType {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+		case r == '_', r == '-', r == '.':
+		default:
+			return ""
+		}
+	}
+	return eventType
 }
 
 // triggerBuildFromEvent triggers a build from a webhook event if valid.

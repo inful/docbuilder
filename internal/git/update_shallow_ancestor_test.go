@@ -64,7 +64,7 @@ func TestShallowCloneFastForwardsAfterSeveralCommits(t *testing.T) {
 		ShallowDepth:       1,
 		HardResetOnDiverge: false,
 	})
-	if _, updateErr := client.updateExistingRepo(localPath, repoCfg); updateErr != nil {
+	if _, updateErr := client.updateExistingRepo(t.Context(), localPath, repoCfg); updateErr != nil {
 		t.Fatalf("expected fast-forward, got %v", updateErr)
 	}
 

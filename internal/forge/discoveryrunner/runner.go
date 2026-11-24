@@ -180,6 +180,7 @@ func (r *Runner) Run(ctx context.Context) error {
 		r.discoveryCache.Update(result)
 	}
 
+	removed := 0
 	if r.repoRemoved != nil && len(prevDiscovered) > 0 {
 		current := make(map[string]struct{}, len(result.Repositories))
 		for _, repo := range result.Repositories {
@@ -192,6 +193,7 @@ func (r *Runner) Run(ctx context.Context) error {
 			if _, ok := current[url]; ok {
 				continue
 			}
+			removed++
 			r.repoRemoved(ctx, url, name)
 		}
 	}
@@ -216,7 +218,11 @@ func (r *Runner) Run(ctx context.Context) error {
 		}
 	}
 
-	if len(result.Repositories) > 0 && r.shouldBuildOnDiscovery() {
+	// A repository that was removed has to leave the site. The build
+	// that publishes the site without it is the one that takes its
+	// pages away - so a removal asks for a build even when no
+	// repository is left.
+	if (len(result.Repositories) > 0 || removed > 0) && r.shouldBuildOnDiscovery() {
 		r.triggerBuildForDiscoveredRepos(ctx, result)
 	}
 

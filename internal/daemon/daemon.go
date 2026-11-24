@@ -975,12 +975,5 @@ func (d *Daemon) jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, err
 // daemon-mode builds: relative directories are joined onto
 // BaseDirectory; BaseDirectory is ignored when Directory is absolute.
 func resolveOutputDir(cfg *config.Config) string {
-	outDir := cfg.Output.Directory
-	if outDir == "" {
-		outDir = "./site"
-	}
-	if cfg.Output.BaseDirectory != "" && !filepath.IsAbs(outDir) {
-		outDir = filepath.Join(cfg.Output.BaseDirectory, outDir)
-	}
-	return outDir
+	return cfg.ResolveOutputDir()
 }

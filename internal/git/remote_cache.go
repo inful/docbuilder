@@ -126,23 +126,26 @@ func (c *Client) CheckRemoteChanged(cache *RemoteHeadCache, repo appcfg.Reposito
 
 	// Check cache
 	cached := cache.Get(repo.URL, branch)
-	if cached == nil {
+	changed := cached == nil || cached.CommitSHA != currentSHA
+	switch {
+	case cached == nil:
 		slog.Debug("No cached remote HEAD, will fetch", logfields.Name(repo.Name))
-		return true, currentSHA, nil
-	}
-
-	if cached.CommitSHA != currentSHA {
+	case changed:
 		slog.Info("Remote HEAD changed",
 			logfields.Name(repo.Name),
 			slog.String("old", shortSHA(cached.CommitSHA)),
 			slog.String("new", shortSHA(currentSHA)))
-		return true, currentSHA, nil
+	default:
+		slog.Info("Remote HEAD unchanged, skipping fetch",
+			logfields.Name(repo.Name),
+			slog.String("commit", shortSHA(currentSHA)))
 	}
 
-	slog.Info("Remote HEAD unchanged, skipping fetch",
-		logfields.Name(repo.Name),
-		slog.String("commit", currentSHA[:8]))
-	return false, currentSHA, nil
+	// Remember what the remote holds now. Without this the cache stays
+	// empty, every check says "changed", and every webhook rebuilds the
+	// whole site.
+	cache.Set(repo.URL, branch, currentSHA)
+	return changed, currentSHA, nil
 }
 
 // Get retrieves a cached entry.

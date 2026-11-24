@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	stdErrors "errors"
 	"log/slog"
 	"net"
@@ -14,7 +15,7 @@ import (
 )
 
 // withRetry wraps an operation with retry logic based on build configuration.
-func (c *Client) withRetry(op, repoName string, fn func() (string, error)) (string, error) {
+func (c *Client) withRetry(ctx context.Context, op, repoName string, fn func() (string, error)) (string, error) {
 	if c.buildCfg == nil || c.buildCfg.MaxRetries <= 0 {
 		return fn()
 	}
@@ -37,6 +38,11 @@ func (c *Client) withRetry(op, repoName string, fn func() (string, error)) (stri
 	for attempt := 0; attempt <= c.buildCfg.MaxRetries; attempt++ {
 		if attempt > 0 {
 			slog.Warn("retrying git operation", slog.String("operation", op), logfields.Name(repoName), slog.Int("attempt", attempt))
+		}
+		// A build that was canceled does not retry: the work it was
+		// doing is not wanted any more.
+		if err := ctx.Err(); err != nil {
+			return "", err
 		}
 		c.inRetry = true
 		path, err := fn()
@@ -75,7 +81,7 @@ func (c *Client) withRetry(op, repoName string, fn func() (string, error)) (stri
 }
 
 // withRetryMetadata wraps an operation returning CloneResult with retry logic.
-func (c *Client) withRetryMetadata(op, repoName string, fn func() (CloneResult, error)) (CloneResult, error) {
+func (c *Client) withRetryMetadata(ctx context.Context, op, repoName string, fn func() (CloneResult, error)) (CloneResult, error) {
 	if c.buildCfg == nil || c.buildCfg.MaxRetries <= 0 {
 		return fn()
 	}
@@ -97,6 +103,11 @@ func (c *Client) withRetryMetadata(op, repoName string, fn func() (CloneResult, 
 	for attempt := 0; attempt <= c.buildCfg.MaxRetries; attempt++ {
 		if attempt > 0 {
 			slog.Warn("retrying git operation", slog.String("operation", op), logfields.Name(repoName), slog.Int("attempt", attempt))
+		}
+		// A build that was canceled does not retry: the work it was
+		// doing is not wanted any more.
+		if err := ctx.Err(); err != nil {
+			return CloneResult{}, err
 		}
 		c.inRetry = true
 		result, err := fn()

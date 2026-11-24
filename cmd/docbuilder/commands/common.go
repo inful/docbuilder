@@ -107,17 +107,10 @@ func ResolveOutputDir(cliOutput string, cfg *config.Config) string {
 		return cliOutput
 	}
 
-	// If base_directory is configured, combine it with directory
-	if cfg.Output.BaseDirectory != "" {
-		return filepath.Join(cfg.Output.BaseDirectory, cfg.Output.Directory)
-	}
-
-	// Otherwise use configured directory (or CLI default)
-	if cfg.Output.Directory != "" {
-		return cfg.Output.Directory
-	}
-
-	return cliOutput // fallback to CLI default
+	// The configuration decides, with the same rules the daemon and
+	// the server use: the site is published in the same place whoever
+	// looks for it.
+	return cfg.ResolveOutputDir()
 }
 
 // CopyDir recursively copies a directory tree, handling cross-device scenarios.
