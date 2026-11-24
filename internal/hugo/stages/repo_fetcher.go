@@ -187,8 +187,18 @@ func (f *defaultRepoFetcher) fetchPinnedCommit(ctx context.Context, client *git.
 	// Checkout exact pinned SHA (detached HEAD).
 	checkedOutAt, cerr := checkoutExactCommit(path, repo.PinnedCommit)
 	if cerr != nil {
-		res.Err = cerr
-		return res
+		// The commit is not in the shallow history: it is fetched on
+		// its own. A push that landed while the build ran is such a
+		// commit, and the build must not fail over it.
+		if fetchErr := client.FetchCommit(ctx, path, repo, repo.PinnedCommit); fetchErr != nil {
+			res.Err = fmt.Errorf("fetch the pinned commit %s: %w", repo.PinnedCommit, fetchErr)
+			return res
+		}
+		checkedOutAt, cerr = checkoutExactCommit(path, repo.PinnedCommit)
+		if cerr != nil {
+			res.Err = cerr
+			return res
+		}
 	}
 
 	res.PostHead = repo.PinnedCommit
