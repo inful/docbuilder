@@ -31,18 +31,6 @@ commits; pin to a SHA for reproducibility per the README.
 - **The build command has an edit-url-base flag.**
 
 
-## [0.35.21] - 2026-11-24
-
-### Fixed
-- **The build prints the warnings of the loader.** The daemon and the
-  discover command printed them; the build did not.
-- **The README lists the commands and the tools that exist.** Five
-  commands and two MCP tools were missing.
-- **The style of the frontmatter has no field that nothing reads.**
-- **The build command has an edit-url-base flag.** The table of the
-  flags did not name it.
-
-
 ## [0.35.20] - 2026-11-24
 
 ### Fixed
