@@ -49,8 +49,19 @@ func NewForgejoClient(fg *Config) (*ForgejoClient, error) {
 	return &ForgejoClient{
 		BaseForge: baseForge,
 		config:    fg,
-		baseURL:   fg.BaseURL,
+		baseURL:   forgejoBaseURL(fg.BaseURL, fg.APIURL),
 	}, nil
+}
+
+// forgejoBaseURL returns the web address of the forge. Without one the
+// API address is used without its API path: the edit links of the site
+// point at the web address of the forge, and an empty one points at
+// nothing.
+func forgejoBaseURL(baseURL, apiURL string) string {
+	if baseURL != "" {
+		return baseURL
+	}
+	return strings.TrimSuffix(strings.TrimSuffix(apiURL, "/"), "/api/v1")
 }
 
 // GetType returns the forge type.
