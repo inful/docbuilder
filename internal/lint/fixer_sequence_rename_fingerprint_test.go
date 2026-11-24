@@ -66,6 +66,7 @@ body
 	}
 
 	// The new file holds the fingerprint.
+	// #nosec G304 -- the path is built by the test itself.
 	content, err := os.ReadFile(filepath.Join(adrDir, renamed))
 	if err != nil {
 		t.Fatalf("read the renamed file: %v", err)

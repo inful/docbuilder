@@ -43,6 +43,7 @@ body
 		t.Fatalf("fix: %v", err)
 	}
 
+	// #nosec G304 -- the path is built by the test itself.
 	content, err := os.ReadFile(doc)
 	if err != nil {
 		t.Fatalf("read the document: %v", err)
