@@ -47,7 +47,12 @@ func (g *Generator) beginStaging() error {
 
 	// Determine staging directory based on base_directory configuration
 	var stage string
-	if g.config.Output.BaseDirectory != "" {
+	// The staging directory is a sibling of the output: the site is
+	// moved into its place with a rename, and a rename across
+	// directories fails when they are on different file systems. The
+	// base directory holds the staging only when the output is inside
+	// it.
+	if g.config.Output.BaseDirectory != "" && !filepath.IsAbs(g.outputDir) {
 		// When base_directory is set, create staging as {base}/staging
 		// and output will be at {base}/{directory}
 		stage = filepath.Join(g.config.Output.BaseDirectory, "staging")
