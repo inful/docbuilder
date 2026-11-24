@@ -16,7 +16,7 @@ func TestTheCommandLineUsesTheSameOutputDirectoryAsTheDaemon(t *testing.T) {
 	cfg.Output.BaseDirectory = "/data"
 	cfg.Output.Directory = "/srv/site"
 
-	if got := ResolveOutputDir("", cfg); got != "/srv/site" {
+	if got := ResolveOutputDir(nil, cfg); got != "/srv/site" {
 		t.Fatalf("the command line publishes the site in %s, want /srv/site", got)
 	}
 }
@@ -27,7 +27,20 @@ func TestTheOutputFlagWinsOverTheConfiguration(t *testing.T) {
 	cfg.Output.BaseDirectory = "/data"
 	cfg.Output.Directory = "site"
 
-	if got := ResolveOutputDir("/tmp/elsewhere", cfg); got != "/tmp/elsewhere" {
+	elsewhere := "/tmp/elsewhere"
+	if got := ResolveOutputDir(&elsewhere, cfg); got != "/tmp/elsewhere" {
 		t.Fatalf("the flag was ignored: %s", got)
+	}
+}
+
+// The flag wins over the configuration, even when the operator typed
+// the default value: they typed it.
+func TestTheOutputFlagWinsEvenWithTheDefaultValue(t *testing.T) {
+	cfg := &config.Config{}
+	cfg.Output.Directory = "public"
+
+	site := "./site"
+	if got := ResolveOutputDir(&site, cfg); got != "./site" {
+		t.Fatalf("the site is published in %q, want ./site", got)
 	}
 }

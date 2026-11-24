@@ -16,15 +16,17 @@ import (
 
 // BuildCmd implements the 'build' command.
 type BuildCmd struct {
-	Output        string `short:"o" default:"./site" help:"Output directory for generated site"`
-	Incremental   bool   `short:"i" help:"Use incremental updates instead of fresh clone"`
-	RenderMode    string `name:"render-mode" help:"Override build.render_mode (auto|always|never). Precedence: --render-mode > env vars (skip/run) > config."`
-	DocsDir       string `short:"d" name:"docs-dir" default:"./docs" help:"Path to local docs directory (used when no config file provided)"`
-	Title         string `name:"title" default:"Documentation" help:"Site title when no config provided"`
-	BaseURL       string `name:"base-url" help:"Override hugo.base_url from config"`
-	Relocatable   bool   `name:"relocatable" help:"Generate fully relocatable site with relative links (sets base_url to empty string)"`
-	EditURLBase   string `name:"edit-url-base" help:"Base URL for generating edit links (e.g., https://github.com/org/repo). If not provided, edit links are only generated for cloned repos with forge URLs."`
-	KeepWorkspace bool   `name:"keep-workspace" help:"Keep workspace and staging directories for debugging (do not clean up on exit)"`
+	// Output is a pointer: the operator may type the default value
+	// on purpose, and the configuration must not win over it.
+	Output        *string `short:"o" name:"output" help:"Output directory for generated site (default: ./site)"`
+	Incremental   bool    `short:"i" help:"Use incremental updates instead of fresh clone"`
+	RenderMode    string  `name:"render-mode" help:"Override build.render_mode (auto|always|never). Precedence: --render-mode > env vars (skip/run) > config."`
+	DocsDir       string  `short:"d" name:"docs-dir" default:"./docs" help:"Path to local docs directory (used when no config file provided)"`
+	Title         string  `name:"title" default:"Documentation" help:"Site title when no config provided"`
+	BaseURL       string  `name:"base-url" help:"Override hugo.base_url from config"`
+	Relocatable   bool    `name:"relocatable" help:"Generate fully relocatable site with relative links (sets base_url to empty string)"`
+	EditURLBase   string  `name:"edit-url-base" help:"Base URL for generating edit links (e.g., https://github.com/org/repo). If not provided, edit links are only generated for cloned repos with forge URLs."`
+	KeepWorkspace bool    `name:"keep-workspace" help:"Keep workspace and staging directories for debugging (do not clean up on exit)"`
 }
 
 func (b *BuildCmd) Run(_ *Global, root *CLI) error {
@@ -48,7 +50,7 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 		useLocalMode = true
 		slog.Info("No config file found, using local docs directory mode",
 			"docs_dir", b.DocsDir,
-			"output", b.Output)
+			"output", outputFlag(b.Output))
 	} else {
 		result, loadedCfg, err := config.LoadWithResult(root.Config)
 		if err != nil {
@@ -287,7 +289,7 @@ func (b *BuildCmd) createLocalConfig() *config.Config {
 	cfg := &config.Config{}
 	cfg.Version = "2.0"
 
-	cfg.Output.Directory = b.Output
+	cfg.Output.Directory = outputFlag(b.Output)
 
 	cfg.Hugo.Title = b.Title
 	cfg.Hugo.Description = "Documentation built with DocBuilder"

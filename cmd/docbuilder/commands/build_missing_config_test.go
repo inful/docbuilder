@@ -12,7 +12,8 @@ import (
 func TestTheBuildFailsWhenTheNamedConfigurationFileIsMissing(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "definitely-missing.yaml")
 
-	b := &BuildCmd{DocsDir: "./docs", Output: "./out"}
+	out := "./out"
+	b := &BuildCmd{DocsDir: "./docs", Output: &out}
 	root := &CLI{Config: missing}
 
 	err := b.Run(&Global{}, root)
