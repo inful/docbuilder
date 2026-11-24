@@ -23,7 +23,7 @@ func TestWithRetryBehavior(t *testing.T) {
 
 	attempts := 0
 	// Transient failure first 2 attempts, then success
-	path, err := c.withRetry("clone", "repo", func() (string, error) {
+	path, err := c.withRetry(t.Context(), "clone", "repo", func() (string, error) {
 		if attempts < 2 {
 			attempts++
 			return "", errors.New("temporary network failure")
@@ -43,7 +43,7 @@ func TestWithRetryBehavior(t *testing.T) {
 
 	// Permanent error should not retry
 	attempts = 0
-	_, err = c.withRetry("clone", "repo", func() (string, error) {
+	_, err = c.withRetry(t.Context(), "clone", "repo", func() (string, error) {
 		attempts++
 		return "", errors.New("authentication failed: permission denied")
 	})
@@ -139,7 +139,7 @@ func TestDivergenceHandling(t *testing.T) {
 
 	// Case 1: HardResetOnDiverge = false -> expect divergence error
 	client := NewClient(ws).WithBuildConfig(&appcfg.BuildConfig{HardResetOnDiverge: false})
-	if _, updateErr := client.updateExistingRepo(localPath, repoCfg); updateErr == nil || !strings.Contains(updateErr.Error(), "diverged") {
+	if _, updateErr := client.updateExistingRepo(t.Context(), localPath, repoCfg); updateErr == nil || !strings.Contains(updateErr.Error(), "diverged") {
 		t.Fatalf("expected divergence error, got %v", updateErr)
 	}
 
@@ -152,7 +152,7 @@ func TestDivergenceHandling(t *testing.T) {
 
 	// Case 2: HardResetOnDiverge = true -> expect success and head equals remote hash
 	client2 := NewClient(ws).WithBuildConfig(&appcfg.BuildConfig{HardResetOnDiverge: true})
-	if _, err := client2.updateExistingRepo(localPath, repoCfg); err != nil {
+	if _, err := client2.updateExistingRepo(t.Context(), localPath, repoCfg); err != nil {
 		t.Fatalf("expected hard reset success: %v", err)
 	}
 	updatedRepo, _ := git.PlainOpen(localPath)

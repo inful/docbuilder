@@ -76,7 +76,7 @@ func RunDiscover(cfg *config.Config, specificRepo string) error {
 		slog.Info("Cloning repository", logfields.Name(repo.Name), logfields.URL(repo.URL))
 
 		var result git.CloneResult
-		result, err = gitClient.CloneRepoWithMetadata(*repo)
+		result, err = gitClient.CloneRepoWithMetadata(context.Background(), *repo)
 		if err != nil {
 			slog.Error("Failed to clone repository", "name", repo.Name, "error", err)
 			return err

@@ -146,7 +146,7 @@ func TestUpdateRepoSelfHealsOnPackCorruption(t *testing.T) {
 	}
 	client := NewClient(ws).WithBuildConfig(cfg)
 	repoCfg := appcfg.Repository{Name: "repo", URL: barePath, Branch: "master"}
-	path, err := client.UpdateRepo(repoCfg)
+	path, err := client.UpdateRepo(t.Context(), repoCfg)
 	if err != nil {
 		t.Fatalf("expected self-heal to recover from pack corruption, got: %v", err)
 	}

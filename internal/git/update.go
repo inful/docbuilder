@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	stdErrors "errors"
 	"fmt"
 	"log/slog"
@@ -14,7 +15,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
-func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (string, error) {
+func (c *Client) updateExistingRepo(ctx context.Context, repoPath string, repo appcfg.Repository) (string, error) {
 	repository, err := git.PlainOpen(repoPath)
 	if err != nil {
 		return "", GitError("failed to open repository").
@@ -47,7 +48,7 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 
 	// 1. Fetch remote refs (only if needed)
 	if fetchNeeded {
-		if fetchErr := c.performFetch(repository, repo, branch, remoteSHA); fetchErr != nil {
+		if fetchErr := c.performFetch(ctx, repository, repo, branch, remoteSHA); fetchErr != nil {
 			return "", fetchErr
 		}
 	} else {
@@ -61,7 +62,7 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 	}
 
 	// 3. Fast-forward or handle divergence
-	if err := c.syncWithRemote(repository, wt, repo, branch, localRef, remoteRef); err != nil {
+	if err := c.syncWithRemote(ctx, repository, wt, repo, branch, localRef, remoteRef); err != nil {
 		// Divergence without hard reset is treated as permanent (REMOTE_DIVERGED)
 		if strings.Contains(strings.ToLower(err.Error()), "diverged") {
 			return "", ClassifyGitError(err, "update", repo.URL)
@@ -79,17 +80,17 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 //
 // Performance note: fetching "+refs/heads/*" can be very expensive for repositories with many branches.
 // DocBuilder generally only needs a single target branch, so we fetch only that branch when provided.
-func (c *Client) fetchOrigin(repository *git.Repository, repo appcfg.Repository, branch string) error {
+func (c *Client) fetchOrigin(ctx context.Context, repository *git.Repository, repo appcfg.Repository, branch string) error {
 	depth := 0
 	if c.buildCfg != nil && c.buildCfg.ShallowDepth > 0 {
 		depth = c.buildCfg.ShallowDepth
 	}
-	return c.fetchOriginWithDepth(repository, repo, branch, depth)
+	return c.fetchOriginWithDepth(ctx, repository, repo, branch, depth)
 }
 
 // fetchOriginWithDepth fetches the origin remote with an explicit history depth.
 // A depth of 0 asks for the full history.
-func (c *Client) fetchOriginWithDepth(repository *git.Repository, repo appcfg.Repository, branch string, depth int) error {
+func (c *Client) fetchOriginWithDepth(ctx context.Context, repository *git.Repository, repo appcfg.Repository, branch string, depth int) error {
 	refSpecs := []ggitcfg.RefSpec{"+refs/heads/*:refs/remotes/origin/*"}
 	if branch != "" {
 		// Fetch only the required branch.
@@ -109,7 +110,7 @@ func (c *Client) fetchOriginWithDepth(repository *git.Repository, repo appcfg.Re
 		}
 		fetchOpts.Auth = auth
 	}
-	if err := repository.Fetch(fetchOpts); err != nil && !stdErrors.Is(err, git.NoErrAlreadyUpToDate) {
+	if err := repository.FetchContext(ctx, fetchOpts); err != nil && !stdErrors.Is(err, git.NoErrAlreadyUpToDate) {
 		return ClassifyGitError(err, "fetch", repo.URL)
 	}
 	return nil
@@ -175,8 +176,8 @@ func checkoutAndGetRefs(repository *git.Repository, wt *git.Worktree, branch str
 var deepenDepths = []int{16, 128, 1024}
 
 // syncWithRemote fast-forwards or hard-resets the local branch depending on divergence and build config.
-func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, repo appcfg.Repository, branch string, localRef, remoteRef *plumbing.Reference) error {
-	fastForwardPossible, ancestryErr := c.checkAncestry(repository, repo, branch, localRef.Hash(), remoteRef.Hash())
+func (c *Client) syncWithRemote(ctx context.Context, repository *git.Repository, wt *git.Worktree, repo appcfg.Repository, branch string, localRef, remoteRef *plumbing.Reference) error {
+	fastForwardPossible, ancestryErr := c.checkAncestry(ctx, repository, repo, branch, localRef.Hash(), remoteRef.Hash())
 	hardReset := c.buildCfg != nil && c.buildCfg.HardResetOnDiverge
 	if ancestryErr != nil {
 		// The history could not be read, so we cannot claim the branch
@@ -236,14 +237,14 @@ func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, re
 // A shallow clone does not hold the history the question needs, so the fetch
 // is deepened and the question asked again: an unreadable history is
 // unknown, not a divergence.
-func (c *Client) checkAncestry(repository *git.Repository, repo appcfg.Repository, branch string, local, remote plumbing.Hash) (bool, error) {
+func (c *Client) checkAncestry(ctx context.Context, repository *git.Repository, repo appcfg.Repository, branch string, local, remote plumbing.Hash) (bool, error) {
 	ok, err := isAncestor(repository, local, remote)
 	if err == nil {
 		return ok, nil
 	}
 	slog.Warn("ancestor check failed, deepening history", logfields.Name(repo.Name), slog.String("error", err.Error()))
 	for _, depth := range deepenDepths {
-		if fetchErr := c.fetchOriginWithDepth(repository, repo, branch, depth); fetchErr != nil {
+		if fetchErr := c.fetchOriginWithDepth(ctx, repository, repo, branch, depth); fetchErr != nil {
 			return false, stdErrors.Join(err, fetchErr)
 		}
 		ok, err = isAncestor(repository, local, remote)
@@ -306,10 +307,10 @@ func isAncestor(repo *git.Repository, a, b plumbing.Hash) (bool, error) {
 }
 
 // performFetch executes fetch operation and updates cache.
-func (c *Client) performFetch(repository *git.Repository, repo appcfg.Repository, branch, remoteSHA string) error {
+func (c *Client) performFetch(ctx context.Context, repository *git.Repository, repo appcfg.Repository, branch, remoteSHA string) error {
 	logFetchOperation(repo.Name, branch, remoteSHA)
 
-	if fetchErr := c.fetchOrigin(repository, repo, branch); fetchErr != nil {
+	if fetchErr := c.fetchOrigin(ctx, repository, repo, branch); fetchErr != nil {
 		return ClassifyGitError(fetchErr, "fetch", repo.URL)
 	}
 

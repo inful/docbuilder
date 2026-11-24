@@ -107,7 +107,7 @@ func TestUpdateExistingRepoFastForward(t *testing.T) {
 
 	repoCfg := appcfg.Repository{Name: "repo", URL: bare}
 	client := NewClient(tmp)
-	if _, err := client.updateExistingRepo(localPath, repoCfg); err != nil {
+	if _, err := client.updateExistingRepo(t.Context(), localPath, repoCfg); err != nil {
 		t.Fatalf("updateExistingRepo fast-forward: %v", err)
 	}
 	updated, _ := git.PlainOpen(localPath)

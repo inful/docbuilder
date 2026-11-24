@@ -39,12 +39,12 @@ func TestUpdateOfATagKeepsTheTag(t *testing.T) {
 		IsTag:  true,
 	}
 
-	if _, cloneErr := client.CloneRepo(tagged); cloneErr != nil {
+	if _, cloneErr := client.CloneRepo(t.Context(), tagged); cloneErr != nil {
 		t.Fatalf("clone the tag: %v", cloneErr)
 	}
 
 	// The second build takes the update path.
-	if _, updateErr := client.UpdateRepo(tagged); updateErr != nil {
+	if _, updateErr := client.UpdateRepo(t.Context(), tagged); updateErr != nil {
 		t.Fatalf("update the tag: %v", updateErr)
 	}
 
