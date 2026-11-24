@@ -282,8 +282,8 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	}
 	// VerifyExternalOnly defaults to false (verify both internal and external)
 	// SkipEditLinks defaults to true (edit links require authentication)
-	if !lv.SkipEditLinks {
-		lv.SkipEditLinks = true // Default enabled
+	if lv.SkipEditLinks == nil {
+		lv.SkipEditLinks = new(true) // Default enabled
 	}
 	if lv.FollowRedirects == nil {
 		lv.FollowRedirects = new(true) // Default enabled
@@ -342,8 +342,10 @@ func (v *VersioningDefaultApplier) ApplyDefaults(cfg *Config) error {
 		cfg.Versioning = &VersioningConfig{}
 	}
 
-	// If strategy is explicitly provided, implicitly enable versioning
-	if cfg.Versioning.Strategy != "" && !cfg.Versioning.Enabled {
+	// If strategy is explicitly provided, implicitly enable versioning.
+	// An operator who wrote "enabled: false" means it: the strategy
+	// alone does not turn versioning on.
+	if cfg.Versioning.Strategy != "" && !cfg.Versioning.Enabled && !cfg.Versioning.enabledSpecified {
 		cfg.Versioning.Enabled = true
 	}
 
