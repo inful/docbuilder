@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-29T00:00:00Z
-fingerprint: 5bf4f6a1ec26a6f04e47eb6c0fe86468282ec1c272ba36d49a498b493fa3e00d
-lastmod: "2026-11-19"
+fingerprint: 0a65babd787b30a44720e32cad4672435938e092e0bb0b26a2b405bb5432b04b
+lastmod: "2026-11-24"
 tags:
   - linting
   - validation
@@ -277,49 +277,6 @@ ERROR: Invalid double extension
 
 ---
 
-### Rule: Reserved Names
-
-**Pattern**: Filenames that conflict with Hugo taxonomy URLs
-
-**Reserved Names**: `tags.md`, `categories.md` (without namespace prefix)
-
-**Rationale**:
-- Hugo reserves `/tags/` and `/categories/` URLs for taxonomy listings
-- Direct files cause URL conflicts and build errors
-
-**Examples**:
-
-```
-❌ Invalid:
-  tags.md
-  categories.md
-
-✅ Valid (with prefix):
-  content-tags.md
-  doc-categories.md
-  using-tags.md
-  about-categories.md
-```
-
-**Auto-fix**: Adds prefix: `tags.md` → `content-tags.md`
-
-**Error Message**:
-```
-ERROR: Reserved filename
-  File: docs/tags.md
-  Issue: Conflicts with Hugo taxonomy URL
-  
-  Current:  docs/tags.md
-  Suggested: docs/content-tags.md
-  
-  Why: Hugo reserves /tags/ for taxonomy listings.
-  Using tags.md creates URL conflicts.
-  
-  Fix: docbuilder lint --fix docs/
-```
-
----
-
 ## Content Rules
 
 Content rules validate the internal structure of markdown files.
@@ -537,125 +494,9 @@ ERROR: Broken internal link
 
 ## Structure Rules
 
-Structure rules are **Warnings** that don't block builds but should be addressed.
-
-### Rule: Deep Nesting
-
-**Pattern**: Directory structure exceeds 4 levels deep
-
-**Rationale**:
-- Poor navigation UX (too many clicks)
-- Overly complex information architecture
-- Consider flattening or reorganizing
-
-**Examples**:
-
-```
-❌ Too deep (5 levels):
-docs/guides/advanced/api/rest/authentication.md
-
-⚠️ Consider flattening:
-docs/guides/api-rest-authentication.md
-# or
-docs/api/rest-authentication.md
-```
-
-**Auto-fix**: Not automatically fixable (requires architectural decision)
-
-**Warning Message**:
-```
-WARNING: Deep directory nesting
-  File: docs/guides/advanced/api/rest/authentication.md
-  Depth: 5 levels
-  
-  Consider flattening directory structure for better UX.
-  Deep nesting makes navigation difficult.
-  
-  Suggested: docs/api/rest-authentication.md
-```
-
----
-
-### Rule: Orphaned Assets
-
-**Pattern**: Image file not referenced by any markdown file
-
-**Rationale**:
-- Bloats repository size
-- May be leftover from deletions
-- Indicates maintenance needed
-
-**Examples**:
-
-```
-❌ Orphaned:
-docs/
-  images/
-    old-screenshot.png  # Not referenced anywhere
-```
-
-**Auto-fix**: Can list orphans with `--fix --remove-orphans` (prompts for confirmation)
-
-**Warning Message**:
-```
-WARNING: Orphaned asset
-  File: docs/images/old-screenshot.png
-  Issue: Not referenced by any markdown file
-  Size: 2.4 MB
-  
-  This file may be unused and safe to remove.
-  
-  To remove: docbuilder lint --fix --remove-orphans
-```
-
----
-
-### Rule: Mixed Naming Styles
-
-**Pattern**: Same directory has different naming conventions
-
-**Rationale**:
-- Inconsistent developer experience
-- Harder to remember filenames
-- Looks unprofessional
-
-**Examples**:
-
-```
-❌ Mixed styles:
-docs/
-  getting_started.md    # snake_case
-  api-guide.md          # kebab-case
-  UserManual.md         # PascalCase
-  CHANGELOG.md          # SCREAMING_CASE
-
-✅ Consistent:
-docs/
-  getting-started.md
-  api-guide.md
-  user-manual.md
-  changelog.md
-```
-
-**Auto-fix**: Normalizes to kebab-case: `getting_started.md` → `getting-started.md`
-
-**Warning Message**:
-```
-WARNING: Mixed filename styles
-  Directory: docs/
-  Issue: Files use different naming conventions
-  
-  Files:
-    • getting_started.md (snake_case)
-    • api-guide.md (kebab-case)
-    • UserManual.md (PascalCase)
-  
-  Recommended: Use consistent kebab-case naming
-  
-  Fix: docbuilder lint --fix docs/
-```
-
----
+The rule of the structure of the documentation set is the
+**directory-category-consistency**: a document under a mode-specific
+directory carries the category of that directory.
 
 ## Asset Rules
 
@@ -735,99 +576,23 @@ INFO: Whitelisted double extension
 
 ---
 
-### Rule: Absolute URLs to Internal Assets
-
-**Severity**: Warning
-
-**Pattern**: `![](https://your-domain.com/images/logo.png)` pointing to same repository
-
-**Rationale**:
-- Breaks in local development
-- Not portable across deployments
-- Should use relative paths
-
-**Examples**:
-
-```
-❌ Absolute (internal):
-![Logo](https://docs.example.com/images/logo.png)
-
-✅ Relative:
-![Logo](./images/logo.png)
-![Logo](../assets/logo.png)
-```
-
-**Auto-fix**: Not automatically fixable (requires manual verification)
-
-**Warning Message**:
-```
-WARNING: Absolute URL to internal asset
-  File: docs/index.md
-  Line: 8
-  Issue: Using absolute URL for same-repository asset
-  
-  ![Logo](https://docs.example.com/images/logo.png)
-  
-  This breaks in local development and isn't portable.
-  
-  Use relative path instead:
-  ![Logo](./images/logo.png)
-```
-
----
-
-### Rule: Large Binary Files
-
-**Severity**: Warning
-
-**Pattern**: Image/asset file exceeds 5 MB
-
-**Rationale**:
-- Slows Git operations (clone, fetch, pull)
-- Poor repository performance
-- Consider external hosting or optimization
-
-**Examples**:
-
-```
-⚠️ Large files:
-  screenshot-4k.png (12 MB)
-  demo-video.gif (25 MB)
-  presentation.pdf (18 MB)
-```
-
-**Auto-fix**: Not automatically fixable (requires manual optimization)
-
-**Warning Message**:
-```
-WARNING: Large binary file
-  File: docs/images/screenshot-4k.png
-  Size: 12.4 MB
-  
-  Large files slow Git performance and bloat repository.
-  
-  Consider:
-    • Optimize/compress image (use tools like tinypng.com)
-    • Host externally (CDN, cloud storage)
-    • Split into multiple smaller images
-    • Use thumbnail with link to full size
-```
-
----
-
 ## Standard File Exclusions
 
 These files are **automatically excluded** from linting (never reported as errors):
 
-- `README.md` (root or in subdirectories)
-- `CONTRIBUTING.md`
-- `CHANGELOG.md`
-- `LICENSE.md`
-- `CODE_OF_CONDUCT.md`
+- `README.md` (at the root of the linted tree)
+- `CONTRIBUTING.md` (at the root of the linted tree)
+- `CHANGELOG.md` (at the root of the linted tree)
+- `LICENSE.md` (at the root of the linted tree)
+- `CODE_OF_CONDUCT.md` (at the root of the linted tree)
 - Files in `.git/` directory
 - Files matching `.gitignore` patterns
 
 **Rationale**: These are standard repository files, not documentation content processed by Hugo.
+
+The name of a conventional file is never renamed, in any directory: the
+git forges recognize `README.md` and its kin, and a `readme.md` is no
+home page.
 
 ---
 
