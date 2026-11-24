@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 84a3b39a5b745f14637c5c4bb91242b5882407e94be6ca15247c9cac79332226
+fingerprint: 7a8332ecd1967e3248ba59b85e857b94a380e289543cc4ee76647bcc8df165c7
 lastmod: "2026-11-24"
 tags:
   - configuration
@@ -82,7 +82,9 @@ share a name, the second one gets a name from its full path
 The `monitoring` section configures:
 
 - Health/ready/metrics endpoints exposed by the daemon's **admin** HTTP server (see `daemon.http.admin_port`).
-- Default daemon logging level and format.
+- The logging level and format. Both are reserved: the level of the
+  daemon comes from `DOCBUILDER_LOG_LEVEL` or from `--verbose`, and the
+  format is always the text format of `slog`.
 
 ### Monitoring Fields
 
@@ -91,8 +93,8 @@ The `monitoring` section configures:
 | metrics.enabled | bool | true | Enable metrics endpoints on the admin server. |
 | metrics.path | string | /metrics | Path for the basic metrics endpoint (JSON summary). |
 | health.path | string | /health | Path for the basic health endpoint. |
-| logging.level | enum | info | Log level: `debug`, `info`, `warn`, `error`. |
-| logging.format | enum | json | Log output format: `json` or `text`. |
+| logging.level | enum | info | Reserved. The level comes from `DOCBUILDER_LOG_LEVEL` or from `--verbose`. |
+| logging.format | enum | json | Reserved. The format is always the text format of `slog`. |
 
 Example:
 
@@ -636,10 +638,15 @@ anywhere in the tree.
 ### Examples
 
 ```yaml
-# Defaults still apply; add an additional pattern alongside:
+# The list replaces the defaults: the files that are not named here are
+# linted. The defaults have to be repeated to keep them.
 lint:
   excludes:
     - "README.md"
+    - "CONTRIBUTING.md"
+    - "CHANGELOG.md"
+    - "LICENSE.md"
+    - "CODE_OF_CONDUCT.md"
     - "vendor-docs/**/*.md"
 ```
 

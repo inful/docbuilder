@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-29T00:00:00Z
-fingerprint: fdfec285fa3a833af21da297c2cfaff814b28771649917655f4595ea0163c6ea
-lastmod: "2026-11-19"
+fingerprint: f349db3bb558c2ca98d4483f679f44f53b4498470ff2316295402b3f53cc5b88
+lastmod: "2026-11-24"
 tags:
   - linting
   - validation
@@ -96,9 +96,6 @@ docbuilder lint --fix
 
 # Non-interactive mode (CI/automation)
 docbuilder lint --fix --yes
-
-# Force overwrite existing files
-docbuilder lint --fix --force
 ```
 
 Auto-fix will:

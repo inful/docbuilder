@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-29T00:00:00Z
-fingerprint: 0a65babd787b30a44720e32cad4672435938e092e0bb0b26a2b405bb5432b04b
+fingerprint: 12c7496caf9366fa606bbfc68b50255db511422ae70817a0122ac3978bfe6f42
 lastmod: "2026-11-24"
 tags:
   - linting
@@ -470,7 +470,10 @@ ERROR: Missing or invalid fingerprint in frontmatter
 ![Diagram](./images/architecture.png)  # Image exists
 ```
 
-**Auto-fix**: Not automatically fixable (can't determine intent)
+**Auto-fix**: Healed when the file was renamed in the repository: the
+link is rewritten to the new name. The rename has to be found in the
+history of git, and it has to be unambiguous (ADR-012). A link to a file
+that never existed is not fixable.
 
 **Error Message**:
 ```
@@ -504,7 +507,7 @@ Asset rules apply to images and other non-markdown files.
 
 ### Rule: Image Filename Issues
 
-**Severity**: Warning
+**Severity**: Error
 
 **Pattern**: Same filename rules as markdown (spaces, uppercase, special chars)
 
@@ -586,7 +589,6 @@ These files are **automatically excluded** from linting (never reported as error
 - `LICENSE.md` (at the root of the linted tree)
 - `CODE_OF_CONDUCT.md` (at the root of the linted tree)
 - Files in `.git/` directory
-- Files matching `.gitignore` patterns
 
 **Rationale**: These are standard repository files, not documentation content processed by Hugo.
 
@@ -623,17 +625,18 @@ Linting rules evolve with DocBuilder versions. See [Lint Rules Changelog](./lint
 
 | Rule | Auto-Fixable | Method |
 |------|--------------|--------|
-| Uppercase letters | ✅ Yes | Convert to lowercase |
-| Spaces | ✅ Yes | Replace with hyphens |
-| Special characters | ✅ Yes | Replace with hyphens |
-| Leading/trailing hyphens | ✅ Yes | Strip |
-| Double extensions | ❌ No | Manual removal |
-| Reserved names | ✅ Yes | Add prefix |
-| Malformed frontmatter | ❌ No | Manual correction |
-| Broken links | ❌ No* | Manual fix (*Can detect only) |
-| Mixed naming styles | ✅ Yes | Normalize to kebab-case |
-| Image filename issues | ✅ Yes | Same as markdown files |
-| Large binary files | ❌ No | Manual optimization |
+| `filename-conventions` | ✅ Yes | The name is written in lower case, with hyphens |
+| `sequence-prefix-filename` | ✅ Yes | The file is renamed with its number |
+| `frontmatter-uid` | ✅ Yes | The uid and its alias are written |
+| `frontmatter-fingerprint` | ✅ Yes | The fingerprint is written |
+| `frontmatter-required-fields` | ✅ Yes | The missing fields are written |
+| `body-h1` | ❌ No | Manual correction |
+| `tag-count` | ❌ No | Manual correction |
+| `category-naming` | ✅ Yes | The category is renamed |
+| `cross-mode-category` | ❌ No | Manual correction |
+| `directory-category-consistency` | ✅ Yes | The category of the directory is written |
+| `template-uid-binding` | ✅ Yes | The uid is bound in the template |
+| `broken-links` | ✅ Yes* | The link is rewritten when the file was renamed in git (*ADR-012) |
 
 ---
 

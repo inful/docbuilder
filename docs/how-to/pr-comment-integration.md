@@ -5,8 +5,8 @@ categories:
   - how-to
 date: 2026-01-01T00:00:00Z
 description: examples for integrating DocBuilder lint results into pull request comments across different platforms
-fingerprint: 6e1bb0767c5b945538dea8636fa59544365e9d7914f14fc472835e53a956a3c5
-lastmod: "2026-11-19"
+fingerprint: eef5a51fc8c4082044ecf9560fc3c920a433ad22f46ab1bc742fe6e1e36bf4b7
+lastmod: "2026-11-24"
 tags: []
 title: PR Comment Integration Examples
 uid: bf6c5071-2095-472f-89fc-5319bc2e362b
@@ -36,9 +36,9 @@ This document provides examples for integrating DocBuilder lint results into pul
       const report = JSON.parse(fs.readFileSync('lint-report.json', 'utf8'));
       
       let body = '## 📝 Documentation Lint Report\n\n';
-      body += `**Files scanned:** ${report.summary.total_files}\n`;
-      body += `**Errors:** ${report.summary.errors}\n`;
-      body += `**Warnings:** ${report.summary.warnings}\n`;
+      body += `**Files scanned:** ${report.files_total}\n`;
+      body += `**Errors:** ${report.error_count}\n`;
+      body += `**Warnings:** ${report.warning_count}\n`;
       
       await github.rest.issues.createComment({
         owner: context.repo.owner,
@@ -63,19 +63,19 @@ This document provides examples for integrating DocBuilder lint results into pul
       let comment = '## 📝 Documentation Lint Report\n\n';
       
       // Summary with status emoji
-      if (report.summary.errors === 0 && report.summary.warnings === 0) {
+      if (report.error_count === 0 && report.warning_count === 0) {
         comment += '✅ **All documentation passes linting!**\n\n';
       } else {
-        if (report.summary.errors > 0) {
-          comment += `❌ **${report.summary.errors} error(s) found** - merge blocked\n`;
+        if (report.error_count > 0) {
+          comment += `❌ **${report.error_count} error(s) found** - merge blocked\n`;
         }
-        if (report.summary.warnings > 0) {
-          comment += `⚠️ **${report.summary.warnings} warning(s) found** - should fix\n`;
+        if (report.warning_count > 0) {
+          comment += `⚠️ **${report.warning_count} warning(s) found** - should fix\n`;
         }
         comment += '\n';
       }
       
-      comment += `📊 **Summary:** ${report.summary.total_files} files scanned\n\n`;
+      comment += `📊 **Summary:** ${report.files_total} files scanned\n\n`;
       
       // Group issues by file
       if (report.issues && report.issues.length > 0) {
@@ -83,8 +83,8 @@ This document provides examples for integrating DocBuilder lint results into pul
         
         const byFile = {};
         for (const issue of report.issues) {
-          if (!byFile[issue.file]) byFile[issue.file] = [];
-          byFile[issue.file].push(issue);
+          if (!byFile[issue.file_path]) byFile[issue.file_path] = [];
+          byFile[issue.file_path].push(issue);
         }
         
         // Show up to 10 files with most severe issues first
@@ -110,7 +110,7 @@ This document provides examples for integrating DocBuilder lint results into pul
           for (const issue of issues.slice(0, 5)) {
             const emoji = issue.severity === 'error' ? '❌' : '⚠️';
             const lineLink = issue.line > 0 
-              ? `[L${issue.line}](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${context.payload.pull_request.head.sha}/${issue.file}#L${issue.line})`
+              ? `[L${issue.line}](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${context.payload.pull_request.head.sha}/${issue.file_path}#L${issue.line})`
               : 'File-level';
             
             comment += `${emoji} **${issue.rule}** (${lineLink})\n`;
@@ -213,7 +213,7 @@ This document provides examples for integrating DocBuilder lint results into pul
       let comment = `❌ **Documentation linting failed** - ${errors.length} error(s) found\n\n`;
       
       for (const error of errors.slice(0, 5)) {
-        comment += `- \`${error.file}\`: ${error.message}\n`;
+        comment += `- \`${error.file_path}\`: ${error.message}\n`;
       }
       
       if (errors.length > 5) {
@@ -245,9 +245,9 @@ lint:docs:comment:
   script:
     - apk add --no-cache curl jq
     - |
-      ERRORS=$(jq -r '.summary.errors' lint-report.json)
-      WARNINGS=$(jq -r '.summary.warnings' lint-report.json)
-      TOTAL=$(jq -r '.summary.total_files' lint-report.json)
+      ERRORS=$(jq -r '.error_count' lint-report.json)
+      WARNINGS=$(jq -r '.warning_count' lint-report.json)
+      TOTAL=$(jq -r '.files_total' lint-report.json)
       
       COMMENT="## 📝 Documentation Lint Report\n\n"
       COMMENT="${COMMENT}**Files scanned:** ${TOTAL}\n"
@@ -293,9 +293,9 @@ lint:docs:comment:
       EOF
       )
       
-      TOTAL=$(jq -r '.summary.total_files' lint-report.json)
-      ERRORS=$(jq -r '.summary.errors' lint-report.json)
-      WARNINGS=$(jq -r '.summary.warnings' lint-report.json)
+      TOTAL=$(jq -r '.files_total' lint-report.json)
+      ERRORS=$(jq -r '.error_count' lint-report.json)
+      WARNINGS=$(jq -r '.warning_count' lint-report.json)
       
       COMMENT="${COMMENT}**Summary:** ${TOTAL} files scanned\n\n"
       
@@ -309,7 +309,7 @@ lint:docs:comment:
       
       # Add top 5 issues
       ISSUES=$(jq -r '.issues[:5] | .[] | 
-        "- **\(.rule)** in `\(.file)` (L\(.line)): \(.message)"' 
+        "- **\(.rule)** in `\(.file_path)` (L\(.line)): \(.message)"' 
         lint-report.json)
       
       if [ -n "${ISSUES}" ]; then
@@ -348,8 +348,8 @@ pipelines:
             - docbuilder lint --format=json > lint-report.json || true
             
             # Parse results
-            - ERRORS=$(jq -r '.summary.errors' lint-report.json)
-            - WARNINGS=$(jq -r '.summary.warnings' lint-report.json)
+            - ERRORS=$(jq -r '.error_count' lint-report.json)
+            - WARNINGS=$(jq -r '.warning_count' lint-report.json)
             
             # Build comment
             - |
@@ -390,8 +390,8 @@ pipelines:
   inputs:
     targetType: 'inline'
     script: |
-      ERRORS=$(jq -r '.summary.errors' lint-report.json)
-      WARNINGS=$(jq -r '.summary.warnings' lint-report.json)
+      ERRORS=$(jq -r '.error_count' lint-report.json)
+      WARNINGS=$(jq -r '.warning_count' lint-report.json)
       
       COMMENT="## Documentation Lint Report\n\n"
       COMMENT="${COMMENT}Errors: ${ERRORS}, Warnings: ${WARNINGS}\n"
