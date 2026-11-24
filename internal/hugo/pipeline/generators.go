@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 )
 
 // generateMainIndex creates the site root _index.md if it doesn't exist.
@@ -66,8 +67,15 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 	if readme != nil {
 		// The landing page of the site is the page of the portal, with
 		// the title and the description of the configuration, and the
-		// words of the repository.
-		content += readme.Content
+		// words of the repository. The front matter of the readme is
+		// not part of them: the generation phase runs before the
+		// front matter is parsed, and the block would show up as text
+		// in the page.
+		_, body, _, _, err := frontmatter.Split([]byte(readme.Content))
+		if err != nil {
+			body = []byte(readme.Content)
+		}
+		content += string(body)
 	}
 	doc := &Document{
 		Path:        contentIndexPath,
