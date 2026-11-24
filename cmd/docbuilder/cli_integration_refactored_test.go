@@ -33,8 +33,8 @@ func TestRefactoredCLIFramework(t *testing.T) {
 
 			// Verify config file was created
 			fileAssertions := testutils.NewFileAssertions(t, env.TempDir)
-			fileAssertions.AssertFileExists("docbuilder.yaml").
-				AssertFileContains("docbuilder.yaml", "version: \"2.0\"")
+			fileAssertions.AssertFileExists("config.yaml").
+				AssertFileContains("config.yaml", "version: \"2.0\"")
 
 			return &testutils.TestResult{
 				Success:  result.ExitCode == 0,
