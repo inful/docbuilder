@@ -22,7 +22,7 @@ type RepoUpdater struct {
 }
 
 type RemoteHeadChecker interface {
-	CheckRemoteChanged(cache *git.RemoteHeadCache, repo config.Repository, branch string) (bool, string, error)
+	CheckRemoteChanged(ctx context.Context, cache *git.RemoteHeadCache, repo config.Repository, branch string) (bool, string, error)
 }
 
 func NewRepoUpdater(bus *events.Bus, checker RemoteHeadChecker, cache *git.RemoteHeadCache, reposForLookup func() []config.Repository) *RepoUpdater {
@@ -83,7 +83,7 @@ func (u *RepoUpdater) handleRequest(ctx context.Context, req events.RepoUpdateRe
 		branch = repo.Branch
 	}
 
-	changed, sha, err := u.remoteChecker.CheckRemoteChanged(u.cache, repo, branch)
+	changed, sha, err := u.remoteChecker.CheckRemoteChanged(ctx, u.cache, repo, branch)
 	if err != nil {
 		slog.Warn("Repo update check failed; triggering build",
 			logfields.JobID(req.JobID),

@@ -16,7 +16,7 @@ import (
 
 type alwaysChangedRemoteHeadChecker struct{}
 
-func (alwaysChangedRemoteHeadChecker) CheckRemoteChanged(_ *git.RemoteHeadCache, _ config.Repository, _ string) (bool, string, error) {
+func (alwaysChangedRemoteHeadChecker) CheckRemoteChanged(_ context.Context, _ *git.RemoteHeadCache, _ config.Repository, _ string) (bool, string, error) {
 	return true, "deadbeef", nil
 }
 
