@@ -38,13 +38,22 @@ func Split(content []byte) (frontmatter []byte, body []byte, had bool, style Sty
 
 	closeSeq := []byte(nl + "---" + nl)
 	idx := bytes.Index(content[frontmatterStart:], closeSeq)
-	if idx < 0 {
-		return nil, nil, false, style, ErrMissingClosingDelimiter
+	if idx >= 0 {
+		frontmatterEnd := frontmatterStart + idx + len(nl)
+		bodyStart := frontmatterStart + idx + len(closeSeq)
+		return content[frontmatterStart:frontmatterEnd], content[bodyStart:], true, style, nil
 	}
 
-	frontmatterEnd := frontmatterStart + idx + len(nl)
-	bodyStart := frontmatterStart + idx + len(closeSeq)
-	return content[frontmatterStart:frontmatterEnd], content[bodyStart:], true, style, nil
+	// The closing delimiter can be the last line of the file, without a
+	// newline behind it.
+	closeAtEnd := []byte(nl + "---")
+	if idx := bytes.Index(content[frontmatterStart:], closeAtEnd); idx >= 0 &&
+		frontmatterStart+idx+len(closeAtEnd) == len(content) {
+		frontmatterEnd := frontmatterStart + idx + len(nl)
+		return content[frontmatterStart:frontmatterEnd], nil, true, style, nil
+	}
+
+	return nil, nil, false, style, ErrMissingClosingDelimiter
 }
 
 // Join reassembles a document from raw frontmatter and body.
