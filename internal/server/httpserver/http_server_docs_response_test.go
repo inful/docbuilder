@@ -37,6 +37,7 @@ func TestDocsServer_ServesTheBodyWithoutCapturingIt(t *testing.T) {
 			Health: config.MonitoringHealth{Path: "/health"},
 		},
 		Output: config.OutputConfig{Directory: tmpDir},
+		Build:  config.BuildConfig{LiveReload: true},
 		Daemon: &config.DaemonConfig{
 			HTTP: config.HTTPConfig{
 				DocsPort:    docsPort,

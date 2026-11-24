@@ -198,7 +198,7 @@ func (s *Server) startDocsServerWithListener(_ context.Context, ln net.Listener)
 		// capture holds the whole file in memory until the response
 		// has been written, so a big file and a few readers at once
 		// is a lot of memory for nothing.
-		if r.Method != http.MethodGet || !hasLiveReloadCookie(r) {
+		if r.Method != http.MethodGet || !s.cfg.Build.LiveReload || !hasLiveReloadCookie(r) {
 			rootHandler.ServeHTTP(w, r)
 			return
 		}
@@ -467,6 +467,12 @@ func hasLiveReloadCookie(r *http.Request) bool {
 	return err == nil && cookie.Value == "1"
 }
 
+// maxRecorderBody is the amount of a response the recorder holds in
+// memory. The recorder is only there to see whether the page is
+// missing: a bigger response is written through, so one request cannot
+// hold a whole big file in the memory of the server.
+const maxRecorderBody = 512 << 10
+
 // responseRecorder captures the status code and body from the underlying handler.
 type responseRecorder struct {
 	http.ResponseWriter
@@ -484,15 +490,28 @@ func (r *responseRecorder) WriteHeader(code int) {
 }
 
 func (r *responseRecorder) Write(b []byte) (int, error) {
+	if len(r.body)+len(b) > maxRecorderBody {
+		// Too big to hold: what was captured goes to the client and
+		// the rest follows it straight away.
+		r.flushToClient()
+		return r.ResponseWriter.Write(b)
+	}
 	r.body = append(r.body, b...)
 	return len(b), nil
 }
 
-func (r *responseRecorder) Flush() {
+// flushToClient writes the header and the captured body to the client.
+func (r *responseRecorder) flushToClient() {
 	if r.written {
 		r.ResponseWriter.WriteHeader(r.statusCode)
+		r.written = false
 	}
 	if len(r.body) > 0 {
 		_, _ = r.ResponseWriter.Write(r.body)
+		r.body = nil
 	}
+}
+
+func (r *responseRecorder) Flush() {
+	r.flushToClient()
 }
