@@ -59,12 +59,9 @@ func parseHugoError(errStr string) string {
 // docs root, the status page, the content of the site - has to look in
 // the same place, or it looks where the site is not.
 func (s *Server) resolveAbsoluteOutputDir() string {
-	out := s.cfg.Output.Directory
+	out := s.cfg.ResolveOutputDir()
 	if out == "" {
 		out = defaultSiteDir
-	}
-	if s.cfg.Output.BaseDirectory != "" && !filepath.IsAbs(out) {
-		out = filepath.Join(s.cfg.Output.BaseDirectory, out)
 	}
 	if !filepath.IsAbs(out) {
 		if abs, err := filepath.Abs(out); err == nil {
