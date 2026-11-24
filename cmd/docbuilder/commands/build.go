@@ -50,9 +50,15 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 			"docs_dir", b.DocsDir,
 			"output", b.Output)
 	} else {
-		_, loadedCfg, err := config.LoadWithResult(root.Config)
+		result, loadedCfg, err := config.LoadWithResult(root.Config)
 		if err != nil {
 			return fmt.Errorf("load config: %w", err)
+		}
+		// The warnings of the loader say what the configuration said
+		// and what it means now. The daemon and the discover command
+		// print them; the build did not.
+		for _, w := range result.Warnings {
+			slog.Warn(w)
 		}
 		cfg = loadedCfg
 		slog.Info("Loaded config from file", "config", root.Config)

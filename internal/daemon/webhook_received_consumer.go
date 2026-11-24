@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"strings"
@@ -280,9 +281,12 @@ func (d *Daemon) handleWebhookWithNoRepos(ctx context.Context, evt events.Webhoo
 	// In forge mode, repository lists come from discovery. If discovery hasn't completed
 	// yet, retry once it has populated the cache.
 	if d.discover.discoveryRunner != nil {
-		go func() {
+		// The goroutines belong to the daemon: the shutdown waits for
+		// them. A raw goroutine outlived the daemon and published on a
+		// bus that was closed.
+		d.goWorker("webhook_discovery", func() {
 			_ = d.discover.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning })
-		}()
+		})
 	}
 
 	slog.Warn("Webhook received but no repositories available; will retry after discovery",
@@ -290,13 +294,15 @@ func (d *Daemon) handleWebhookWithNoRepos(ctx context.Context, evt events.Webhoo
 		slog.String("forge", evt.ForgeName),
 		slog.String("repo", evt.RepoFullName),
 		slog.String("branch", evtBranch))
-	go d.retryWebhookAfterDiscovery(ctx, events.WebhookReceived{
-		JobID:        evt.JobID,
-		ForgeName:    evt.ForgeName,
-		RepoFullName: evt.RepoFullName,
-		Branch:       evtBranch,
-		ChangedFiles: append([]string(nil), evt.ChangedFiles...),
-		ReceivedAt:   evt.ReceivedAt,
+	d.goWorker("webhook_retry", func() {
+		d.retryWebhookAfterDiscovery(ctx, events.WebhookReceived{
+			JobID:        evt.JobID,
+			ForgeName:    evt.ForgeName,
+			RepoFullName: evt.RepoFullName,
+			Branch:       evtBranch,
+			ChangedFiles: append([]string(nil), evt.ChangedFiles...),
+			ReceivedAt:   evt.ReceivedAt,
+		})
 	})
 	return true
 }
@@ -370,7 +376,13 @@ func (d *Daemon) retryWebhookAfterDiscovery(ctx context.Context, evt events.Webh
 				slog.String("forge", evt.ForgeName),
 				slog.String("repo", evt.RepoFullName),
 				slog.String("branch", evt.Branch))
-			_ = d.publishOrchestrationEvent(ctx, evt)
+			// The retry is a new request: the debouncer drops a
+			// request whose job id it has already emitted, and the
+			// first attempt may have emitted it before the
+			// repository list was empty.
+			retry := evt
+			retry.JobID = fmt.Sprintf("%s-retry-%d", evt.JobID, time.Now().UnixNano())
+			_ = d.publishOrchestrationEvent(ctx, retry)
 			return
 		}
 	}

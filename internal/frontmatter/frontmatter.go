@@ -12,8 +12,7 @@ import (
 // It intentionally focuses on newline/trailing newline shape and does not
 // attempt to preserve original YAML formatting.
 type Style struct {
-	Newline            string
-	HasTrailingNewline bool
+	Newline string
 }
 
 // Split separates YAML frontmatter (`---` delimited) from the Markdown body.
@@ -115,10 +114,7 @@ func detectStyle(content []byte) Style {
 		}
 	}
 
-	hasTrailingNewline := len(content) > 0 && (content[len(content)-1] == '\n')
-
 	return Style{
-		Newline:            newline,
-		HasTrailingNewline: hasTrailingNewline,
+		Newline: newline,
 	}
 }

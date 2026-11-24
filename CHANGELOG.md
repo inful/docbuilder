@@ -9,6 +9,40 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.22] - 2026-11-24
+
+### Fixed
+- **The deadline of the drain belongs to the drain.** It was armed at the
+  start-up of the dispatcher: a daemon that lived longer than it lost the
+  outbound ingest for ever - every document failed with "context deadline
+  exceeded".
+- **The front matter of the readme is not in the landing page.** The
+  generation phase runs before the front matter is parsed, so the block
+  showed up as text in the page.
+- **The retry of a webhook is a new request.** The retry published the
+  event with the job id of the first attempt, and the debouncer drops a
+  request whose job id it has already emitted: the site was never
+  rebuilt for that push.
+- **The goroutines of a webhook belong to the daemon.** The shutdown did
+  not wait for them, and they published on a bus that was closed.
+- **The build prints the warnings of the loader.**
+- **The README lists the commands and the tools that exist.**
+- **The style of the frontmatter has no field that nothing reads.**
+- **The build command has an edit-url-base flag.**
+
+
+## [0.35.21] - 2026-11-24
+
+### Fixed
+- **The build prints the warnings of the loader.** The daemon and the
+  discover command printed them; the build did not.
+- **The README lists the commands and the tools that exist.** Five
+  commands and two MCP tools were missing.
+- **The style of the frontmatter has no field that nothing reads.**
+- **The build command has an edit-url-base flag.** The table of the
+  flags did not name it.
+
+
 ## [0.35.20] - 2026-11-24
 
 ### Fixed

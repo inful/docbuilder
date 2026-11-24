@@ -763,7 +763,7 @@ func handleUpdateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	patch := mapFromArgs(req.GetArguments(), "frontmatter_patch")
 
 	// Match the on-disk style so the rewritten file doesn't drift.
-	writeStyle := frontmatter.Style{Newline: style.Newline, HasTrailingNewline: style.HasTrailingNewline}
+	writeStyle := frontmatter.Style{Newline: style.Newline}
 
 	var newFM []byte
 	switch strategy {
@@ -1086,7 +1086,7 @@ func composeDoc(fm map[string]any, content string) ([]byte, error) {
 	if len(fm) == 0 {
 		return []byte(content), nil
 	}
-	style := frontmatter.Style{Newline: "\n", HasTrailingNewline: true}
+	style := frontmatter.Style{Newline: "\n"}
 	yaml, err := marshalYAML(fm, style)
 	if err != nil {
 		return nil, err

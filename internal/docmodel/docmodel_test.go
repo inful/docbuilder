@@ -47,7 +47,6 @@ func TestParse_CapturesStyle(t *testing.T) {
 	require.True(t, doc.HadFrontmatter())
 	style := doc.Style()
 	require.Equal(t, "\r\n", style.Newline)
-	require.True(t, style.HasTrailingNewline)
 	require.Equal(t, content, doc.Bytes())
 }
 

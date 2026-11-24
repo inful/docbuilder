@@ -78,10 +78,14 @@ type OutboundDispatcher struct {
 	workers  int
 	queueCap int
 
-	// cancelDrain ends the context of the workers. The workers do not
-	// use the context of the run: it is canceled when the daemon
-	// stops, and every upload with a canceled context fails.
-	cancelDrain context.CancelFunc
+	// drainTimeout bounds the time the dispatcher spends on the
+	// documents that are still in the queue when the daemon stops.
+	drainTimeout time.Duration
+
+	// cancel ends the context of the workers. The workers do not use
+	// the context of the run: it is canceled when the daemon stops,
+	// and every upload with a canceled context fails.
+	cancel context.CancelFunc
 
 	// uploaded remembers the fingerprint this dispatcher last uploaded
 	// for a document uid. A document whose fingerprint did not change
@@ -215,6 +219,7 @@ func NewOutboundDispatcher(cfg DispatcherConfig) (*OutboundDispatcher, error) {
 		workers:       workers,
 		queueCap:      queueCap,
 		preflightBase: preflightBase,
+		drainTimeout:  drainTimeout,
 	}, nil
 }
 
@@ -250,14 +255,17 @@ func (d *OutboundDispatcher) Start(ctx context.Context) {
 	queue := d.queue
 	// The context of the run is canceled when the daemon stops, and
 	// every upload with a canceled context fails: the documents that
-	// are still in the queue would be lost. The drain has a context of
-	// its own, with an end.
-	drainCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), drainTimeout)
-	d.cancelDrain = cancel
+	// are still in the queue would be lost. The workers get a context
+	// of their own, and the deadline of the drain is armed when the
+	// dispatcher stops - not here: a deadline that starts at the
+	// start-up of the daemon ends the outbound ingest of a daemon that
+	// lives longer than it.
+	runCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	d.cancel = cancel
 	d.mu.Unlock()
 	for range d.workers {
 		d.wg.Add(1)
-		go d.worker(drainCtx, queue)
+		go d.worker(runCtx, queue)
 	}
 	slog.Info("outbound dispatcher started",
 		slog.String("base_url", d.baseURL),
@@ -284,11 +292,19 @@ func (d *OutboundDispatcher) Stop() {
 		d.closed = true
 		close(d.queue)
 	}
-	cancelDrain := d.cancelDrain
+	cancel := d.cancel
 	d.mu.Unlock()
+
+	// The drain has an end: the workers stop when the deadline passes.
+	timer := time.AfterFunc(d.drainTimeout, func() {
+		if cancel != nil {
+			cancel()
+		}
+	})
 	d.wg.Wait()
-	if cancelDrain != nil {
-		cancelDrain()
+	timer.Stop()
+	if cancel != nil {
+		cancel()
 	}
 	slog.Info("outbound dispatcher stopped",
 		slog.Int64("sends_total", d.sendsTotal.Load()),
