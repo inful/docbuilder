@@ -277,7 +277,6 @@ func (b *BuildCmd) createLocalConfig() *config.Config {
 	cfg.Version = "2.0"
 
 	cfg.Output.Directory = b.Output
-	cfg.Output.Clean = true
 
 	cfg.Hugo.Title = b.Title
 	cfg.Hugo.Description = "Documentation built with DocBuilder"

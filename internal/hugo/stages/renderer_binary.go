@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
@@ -188,33 +189,20 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 		}
 	}
 
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	// The output of Hugo goes to the log as it arrives. Hugo writes
+	// tens of megabytes for a big site: holding it all in memory until
+	// the process ends is a lot for nothing.
+	stdout := &hugoOutputWriter{ctx: ctx, attr: "hugo stdout", debug: slog.Default().Enabled(ctx, slog.LevelDebug)}
+	stderr := &hugoOutputWriter{ctx: ctx, attr: "hugo stderr", level: hugoLogLevel}
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 	slog.Debug("BinaryRenderer invoking hugo", "dir", rootDir)
 
 	err = cmd.Run()
 
-	// Always log Hugo output when non-empty to diagnose issues
-	outStr := stdout.String()
-	errStr := stderr.String()
-	if outStr != "" && slog.Default().Enabled(ctx, slog.LevelDebug) {
-		// The stdout lines are only logged at debug level. Splitting
-		// them when nobody reads them is work for nothing.
-		for line := range strings.SplitSeq(strings.TrimSpace(outStr), "\n") {
-			if line != "" {
-				slog.Debug("hugo stdout", "line", line)
-			}
-		}
-	}
-	if errStr != "" {
-		// Log each line separately to avoid escaped newlines
-		for line := range strings.SplitSeq(strings.TrimSpace(errStr), "\n") {
-			if line != "" {
-				slog.Log(ctx, hugoLogLevel(line), "hugo stderr", "line", line)
-			}
-		}
-	}
+	// The lines that are kept are the ones of the failure message.
+	outStr := stdout.tail()
+	errStr := stderr.tail()
 
 	if err != nil {
 		logHugoExecutionError(outStr, errStr)
@@ -237,6 +225,83 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	}
 
 	return nil
+}
+
+// maxHugoOutputLines is the number of lines of the output of Hugo that
+// are kept for the message of a failure.
+const maxHugoOutputLines = 200
+
+// maxHugoOutputLine is the length of a line of the output of Hugo that
+// is held while it is read. A longer line is cut: Hugo writes no such
+// line, and the buffer must not grow without a bound.
+const maxHugoOutputLine = 8 << 10
+
+// hugoOutputWriter logs the output of Hugo line by line as it arrives
+// and keeps the last lines for the message of a failure.
+type hugoOutputWriter struct {
+	// The context of the build: the lines of Hugo belong to it.
+	//nolint:containedctx // the writer lives as long as the build
+	ctx   context.Context
+	attr  string
+	level func(line string) slog.Level
+	debug bool
+
+	mu    sync.Mutex
+	buf   []byte
+	lines []string
+}
+
+// Write takes a piece of the output and logs the lines that are
+// complete.
+func (w *hugoOutputWriter) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	w.buf = append(w.buf, p...)
+	for {
+		i := bytes.IndexByte(w.buf, '\n')
+		if i < 0 {
+			break
+		}
+		line := strings.TrimSpace(string(w.buf[:i]))
+		w.buf = w.buf[i+1:]
+		w.logLine(line)
+	}
+	if len(w.buf) > maxHugoOutputLine {
+		w.buf = w.buf[len(w.buf)-maxHugoOutputLine:]
+	}
+	return len(p), nil
+}
+
+// logLine logs one line and keeps it for the message of a failure.
+func (w *hugoOutputWriter) logLine(line string) {
+	if line == "" {
+		return
+	}
+	w.lines = append(w.lines, line)
+	if len(w.lines) > maxHugoOutputLines {
+		w.lines = w.lines[len(w.lines)-maxHugoOutputLines:]
+	}
+	if w.level != nil {
+		slog.Log(w.ctx, w.level(line), w.attr, "line", line)
+		return
+	}
+	// The stdout of Hugo is only read when somebody reads it.
+	if w.debug {
+		slog.Debug(w.attr, "line", line)
+	}
+}
+
+// tail returns the lines that were kept, and the line that was not
+// finished when the process ended.
+func (w *hugoOutputWriter) tail() string {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if rest := strings.TrimSpace(string(w.buf)); rest != "" {
+		w.lines = append(w.lines, rest)
+	}
+	w.buf = nil
+	return strings.Join(w.lines, "\n")
 }
 
 // logHugoExecutionError logs Hugo execution error details line by line.

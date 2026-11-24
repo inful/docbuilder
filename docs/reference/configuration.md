@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 7c8e38168d8d46f947c20dc5c9ccd6f308fc5002fed88ac9e15fc5c4f853fa8e
-lastmod: "2026-11-22"
+fingerprint: c987312baabafef3575148246cdfd52c139a8650c66aeccd363263110d692a43
+lastmod: "2026-11-24"
 tags:
   - configuration
   - yaml
@@ -535,7 +535,7 @@ index pages.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | directory | string | ./site | Output root. |
-| clean | bool | true | Remove directory before build. |
+| clean | bool | true | Accepted for compatibility. The build replaces the output directory with the site it built, so the output never holds a file of an older build. |
 
 ### Output Directory Unification
 
