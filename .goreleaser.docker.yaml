@@ -26,7 +26,9 @@ builds:
     
     ldflags:
       - -s -w
-      - -X main.version={{.Version}}
+      - -X git.home.luguber.info/inful/docbuilder/internal/version.Version={{.Version}}
+      - -X git.home.luguber.info/inful/docbuilder/internal/version.BuildTime={{.Date}}
+      - -X git.home.luguber.info/inful/docbuilder/internal/version.GitCommit={{.FullCommit}}
     
     env:
       - CGO_ENABLED=0
@@ -52,7 +54,9 @@ builds:
     
     ldflags:
       - -s -w
-      - -X main.version={{.Version}}
+      - -X git.home.luguber.info/inful/docbuilder/internal/version.Version={{.Version}}
+      - -X git.home.luguber.info/inful/docbuilder/internal/version.BuildTime={{.Date}}
+      - -X git.home.luguber.info/inful/docbuilder/internal/version.GitCommit={{.FullCommit}}
     
     env:
       - CGO_ENABLED=0
