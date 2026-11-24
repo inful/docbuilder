@@ -25,6 +25,16 @@ type RemoteHeadChecker interface {
 	CheckRemoteChanged(ctx context.Context, cache *git.RemoteHeadCache, repo config.Repository, branch string) (bool, string, error)
 }
 
+// SetBus gives the updater the bus of the current run. The bus of the
+// last run was closed when the daemon stopped, and a subscription to a
+// closed bus returns at once.
+func (u *RepoUpdater) SetBus(bus *events.Bus) {
+	if u == nil || bus == nil {
+		return
+	}
+	u.bus = bus
+}
+
 func NewRepoUpdater(bus *events.Bus, checker RemoteHeadChecker, cache *git.RemoteHeadCache, reposForLookup func() []config.Repository) *RepoUpdater {
 	return &RepoUpdater{bus: bus, ready: make(chan struct{}), remoteChecker: checker, cache: cache, reposForLookup: reposForLookup}
 }

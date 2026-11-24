@@ -203,6 +203,18 @@ func (c *RemoteHeadCache) DeleteByURL(url string) {
 	}
 }
 
+// Clear forgets every entry. A build that failed did not bring the site
+// up to date: the cache would say that the remote did not move, and the
+// next webhook would skip the build.
+func (c *RemoteHeadCache) Clear() {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.entries = make(map[string]*RemoteHeadEntry)
+}
+
 // Save persists the cache to disk.
 func (c *RemoteHeadCache) Save() error {
 	if c.path == "" {

@@ -309,9 +309,18 @@ func (r *Runner) SafeRun(ctx context.Context, shouldRun func() bool) (err error)
 
 // TriggerManual triggers a manual discovery run in a separate goroutine.
 // Returns the job ID for tracking.
-func (r *Runner) TriggerManual(shouldRun func() bool) string {
+//
+// The context of the caller is the context of the run: a discovery that
+// is still running when the daemon stops is canceled with it, and it
+// does not write to the state of a daemon that is gone.
+func (r *Runner) TriggerManual(ctx context.Context, shouldRun func() bool) string {
 	if shouldRun != nil && !shouldRun() {
 		return ""
+	}
+	if ctx == nil {
+		// The caller gave no context: the discovery runs on its own.
+		//nolint:contextcheck // there is no context to inherit
+		ctx = context.Background()
 	}
 
 	jobID := fmt.Sprintf("discovery-%d", time.Now().Unix())
@@ -319,10 +328,10 @@ func (r *Runner) TriggerManual(shouldRun func() bool) string {
 	go func() {
 		slog.Info("Manual discovery triggered", logfields.JobID(jobID))
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		runCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 		defer cancel()
 
-		if err := r.Run(ctx); err != nil {
+		if err := r.Run(runCtx); err != nil {
 			slog.Error("Discovery failed", logfields.JobID(jobID), logfields.Error(err))
 		} else {
 			slog.Info("Discovery completed", logfields.JobID(jobID))

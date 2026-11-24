@@ -39,6 +39,16 @@ func (d *Daemon) updateStateAfterBuild(report *models.BuildReport) {
 		}
 	}
 
+	// A build that failed did not bring the site up to date. The
+	// remote-head cache holds the head of every remote as it was seen:
+	// it would say that the remote did not move, and the next webhook
+	// would skip the build.
+	if report.Outcome != models.OutcomeSuccess {
+		if d.build != nil && d.build.repoUpdater != nil && d.build.repoUpdater.cache != nil {
+			d.build.repoUpdater.cache.Clear()
+		}
+	}
+
 	// Update repository commits and hashes.
 	// The per-repository commit is recorded by the build itself (the
 	// generator persists it where the repositories and their commits are

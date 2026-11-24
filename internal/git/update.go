@@ -49,6 +49,12 @@ func (c *Client) updateExistingRepo(ctx context.Context, repoPath string, repo a
 	// 1. Fetch remote refs (only if needed)
 	if fetchNeeded {
 		if fetchErr := c.performFetch(ctx, repository, repo, branch, remoteSHA); fetchErr != nil {
+			// The clone is not at the head of the remote: the entry
+			// of the cache would say that it is, and the next
+			// update would skip the fetch.
+			if c.remoteHeadCache != nil {
+				c.remoteHeadCache.Delete(repo.URL, branch)
+			}
 			return "", fetchErr
 		}
 	} else {

@@ -17,7 +17,7 @@ func (d *Daemon) TriggerDiscovery() string {
 	if d.discover.discoveryRunner == nil {
 		return ""
 	}
-	return d.discover.discoveryRunner.TriggerManual(func() bool { return d.GetStatus() == StatusRunning })
+	return d.discover.discoveryRunner.TriggerManual(d.runContext(), func() bool { return d.GetStatus() == StatusRunning })
 }
 
 // publishTimeout bounds the wait for the subscribers of the bus. The
@@ -154,4 +154,27 @@ func (d *Daemon) triggerScheduledBuildForExplicitRepos(ctx context.Context) {
 	slog.Info("Scheduled build requested",
 		logfields.JobID(jobID),
 		slog.Int("repositories", len(d.config.Repositories)))
+}
+
+// runContext returns a context that is canceled when the daemon stops.
+// The triggers use it: work that belongs to the daemon is canceled with
+// it, and it does not write to the state of a daemon that is gone.
+func (d *Daemon) runContext() context.Context {
+	if d == nil {
+		return context.Background()
+	}
+
+	d.lifecycle.mu.Lock()
+	stopChan := d.lifecycle.stopChan
+	d.lifecycle.mu.Unlock()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-stopChan:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	return ctx
 }

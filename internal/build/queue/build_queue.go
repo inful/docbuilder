@@ -154,6 +154,14 @@ func (bq *BuildQueue) SetEventEmitter(emitter BuildEventEmitter) {
 // Start begins processing jobs with the configured number of workers.
 func (bq *BuildQueue) Start(ctx context.Context) {
 	slog.Info("Starting build queue", "workers", bq.workers, "max_size", bq.maxSize)
+
+	// A queue that runs again after a stop needs a new stop channel: the
+	// old one is closed, and the workers would return at once.
+	bq.mu.Lock()
+	bq.stopChan = make(chan struct{})
+	bq.stopOnce = sync.Once{}
+	bq.mu.Unlock()
+
 	for i := range bq.workers {
 		bq.wg.Add(1)
 		go bq.worker(ctx, fmt.Sprintf("worker-%d", i))
@@ -167,12 +175,12 @@ func (bq *BuildQueue) Start(ctx context.Context) {
 func (bq *BuildQueue) Stop(ctx context.Context) {
 	// Stop can be called twice (a signal handler and a deferred
 	// shutdown), and closing a closed channel panics.
+	bq.mu.Lock()
 	bq.stopOnce.Do(func() {
 		close(bq.stopChan)
 	})
 
 	// Cancel all active jobs
-	bq.mu.Lock()
 	for _, job := range bq.active {
 		if job.cancel != nil {
 			job.cancel()

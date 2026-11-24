@@ -83,6 +83,18 @@ func (d *BuildDebouncer) PlannedJobID() (string, bool) {
 	return d.lastJobID, true
 }
 
+// SetBus gives the debouncer the bus of the current run. The bus of
+// the last run was closed when the daemon stopped, and a subscription
+// to a closed bus returns at once.
+func (d *BuildDebouncer) SetBus(bus *events.Bus) {
+	if d == nil || bus == nil {
+		return
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.bus = bus
+}
+
 func NewBuildDebouncer(bus *events.Bus, cfg BuildDebouncerConfig) (*BuildDebouncer, error) {
 	if bus == nil {
 		return nil, ferrors.ValidationError("bus is required").Build()
