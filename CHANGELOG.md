@@ -9,6 +9,26 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.16] - 2026-11-24
+
+### Fixed
+- **The files that keep a repository out of the site are the ones of the
+  configuration.** The field was normalised, put in the hash of the
+  configuration and never read: every forge looked for ".docignore", so
+  `ignore_files: [.myignore]` kept excluding `.docignore` and never
+  excluded `.myignore`.
+- **No retries is no retries.** `max_retries: 0` became two retries: the
+  field had no memory of being written.
+- **A self-hosted forge needs an api_url.** Without one the first request
+  died with "unsupported protocol scheme", long after the daemon started.
+- **One search index job at a time.** Two builds that finish close
+  together started two index jobs, and the slower one wrote the pages of
+  the older build into the index of the newer one.
+- **The stage that does nothing does not spin.** The post process stage
+  waited for the clock to move.
+- **The skip evaluation lists the checks the pipeline really makes.**
+
+
 ## [0.35.15] - 2026-11-24
 
 ### Fixed
