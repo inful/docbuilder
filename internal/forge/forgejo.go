@@ -148,13 +148,29 @@ func (c *ForgejoClient) ListOrganizations(ctx context.Context) ([]*Organization,
 // ListRepositories returns repositories for specified organizations.
 func (c *ForgejoClient) ListRepositories(ctx context.Context, organizations []string) ([]*Repository, error) {
 	repoMap := make(map[string]*Repository)
+	// The order of the repositories is the order they were found in.
+	// A map has no order, and the name of a repository is what the
+	// content of the site is built from: a random order made the same
+	// repository change its name - and its place in the site - from
+	// one run to the next.
+	var order []string
+	add := func(r *Repository) {
+		if r == nil {
+			return
+		}
+		if _, ok := repoMap[r.FullName]; ok {
+			return
+		}
+		repoMap[r.FullName] = r
+		order = append(order, r.FullName)
+	}
 
 	userRepos, err := c.listUserRepositories(ctx)
 	if err != nil {
 		slog.Warn("Forgejo: failed to list user repositories", "forge", c.GetName(), "error", err)
 	} else {
 		for _, r := range userRepos {
-			repoMap[r.FullName] = r
+			add(r)
 		}
 	}
 
@@ -171,13 +187,13 @@ func (c *ForgejoClient) ListRepositories(ctx context.Context, organizations []st
 			continue
 		}
 		for _, r := range res.Value {
-			repoMap[r.FullName] = r
+			add(r)
 		}
 	}
 
-	allRepos := make([]*Repository, 0, len(repoMap))
-	for _, r := range repoMap {
-		allRepos = append(allRepos, r)
+	allRepos := make([]*Repository, 0, len(order))
+	for _, name := range order {
+		allRepos = append(allRepos, repoMap[name])
 	}
 	return allRepos, nil
 }
