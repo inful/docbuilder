@@ -216,9 +216,14 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 				return match
 			}
 
-			// Normalize root-relative paths to lowercase (DocBuilder writes content paths lowercased)
+			// Normalize root-relative paths to lowercase (DocBuilder writes content paths lowercased).
+			// A build that is namespaced by its forge keeps the forge in
+			// the path of the content, so the image needs it too.
 			if strings.HasPrefix(path, "/") {
 				newPath := lowerPathPreserveQueryAndFragment(path)
+				if doc.IsSingleRepo && doc.Forge != "" {
+					newPath = "/" + strings.ToLower(doc.Forge) + newPath
+				}
 				return fmt.Sprintf("![%s](%s)", alt, newPath)
 			}
 
@@ -317,7 +322,11 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 			return buildFullPath(forge, repository, "", rel) + suffix
 		}
 
-		// Single-repo mode: keep site-root path.
+		// Single-repo mode: the content keeps the forge in its path,
+		// so the link needs it too.
+		if forge != "" {
+			return "/" + strings.ToLower(forge) + "/" + rel + suffix
+		}
 		return "/" + rel + suffix
 	}
 
@@ -496,15 +505,20 @@ func rewriteImagePath(path, repository, forge, section string, isSingleRepo bool
 	// Lowercase the entire path including filename and extension for URL compatibility
 	path = strings.ToLower(path)
 
-	// In single-repo mode, omit repository/forge namespace to match content paths.
+	// In single-repo mode the repository is not part of the path of the
+	// content, but the forge is: the link needs it too.
 	if isSingleRepo {
+		prefix := ""
+		if forge != "" {
+			prefix = "/" + strings.ToLower(forge)
+		}
 		if section != "" {
-			return "/" + strings.ToLower(section) + "/" + path
+			return prefix + "/" + strings.ToLower(section) + "/" + path
 		}
 		if !strings.HasPrefix(path, "/") {
-			return "/" + path
+			return prefix + "/" + path
 		}
-		return path
+		return prefix + path
 	}
 
 	// Prepend repository and section path if relative
