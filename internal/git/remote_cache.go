@@ -201,8 +201,11 @@ func (c *RemoteHeadCache) Save() error {
 		return nil // No persistence
 	}
 
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	// The write is exclusive: two saves write the same temporary file
+	// and rename it over the cache - one of them renames the file the
+	// other is about to rename.
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(c.path), 0o750); err != nil {
