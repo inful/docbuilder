@@ -3,6 +3,7 @@ package httpserver
 import (
 	"context"
 	"fmt"
+	"html"
 	"log/slog"
 	"net"
 	"net/http"
@@ -114,7 +115,10 @@ func (s *Server) renderBuildErrorPage(w http.ResponseWriter, buildErr error) {
 
 	errorMsg := "Unknown error"
 	if buildErr != nil {
-		errorMsg = parseHugoError(buildErr.Error())
+		// The message of a build failure holds the name of the file
+		// that failed and the text of Hugo: it goes into the page as
+		// text, not as markup.
+		errorMsg = html.EscapeString(parseHugoError(buildErr.Error()))
 	}
 
 	scriptTag := s.getLiveReloadScript()
