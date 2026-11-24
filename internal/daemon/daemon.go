@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
@@ -508,6 +509,16 @@ func (d *Daemon) initOutboundDispatcher(ragCfg *config.RagabastConfig) error {
 	return nil
 }
 
+// resetStopChannel gives the daemon a new stop channel. The channel of
+// a daemon that ran is closed, and the main loop of the next run would
+// exit at once.
+//
+// The lock of the lifecycle is held by the caller.
+func (d *Daemon) resetStopChannel() {
+	d.lifecycle.stopChan = make(chan struct{})
+	d.lifecycle.stopOnce = sync.Once{}
+}
+
 // Start starts the daemon and all its components.
 func (d *Daemon) Start(ctx context.Context) error {
 	d.lifecycle.mu.Lock()
@@ -518,6 +529,19 @@ func (d *Daemon) Start(ctx context.Context) error {
 
 	d.lifecycle.status.Store(StatusStarting)
 	d.lifecycle.startTime = time.Now()
+
+	// A daemon that is started again after a stop needs a new stop
+	// channel and a new bus: the old ones are closed, and the main loop
+	// would exit at once and the consumers would return at once.
+	d.resetStopChannel()
+	bus := events.NewBus()
+	d.serve.orchestrationBus = bus
+	if d.build.buildDebouncer != nil {
+		d.build.buildDebouncer.SetBus(bus)
+	}
+	if d.build.repoUpdater != nil {
+		d.build.repoUpdater.SetBus(bus)
+	}
 
 	// Initialize metrics
 	d.serve.metrics.IncrementCounter("daemon_starts")
@@ -541,6 +565,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 		d.lifecycle.runCancel = nil
 		runCancel()
 		d.lifecycle.mu.Unlock()
+		// The daemon started part of itself: the ports may be bound
+		// and the workers run. They have to be stopped.
+		d.stopAfterFailedStart(ctx)
 		return fmt.Errorf("failed to start HTTP server: %w", err)
 	}
 
@@ -562,6 +589,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 			d.lifecycle.runCancel = nil
 		}
 		d.lifecycle.mu.Unlock()
+		// The HTTP server runs and the build queue has its workers:
+		// they have to be stopped.
+		d.stopAfterFailedStart(ctx)
 		return fmt.Errorf("failed to schedule daemon jobs: %w", err)
 	}
 
@@ -935,6 +965,12 @@ func (d *Daemon) Build(ctx context.Context, job *queue.BuildJob) (*models.BuildR
 	}
 	result, err := d.build.buildSvc.Run(ctx, req)
 	if err != nil {
+		// The report says what failed: the queue tells a transient
+		// error from a permanent one by it, and it retries the
+		// transient ones. Thrown away, the retries never happened.
+		if result != nil && result.Report != nil {
+			return result.Report, err
+		}
 		return nil, err
 	}
 	return result.Report, nil

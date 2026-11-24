@@ -9,6 +9,25 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.26] - 2026-11-24
+
+### Fixed
+- **The daemon retries a transient failure.** The report of a failed
+  build was thrown away: the queue tells a transient error from a
+  permanent one by it, so the retries never happened in daemon mode.
+- **A daemon that is started again after a stop builds again.** The bus
+  and the stop channel of the queue were closed and never opened again:
+  the second run never consumed a build request.
+- **A failed build forgets the heads of the remotes.** The cache held
+  the head of a remote whose build failed: the next webhook said that
+  the remote did not move and skipped the build.
+- **A namespaced build keeps the forge in its root-relative links.** A
+  build of one repository that is namespaced by its forge keeps the
+  forge in the path of the content, but the links at the root of the
+  site and the images lost it: they pointed at pages that do not exist.
+- **A manual discovery is canceled when the daemon stops.**
+
+
 ## [0.35.25] - 2026-11-24
 
 ### Fixed
