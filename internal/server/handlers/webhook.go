@@ -152,7 +152,7 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 	resp := map[string]any{
 		"status":    status,
 		"timestamp": time.Now().UTC(),
-		"event":     eventType,
+		"event":     eventName(eventType),
 		"source":    forgeName,
 	}
 	if jobID != "" {
@@ -220,6 +220,26 @@ func (h *WebhookHandlers) validateWebhookSignature(forgeName, signatureHeader st
 
 	slog.Debug("Webhook signature validated", "forge", forgeName)
 	return nil
+}
+
+// eventName keeps the event type of a request header to the shape a
+// forge event name has: letters, digits, dashes, dots and underscores.
+// The header holds whatever the sender wants, and the answer repeats
+// it: a header that holds markup would put markup in the answer.
+func eventName(eventType string) string {
+	const maxLen = 64
+	if eventType == "" || len(eventType) > maxLen {
+		return ""
+	}
+	for _, r := range eventType {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+		case r == '_', r == '-', r == '.':
+		default:
+			return ""
+		}
+	}
+	return eventType
 }
 
 // triggerBuildFromEvent triggers a build from a webhook event if valid.
