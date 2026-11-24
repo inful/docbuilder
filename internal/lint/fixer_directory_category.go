@@ -86,8 +86,11 @@ func (f *Fixer) injectCategory(filePath, category string) CategoryInjectUpdate {
 		fields = map[string]any{}
 	}
 
-	if !frontmatterops.EnsureCategory(fields, category) {
-		// Already present or not applicable; no change.
+	// The categories of a doc are its doc mode: the wrong one is
+	// replaced, not joined. A doc with two modes is an error that no
+	// fixer can remove.
+	if !frontmatterops.SetCategory(fields, category) {
+		// Already the expected category; no change.
 		return op
 	}
 
