@@ -267,7 +267,11 @@ func detectForgeType(forgeField, baseURL string) config.ForgeType {
 
 	// Fallback to URL pattern detection
 	lowerURL := strings.ToLower(baseURL)
-	if strings.Contains(lowerURL, "github.com") {
+	// A self-hosted GitHub is "github.something": the name of the
+	// forge in the host tells GitHub and GitLab apart. Only
+	// "github.com" was recognized, so a GitHub Enterprise was taken
+	// for a Forgejo and its edit links pointed at the wrong place.
+	if strings.Contains(lowerURL, "github.") {
 		return config.ForgeGitHub
 	}
 	if strings.Contains(lowerURL, "gitlab.com") || strings.Contains(lowerURL, "gitlab") {
@@ -280,12 +284,7 @@ func detectForgeType(forgeField, baseURL string) config.ForgeType {
 
 	// For self-hosted instances that aren't GitHub/GitLab, default to Forgejo/Gitea pattern
 	// as it's becoming the most common self-hosted option
-	if !strings.Contains(lowerURL, "github.com") && !strings.Contains(lowerURL, "gitlab.com") {
-		return config.ForgeForgejo
-	}
-
-	// Final fallback to GitHub
-	return config.ForgeGitHub
+	return config.ForgeForgejo
 }
 
 // isForgeURL checks if a URL is a real forge URL (not a local path).
