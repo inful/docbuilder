@@ -468,6 +468,11 @@ Warnings are emitted if every repository is filtered out so you can adjust patte
 - `docbuilder build` - Build documentation site from configured repositories
 - `docbuilder init` - Initialize a new configuration file
 - `docbuilder build --incremental` - Update existing repositories instead of fresh clone
+- `docbuilder discover` - List the documentation files of the configured repositories
+- `docbuilder lint` - Lint a documentation set
+- `docbuilder template` - Create a documentation page from a template
+- `docbuilder preview` - Serve a local documentation set with live reload
+- `docbuilder daemon` - Run the daemon: discover, build and serve the site
 
 ## MCP Server (LLM Integration)
 
@@ -525,6 +530,8 @@ Read-only:
 - `resolve_template_inputs` — preview output path & body for given field values
 - `lint_docs` — structured lint findings for a path
 - `read_doc` — parsed frontmatter + body for a file
+- `search_site` — the pages of the site that match a query
+- `list_site_pages` — the pages the site holds
 
 Mutating (require `confirm=true`; host prompts user):
 
