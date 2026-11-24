@@ -156,6 +156,15 @@ func (d *Daemon) updateStatus() {
 			slog.Warn("Failed to save state", "error", err)
 		}
 	}
+
+	// The remote-head cache is daemon state as well: what the remote
+	// held at the last check has to survive a restart, or every
+	// webhook rebuilds the whole site after it.
+	if d.build.repoUpdater != nil && d.build.repoUpdater.cache != nil {
+		if err := d.build.repoUpdater.cache.Save(); err != nil {
+			slog.Warn("Failed to save the remote head cache", "error", err)
+		}
+	}
 }
 
 // GetConfig returns the current daemon configuration.
