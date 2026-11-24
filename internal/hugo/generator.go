@@ -483,6 +483,13 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 			// the discovery did not run, so the hash of this report
 			// is empty and the state would keep a stale one.
 			report.DocFilesHash = prev.DocFilesHash
+			// The numbers of the pages of the last build that ran: the
+			// report of the published site said "files: 7" and
+			// "rendered_pages: 0" - the site holds seven pages and the
+			// report said that none were written.
+			report.RenderedPages = prev.RenderedPages
+			report.StaticRendered = prev.StaticRendered
+			report.ClonedRepositories = prev.ClonedRepositories
 		}
 		// best-effort: persist updated report into existing output dir
 		if err := report.Persist(g.outputDir); err != nil {
