@@ -176,7 +176,13 @@ func (d *Daemon) initDiscoveryStack() {
 func (d *Daemon) initForges(cfg *config.Config) error {
 	forgeManager := forge.NewForgeManager()
 	for _, forgeConfig := range cfg.Forges {
-		client, err := forge.NewForgeClient(forgeConfig)
+		// The files that keep a repository out of the site are a
+		// setting of the site: every forge looks for them.
+		forgeCfg := *forgeConfig
+		if cfg.Filtering != nil {
+			forgeCfg.IgnoreFiles = cfg.Filtering.IgnoreFiles
+		}
+		client, err := forge.NewForgeClient(&forgeCfg)
 		if err != nil {
 			return fmt.Errorf("failed to create forge client %s: %w", forgeConfig.Name, err)
 		}
