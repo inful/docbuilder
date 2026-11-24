@@ -396,10 +396,18 @@ func (d *OutboundDispatcher) send(ctx context.Context, job ingestJob) {
 
 	if d.preflightBase != "" {
 		if uid != "" && fp != "" {
-			if !d.preflight(ctx, uid, fp, job.path) {
-				// preflight returned false → skip the upload
+			switch d.preflight(ctx, uid, fp, job.path) {
+			case preflightSkip:
+				// ragabast holds this document already.
 				d.rememberUploaded(uid, fp)
 				return
+			case preflightAuthFailed:
+				// The document was not uploaded: it must not be
+				// remembered as uploaded, or the next build skips it
+				// for ever - even after the auth is fixed.
+				return
+			case preflightUpload:
+				// The document must be uploaded.
 			}
 		}
 		// Anything missing (uid or fingerprint, or no frontmatter at all)
@@ -526,7 +534,21 @@ func (d *OutboundDispatcher) upload(ctx context.Context, job ingestJob, uid, fin
 //	5xx / network / timeout      → true (fail-open, preflight_errors++)
 //	empty UID or fingerprint     → true (caller already short-circuited;
 //	                                 we don't get here in normal flow)
-func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string) bool {
+//
+// preflightResult says what the preflight found.
+type preflightResult int
+
+const (
+	// preflightUpload: the document must be uploaded.
+	preflightUpload preflightResult = iota
+	// preflightSkip: ragabast holds this document already.
+	preflightSkip
+	// preflightAuthFailed: the auth is broken. The document was not
+	// uploaded.
+	preflightAuthFailed
+)
+
+func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string) preflightResult {
 	target := d.preflightBase + fmt.Sprintf(ragabastPreflightPath, url.PathEscape(uid))
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
@@ -536,7 +558,7 @@ func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string
 		slog.Warn("outbound dispatcher: preflight build request failed",
 			slog.String("path", path),
 			slog.String("error", err.Error()))
-		return true
+		return preflightUpload
 	}
 	if d.token != "" {
 		req.Header.Set("Authorization", "Bearer "+d.token)
@@ -548,7 +570,7 @@ func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string
 		slog.Warn("outbound dispatcher: preflight GET failed",
 			slog.String("path", path),
 			slog.String("error", err.Error()))
-		return true
+		return preflightUpload
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -563,25 +585,25 @@ func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string
 			slog.Warn("outbound dispatcher: preflight body parse failed",
 				slog.String("path", path),
 				slog.String("error", err.Error()))
-			return true
+			return preflightUpload
 		}
 		if stored.Fingerprint == fp {
 			d.preflightSkipsTotal.Add(1)
 			slog.Debug("outbound dispatcher: preflight match, skipping upload",
 				slog.String("path", path),
 				slog.String("uid", uid))
-			return false
+			return preflightSkip
 		}
 		slog.Debug("outbound dispatcher: preflight fingerprint mismatch, will upload",
 			slog.String("path", path),
 			slog.String("uid", uid),
 			slog.String("stored", stored.Fingerprint),
 			slog.String("local", fp))
-		return true
+		return preflightUpload
 
 	case http.StatusNotFound:
 		// Document not present on the server yet. Upload.
-		return true
+		return preflightUpload
 
 	case http.StatusUnauthorized, http.StatusForbidden:
 		// Auth is broken; retrying the upload would just waste bandwidth
@@ -591,7 +613,7 @@ func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string
 		slog.Error("outbound dispatcher: preflight auth failed; not uploading",
 			slog.String("path", path),
 			slog.Int("status", resp.StatusCode))
-		return false
+		return preflightAuthFailed
 
 	default:
 		// 5xx and any other unexpected status: fail-open so transient
@@ -601,7 +623,7 @@ func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string
 		slog.Warn("outbound dispatcher: preflight non-2xx, falling through to upload",
 			slog.String("path", path),
 			slog.Int("status", resp.StatusCode))
-		return true
+		return preflightUpload
 	}
 }
 
