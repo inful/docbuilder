@@ -9,6 +9,33 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.24] - 2026-11-24
+
+### Fixed
+- **A fix does not rewrite the whole frontmatter.** The uid fix and the
+  fix that fills the required fields parsed the frontmatter and wrote it
+  again: the comments of the file were lost and the keys were sorted
+  alphabetically. The fields are patched into the raw frontmatter now.
+- **The linter takes several paths.** The pre-commit hook of the
+  documentation passes the staged files: the command took a single path
+  and the hook failed with a usage error.
+- **The output flag wins over the configuration.** The flag was ignored
+  when the operator typed the default value.
+- **The hash holds what decides the paths of the pages.** The namespace
+  and the tags of a repository decide the path of every page of it: a
+  change of them left the hash the same and the daemon served the old
+  URLs.
+- **A failed start stops what it started.** The HTTP server, the workers
+  and the files of a daemon whose start failed halfway were left behind.
+- **The report of a skipped build holds the numbers of the last build.**
+- **The log of the discovery holds the number of the files of the
+  repository.**
+- **The fonts of KaTeX are published when a page with math needs them.**
+- **The JSON report of the linter is described as it is.** The CI
+  recipes that counted the errors always reported zero.
+- **The pages of the linter say what the linter does.**
+
+
 ## [0.35.22] - 2026-11-24
 
 ### Fixed
