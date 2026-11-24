@@ -69,8 +69,16 @@ Common problematic patterns:
 	// Track if we've already reported uppercase to avoid duplicate "special chars" errors
 	hasUppercaseIssue := false
 
+	// The git forges recognize the conventional names in every
+	// directory: a README.md that the fixer renames to readme.md is no
+	// home page any more. Their uppercase form is the convention.
+	conventional := isConventionalFilename(filename)
+
 	// Check for uppercase letters
-	if hasUppercase(filename) {
+	// The git forges recognize the conventional names in every
+	// directory: a README.md that the fixer renames to readme.md is
+	// no home page any more.
+	if hasUppercase(filename) && !conventional {
 		hasUppercaseIssue = true
 		suggested := SuggestFilename(filename)
 		issues = append(issues, Issue{
@@ -131,7 +139,7 @@ Why this matters:
 
 	// Check for special characters (except allowed ones)
 	// Skip this check if we already reported uppercase (avoid duplicate errors)
-	if !hasUppercaseIssue && hasSpecialChars(filename) {
+	if !hasUppercaseIssue && !conventional && hasSpecialChars(filename) {
 		suggested := SuggestFilename(filename)
 		invalidChars := findSpecialChars(filename)
 		issues = append(issues, Issue{
@@ -283,6 +291,23 @@ func SuggestFilename(filename string) string {
 	name = strings.Trim(name, "-_")
 
 	return name + ext
+}
+
+// isConventionalFilename reports whether the name is one of the names
+// the git forges recognize: the home page, the contribution guide, the
+// license and the like. Their uppercase form is the convention.
+func isConventionalFilename(filename string) bool {
+	for _, pattern := range DefaultExcludes {
+		// The patterns with a path or a wildcard are directories and
+		// templates, not names of files.
+		if strings.ContainsAny(pattern, "/*") {
+			continue
+		}
+		if filename == pattern {
+			return true
+		}
+	}
+	return false
 }
 
 // HasFilenameIssue checks if a filename violates naming conventions.
