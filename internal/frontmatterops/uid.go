@@ -65,7 +65,7 @@ func EnsureUIDInContent(content []byte) ([]byte, bool) {
 	if aliasChanged {
 		fieldsToPatch["aliases"] = fields["aliases"]
 	}
-	out, ok := patchFrontmatter(content, body, had, style, fieldsToPatch)
+	out, ok := PatchFrontmatter(content, body, had, style, fieldsToPatch)
 	if !ok {
 		return content, false
 	}
@@ -119,19 +119,19 @@ func EnsureUIDAliasInContent(content []byte, uid string) ([]byte, bool) {
 
 	// The frontmatter is patched, not written again: the comments of
 	// the file and the order of its keys survive the fix (ADR-014).
-	out, ok := patchFrontmatter(content, body, had, style, map[string]any{"aliases": fields["aliases"]})
+	out, ok := PatchFrontmatter(content, body, had, style, map[string]any{"aliases": fields["aliases"]})
 	if !ok {
 		return content, false
 	}
 	return out, true
 }
 
-// patchFrontmatter writes the given fields into the raw frontmatter of
+// PatchFrontmatter writes the given fields into the raw frontmatter of
 // the document and joins it with the body.
 //
 // The frontmatter is not parsed and written again: the comments of the
 // file and the order of its keys survive the fix (ADR-014).
-func patchFrontmatter(content, body []byte, had bool, style frontmatter.Style, fields map[string]any) ([]byte, bool) {
+func PatchFrontmatter(content, body []byte, had bool, style frontmatter.Style, fields map[string]any) ([]byte, bool) {
 	fmBytes, _, hadFrontmatter, _, splitErr := frontmatter.Split(content)
 	if splitErr != nil {
 		return nil, false

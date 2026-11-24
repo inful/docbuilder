@@ -9,6 +9,15 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.25] - 2026-11-24
+
+### Fixed
+- **The categories are patched into the frontmatter too.** The two
+  category fixers parsed the frontmatter and wrote it again: the comments
+  of the file were lost, the keys were sorted and the date of the
+  document changed its form ("2024-01-02" became "2024-01-02T00:00:00Z").
+
+
 ## [0.35.24] - 2026-11-24
 
 ### Fixed
