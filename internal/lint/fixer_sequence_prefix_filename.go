@@ -86,7 +86,11 @@ func (f *Fixer) applySequencePrefixFilenameFixes(targets map[string]struct{}, is
 			}
 			fixResult.FilesRenamed = append(fixResult.FilesRenamed, op)
 			fixResult.ErrorsFixed += issueCounts[p]
-			// Renames invalidate content hashes.
+			// Renames invalidate content hashes. The old path is
+			// gone: the fingerprint of a file that was renamed is
+			// written to the new path, and the old one would be
+			// read and reported as an error.
+			delete(fingerprintTargets, p)
 			fingerprintTargets[newPath] = struct{}{}
 
 			// Update links from the old path to the new path. The
