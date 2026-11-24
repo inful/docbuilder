@@ -17,10 +17,24 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 	}
 
 	// Check if root index already exists
+	var readme *Document
+	kept := make([]*Document, 0, len(ctx.Discovered))
 	for _, doc := range ctx.Discovered {
 		if doc.Path == contentIndexPath || doc.Path == contentLegacyIndexPath {
 			return nil, nil // Already exists
 		}
+		// A README of the root is the index of the site: the transform
+		// phase renames it to _index, and the generated index is
+		// written to the same path. The content of the README would be
+		// lost: it becomes the content of the landing page.
+		if filepath.Dir(doc.Path) == "content" && strings.EqualFold(doc.Name, "README") {
+			readme = doc
+			continue
+		}
+		kept = append(kept, doc)
+	}
+	if readme != nil {
+		ctx.Discovered = kept
 	}
 
 	// Create main index
@@ -48,11 +62,18 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 		"categories":              []string{"documentation"},
 		"tags":                    []string{},
 	}
+	content := indexContent(title, description)
+	if readme != nil {
+		// The landing page of the site is the page of the portal, with
+		// the title and the description of the configuration, and the
+		// words of the repository.
+		content += readme.Content
+	}
 	doc := &Document{
 		Path:        contentIndexPath,
 		IsIndex:     true,
 		Generated:   true,
-		Content:     indexContent(title, description),
+		Content:     content,
 		FrontMatter: frontMatter,
 		Repository:  "",
 		Section:     "",
