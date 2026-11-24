@@ -25,9 +25,12 @@ lint:
 		t.Fatalf("write the config: %v", err)
 	}
 
-	excludes, err := lintExcludesFromConfig(&CLI{Config: configPath})
+	excludes, pairs, err := lintSettingsFromConfig(&CLI{Config: configPath})
 	if err != nil {
 		t.Fatalf("the excludes: %v", err)
+	}
+	if pairs != nil {
+		t.Fatalf("the pairs are %v, want none", pairs)
 	}
 	if len(excludes) != 1 || excludes[0] != "**/README.md" {
 		t.Fatalf("the excludes are %v", excludes)
@@ -37,7 +40,7 @@ lint:
 // A configuration that is not there is no error: the linter works
 // without one.
 func TestTheLintWithoutAConfiguration(t *testing.T) {
-	excludes, err := lintExcludesFromConfig(&CLI{Config: filepath.Join(t.TempDir(), "config.yaml")})
+	excludes, _, err := lintSettingsFromConfig(&CLI{Config: filepath.Join(t.TempDir(), "config.yaml")})
 	if err != nil {
 		t.Fatalf("the excludes: %v", err)
 	}

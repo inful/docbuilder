@@ -51,7 +51,7 @@ func NewLinter(cfg *Config) *Linter {
 			&SequencePrefixFilenameRule{},
 			&TagCountRule{},
 			&CategoryNamingRule{},
-			&CrossModeCategoryRule{},
+			&CrossModeCategoryRule{AllowedPairs: cfg.AllowedCategoryPairs},
 			&DirectoryCategoryConsistencyRule{},
 			&FrontmatterRequiredFieldsRule{},
 			&TemplateUIDBindingRule{},

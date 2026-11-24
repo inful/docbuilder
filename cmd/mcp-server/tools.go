@@ -413,7 +413,7 @@ func handleLintDocs(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	}
 	quiet := req.GetBool("quiet", false)
 
-	cfg := &lint.Config{Quiet: quiet, Format: "json", Excludes: state.cfg.LintExcludes()}
+	cfg := &lint.Config{Quiet: quiet, Format: "json", Excludes: state.cfg.LintExcludes(), AllowedCategoryPairs: state.cfg.LintAllowedCategoryPairs()}
 	linter := lint.NewLinter(cfg)
 	result, err := linter.LintPath(path)
 	if err != nil {
@@ -447,7 +447,7 @@ func handleLintFix(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	// lint.Fixer and lint.NewFixer don't accept context.Context. The fix
 	// runs are local file operations that complete quickly, so using
 	// context.Background() internally is acceptable here.
-	fixer := lint.NewFixer(lint.NewLinter(&lint.Config{Yes: true, Excludes: state.cfg.LintExcludes()}), dryRun, false).WithAutoConfirm(true)
+	fixer := lint.NewFixer(lint.NewLinter(&lint.Config{Yes: true, Excludes: state.cfg.LintExcludes(), AllowedCategoryPairs: state.cfg.LintAllowedCategoryPairs()}), dryRun, false).WithAutoConfirm(true)
 	//nolint:contextcheck // same rationale as above
 	fixResult, err := fixer.Fix(path)
 	if err != nil {
@@ -511,10 +511,12 @@ func computeManualRequired(path string, state *serverState) []manualIssueOut {
 	// The same excludes as the fix: the operator excluded the files,
 	// and the follow-up lint must not report issues in them.
 	var excludes []string
+	var pairs map[string]map[string]bool
 	if state != nil {
 		excludes = state.cfg.LintExcludes()
+		pairs = state.cfg.LintAllowedCategoryPairs()
 	}
-	linter := lint.NewLinter(&lint.Config{Format: "text", Excludes: excludes})
+	linter := lint.NewLinter(&lint.Config{Format: "text", Excludes: excludes, AllowedCategoryPairs: pairs})
 	lintResult, err := linter.LintPath(path)
 	if err != nil {
 		// Lint failures are non-fatal here: the manual_required list
