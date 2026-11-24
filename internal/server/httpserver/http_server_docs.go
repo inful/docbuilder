@@ -498,6 +498,9 @@ func (r *responseRecorder) Write(b []byte) (int, error) {
 		// Too big to hold: what was captured goes to the client and
 		// the rest follows it straight away.
 		r.flushToClient()
+		// The bytes are the file the request asked for, not data the
+		// request carries, so there is nothing to escape.
+		// codeql[go/reflected-xss]
 		return r.ResponseWriter.Write(b)
 	}
 	r.body = append(r.body, b...)
@@ -511,6 +514,9 @@ func (r *responseRecorder) flushToClient() {
 		r.written = false
 	}
 	if len(r.body) > 0 {
+		// The bytes are the file the request asked for, not data the
+		// request carries, so there is nothing to escape.
+		// codeql[go/reflected-xss]
 		_, _ = r.ResponseWriter.Write(r.body)
 		r.body = nil
 	}
