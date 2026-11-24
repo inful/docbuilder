@@ -50,7 +50,6 @@ func NewLinter(cfg *Config) *Linter {
 			&BodyH1Rule{},
 			&SequencePrefixFilenameRule{},
 			&TagCountRule{},
-			&InternalLinkStyleRule{},
 			&CategoryNamingRule{},
 			&CrossModeCategoryRule{},
 			&DirectoryCategoryConsistencyRule{},

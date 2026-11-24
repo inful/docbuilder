@@ -5,7 +5,6 @@ const (
 	ruleBodyH1                       = "body-h1"
 	ruleSequencePrefixFilename       = "sequence-prefix-filename"
 	ruleTagCount                     = "tag-count"
-	ruleInternalLinkStyle            = "internal-link-style"
 	ruleCategoryNaming               = "category-naming"
 	ruleCrossModeCategory            = "cross-mode-category"
 	ruleDirectoryCategoryConsistency = "directory-category-consistency"
