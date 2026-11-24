@@ -76,6 +76,15 @@ type LintConfig struct {
 	Excludes []string `yaml:"excludes,omitempty"`
 }
 
+// LintExcludes returns the files that the linter skips. A nil result
+// means: the built-in defaults of the linter apply.
+func (c *Config) LintExcludes() []string {
+	if c == nil || c.Lint == nil {
+		return nil
+	}
+	return c.Lint.Excludes
+}
+
 // IsDaemonPublicOnlyEnabled returns true if the daemon is configured and public-only mode is enabled.
 func (c *Config) IsDaemonPublicOnlyEnabled() bool {
 	return c != nil && c.Daemon != nil && c.Daemon.Content.PublicOnly
