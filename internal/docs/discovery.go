@@ -327,9 +327,11 @@ func HugoContentPath(forge, repository, section, name, ext string, isSingleRepo 
 		parts = append(parts, strings.ToLower(section))
 	}
 
-	// Convert user-provided index.md to _index.md for Hugo section pages
+	// Convert user-provided index.md to _index.md for Hugo section
+	// pages. The assets keep their name: a file called index.png is
+	// published as index.png, and a link to it would point at nothing.
 	filename := strings.ToLower(name)
-	if filename == "index" {
+	if filename == "index" && isMarkdownExtension(ext) {
 		filename = "_index"
 	}
 
@@ -338,6 +340,16 @@ func HugoContentPath(forge, repository, section, name, ext string, isSingleRepo 
 	// published at /repo/diagram.PNG is not found at /repo/diagram.png.
 	parts = append(parts, filename+strings.ToLower(ext))
 	return filepath.Join(parts...)
+}
+
+// isMarkdownExtension reports whether the extension belongs to a
+// markdown file.
+func isMarkdownExtension(ext string) bool {
+	switch strings.ToLower(ext) {
+	case markdownExtension, ".markdown", ".mdown", ".mkd":
+		return true
+	}
+	return false
 }
 
 // isMarkdownFile checks if a file is a markdown file.

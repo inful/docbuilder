@@ -479,6 +479,10 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		if prev, ok := g.readPreviousBuildReport(); ok {
 			report.Files = prev.Files
 			report.Repositories = prev.Repositories
+			// The hash of the documents of the last build that ran:
+			// the discovery did not run, so the hash of this report
+			// is empty and the state would keep a stale one.
+			report.DocFilesHash = prev.DocFilesHash
 		}
 		// best-effort: persist updated report into existing output dir
 		if err := report.Persist(g.outputDir); err != nil {
