@@ -9,6 +9,19 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.19] - 2026-11-24
+
+### Fixed
+- **The message of a document without frontmatter says so.** The message
+  said that the field "frontmatter" was missing, and the explanation
+  asked for a "frontmatter" field in the frontmatter.
+- **The staging directory is a sibling of the output.** The site is moved
+  into its place with a rename, and a rename across directories fails
+  when they are on different file systems.
+- **The status job does not hold the lock of the lifecycle.** The
+  /status endpoint and the shutdown waited behind the two writes.
+
+
 ## [0.35.18] - 2026-11-24
 
 ### Fixed
