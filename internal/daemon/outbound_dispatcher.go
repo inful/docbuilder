@@ -29,6 +29,10 @@ const (
 	ragabastPreflightPath = "/api/documents/%s/fingerprint"
 )
 
+// drainTimeout bounds the time the dispatcher spends on the documents
+// that are still in the queue when the daemon stops.
+const drainTimeout = 30 * time.Second
+
 // maxUploadedEntries bounds how many documents the dispatcher remembers.
 // The oldest entries are dropped when the limit is reached.
 const maxUploadedEntries = 10000
@@ -73,6 +77,11 @@ type OutboundDispatcher struct {
 	closed   bool
 	workers  int
 	queueCap int
+
+	// cancelDrain ends the context of the workers. The workers do not
+	// use the context of the run: it is canceled when the daemon
+	// stops, and every upload with a canceled context fails.
+	cancelDrain context.CancelFunc
 
 	// uploaded remembers the fingerprint this dispatcher last uploaded
 	// for a document uid. A document whose fingerprint did not change
@@ -239,10 +248,16 @@ func (d *OutboundDispatcher) Start(ctx context.Context) {
 		d.closed = false
 	}
 	queue := d.queue
+	// The context of the run is canceled when the daemon stops, and
+	// every upload with a canceled context fails: the documents that
+	// are still in the queue would be lost. The drain has a context of
+	// its own, with an end.
+	drainCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), drainTimeout)
+	d.cancelDrain = cancel
 	d.mu.Unlock()
 	for range d.workers {
 		d.wg.Add(1)
-		go d.worker(ctx, queue)
+		go d.worker(drainCtx, queue)
 	}
 	slog.Info("outbound dispatcher started",
 		slog.String("base_url", d.baseURL),
@@ -269,8 +284,12 @@ func (d *OutboundDispatcher) Stop() {
 		d.closed = true
 		close(d.queue)
 	}
+	cancelDrain := d.cancelDrain
 	d.mu.Unlock()
 	d.wg.Wait()
+	if cancelDrain != nil {
+		cancelDrain()
+	}
 	slog.Info("outbound dispatcher stopped",
 		slog.Int64("sends_total", d.sendsTotal.Load()),
 		slog.Int64("drops_total", d.dropsTotal.Load()),
