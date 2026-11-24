@@ -9,6 +9,43 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.14] - 2026-11-24
+
+### Fixed
+- **The clone and the fetch take the context of the build.** The git
+  operations took no context: a host that never answers kept the build
+  worker busy until the operating system gave up. The build could not
+  be canceled, and the daemon has one worker.
+- **The remote-head cache remembers what the remote holds.** The cache
+  was never filled, so the check that says "the repository did not
+  move" always said it did, and every webhook rebuilt the whole site.
+  The daemon saves the cache with its other state now.
+- **The parent of the output directory is made before the site is moved
+  aside.** A directory that cannot be made cost the published site: the
+  build failed and the daemon had nothing to serve.
+- **A removed repository leaves the site.** The discovery asked for a
+  build only when it found a repository, so the pages of a deleted
+  repository stayed until something else asked for a build.
+- **The site is published in the same place for everybody.** The command
+  line joined the base directory onto an absolute directory, the daemon
+  and the server did not: the site was published in two places.
+- **The docs server does not hold a whole response in memory.** A
+  request with the LiveReload cookie held the whole file in memory:
+  104 MiB for a 20 MiB file, on the public port, from any client.
+- **A webhook path with a wildcard does not take the process down.** The
+  HTTP router panicked on a malformed path, and the daemon died with a
+  stack trace instead of a clean error.
+- **Versioning that is turned off stays off.** A strategy in the
+  configuration turned the versioning on, even when the operator wrote
+  `enabled: false`. The generated configuration holds both.
+- **The edit links can be verified.** `skip_edit_links: false` did
+  nothing: the field was a plain bool and the default turned every
+  false into a true.
+- **The Forgejo repositories keep their order.** The list was built by
+  walking a map, so the same repository changed its name - and its
+  place in the site - from one run to the next.
+
+
 ## [0.35.13] - 2026-11-24
 
 ### Fixed
