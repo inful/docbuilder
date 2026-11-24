@@ -18,7 +18,7 @@ type fakeRemoteHeadChecker struct {
 	err     error
 }
 
-func (f fakeRemoteHeadChecker) CheckRemoteChanged(_ *git.RemoteHeadCache, _ config.Repository, _ string) (bool, string, error) {
+func (f fakeRemoteHeadChecker) CheckRemoteChanged(_ context.Context, _ *git.RemoteHeadCache, _ config.Repository, _ string) (bool, string, error) {
 	return f.changed, f.sha, f.err
 }
 

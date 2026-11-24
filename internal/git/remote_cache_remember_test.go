@@ -20,7 +20,7 @@ func TestTheRemoteHeadCacheRemembersWhatTheRemoteHolds(t *testing.T) {
 	client := NewClient(t.TempDir())
 	repo := appcfg.Repository{Name: "repo", URL: bare, Branch: "master"}
 
-	changed, sha, err := client.CheckRemoteChanged(cache, repo, "master")
+	changed, sha, err := client.CheckRemoteChanged(t.Context(), cache, repo, "master")
 	if err != nil {
 		t.Fatalf("check: %v", err)
 	}
@@ -31,7 +31,7 @@ func TestTheRemoteHeadCacheRemembersWhatTheRemoteHolds(t *testing.T) {
 		t.Fatal("the first check found no commit")
 	}
 
-	changed, _, err = client.CheckRemoteChanged(cache, repo, "master")
+	changed, _, err = client.CheckRemoteChanged(t.Context(), cache, repo, "master")
 	if err != nil {
 		t.Fatalf("second check: %v", err)
 	}
@@ -51,14 +51,14 @@ func TestTheRemoteHeadCacheSeesAMovedRemote(t *testing.T) {
 	client := NewClient(t.TempDir())
 	repo := appcfg.Repository{Name: "repo", URL: bare, Branch: "master"}
 
-	if _, _, checkErr := client.CheckRemoteChanged(cache, repo, "master"); checkErr != nil {
+	if _, _, checkErr := client.CheckRemoteChanged(t.Context(), cache, repo, "master"); checkErr != nil {
 		t.Fatalf("check: %v", checkErr)
 	}
 
 	// A different branch of the same remote is a different entry.
 	cache.Set(repo.URL, "master", "0000000000000000000000000000000000000000")
 
-	changed, _, err := client.CheckRemoteChanged(cache, repo, "master")
+	changed, _, err := client.CheckRemoteChanged(t.Context(), cache, repo, "master")
 	if err != nil {
 		t.Fatalf("second check: %v", err)
 	}

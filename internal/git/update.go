@@ -39,7 +39,7 @@ func (c *Client) updateExistingRepo(ctx context.Context, repoPath string, repo a
 	fetchNeeded := true
 	var remoteSHA string
 	if c.remoteHeadCache != nil {
-		changed, sha, checkErr := c.CheckRemoteChanged(c.remoteHeadCache, repo, branch)
+		changed, sha, checkErr := c.CheckRemoteChanged(ctx, c.remoteHeadCache, repo, branch)
 		if checkErr == nil {
 			fetchNeeded = changed
 			remoteSHA = sha

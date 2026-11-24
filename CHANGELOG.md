@@ -9,6 +9,39 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.18] - 2026-11-24
+
+### Fixed
+- **Every shortcode of the code is escaped.** Two forms of a shortcode
+  reached Hugo and took the whole site build down: the percent form
+  (`{{% alert %}}`) and a shortcode in an inline span.
+- **The readme of a repository is not lost.** In a single repository build
+  the readme was renamed to `_index` and the generated index was written
+  over it: the content of the readme was nowhere in the site. It is the
+  content of the landing page now.
+- **The worker group is not thrown away under a running worker.** The
+  reset replaced the wait group while a worker that outlived the
+  deadline of the stop still held a reference to it: the counter went
+  below zero and the process died.
+- **The remote-head cache is saved exclusively.** Two saves wrote the
+  same temporary file and renamed it over the cache.
+- **A document that was not uploaded is not remembered as uploaded.** A
+  document whose upload was refused by a 401 was never sent again, not
+  even after the auth was fixed.
+- **The drain of the outbound dispatcher uploads the documents that are
+  left.** The context of the run was canceled before the dispatcher was
+  stopped: every upload failed.
+- **The build after a removal runs without a repository.** The pages of a
+  removed repository stayed published until something else asked for a
+  build.
+- **The check of the head of a remote has a deadline.** A forge that
+  never answered held the repo updater, and every webhook-driven build
+  behind it.
+- **The assets keep their name.** A file called `index.png` was published
+  as `_index.png`, and the link to it pointed at nothing.
+- **The state file says "stopped" after the shutdown.**
+
+
 ## [0.35.17] - 2026-11-24
 
 ### Fixed

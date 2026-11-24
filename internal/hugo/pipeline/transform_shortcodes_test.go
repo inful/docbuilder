@@ -84,10 +84,6 @@ func TestEscapeShortcodesInCodeBlocks_NoSpuriousChanges(t *testing.T) {
 			content: "```bash\necho \"<html>\" | grep '<'\ntest=\">}}\"\n```",
 		},
 		{
-			name:    "Inline code with angle brackets",
-			content: "Use `{{< shortcode >}}` in your templates.\n\nInline code should not be escaped.",
-		},
-		{
 			name:    "Headers and lists",
 			content: "# Title\n\n## Subtitle\n\n- Item 1\n- Item 2\n  - Nested\n\n1. First\n2. Second",
 		},

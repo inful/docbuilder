@@ -57,3 +57,27 @@ func TestEscapeShortcodes_TheTransformIsIdempotent(t *testing.T) {
 
 	assert.Equal(t, first, doc.Content)
 }
+
+// The other form of a shortcode is a shortcode too: Hugo reads
+// "{{% alert %}}" and takes the whole site build down when it has no
+// template.
+func TestEscapeShortcodes_ThePercentFormIsEscaped(t *testing.T) {
+	doc := &Document{Content: "```markdown\n{{% alert %}}\n```\n"}
+
+	_, err := escapeShortcodesInCodeBlocks(doc)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "```markdown\n{{</* alert */>}}\n```\n", doc.Content)
+}
+
+// A shortcode in an inline span is a shortcode: Hugo reads it before
+// the markdown renders the span, and the whole site build fails when
+// the shortcode has no template.
+func TestEscapeShortcodes_TheInlineCodeIsEscaped(t *testing.T) {
+	doc := &Document{Content: "Use `{{< shortcode >}}` in your templates.\n"}
+
+	_, err := escapeShortcodesInCodeBlocks(doc)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "Use `{{</* shortcode */>}}` in your templates.\n", doc.Content)
+}

@@ -14,7 +14,10 @@ import (
 // in them is an example. The rest of the document is left exactly as it
 // was - a shortcode outside the code is meant to run.
 func escapeShortcodesInCodeBlocks(doc *Document) ([]*Document, error) {
-	regions := markdown.CodeBlockRegions([]byte(doc.Content))
+	// The inline code spans count as code as well: Hugo processes a
+	// shortcode before the markdown renders it, so a shortcode in an
+	// inline span takes the whole site build down.
+	regions := markdown.CodeRegions([]byte(doc.Content))
 	doc.Content = markdown.ApplyToCode(doc.Content, regions, escapeShortcodes)
 
 	// This transform only modifies content, doesn't generate new documents
@@ -29,7 +32,7 @@ func escapeShortcodesInCodeBlocks(doc *Document) ([]*Document, error) {
 // A ">}}" that closes no shortcode is left alone: it is not a shortcode,
 // and escaping it would put the escape marker into the example.
 func escapeShortcodes(code string) string {
-	if !strings.Contains(code, "{{<") {
+	if !strings.Contains(code, "{{<") && !strings.Contains(code, "{{%") {
 		return code
 	}
 
@@ -50,6 +53,12 @@ func escapeShortcodes(code string) string {
 			out.WriteString("{{</*")
 			i += len("{{<")
 			pending = true
+		case strings.HasPrefix(code[i:], "{{%"):
+			// The other form of a shortcode: Hugo reads it as one
+			// too.
+			out.WriteString("{{</*")
+			i += len("{{%")
+			pending = true
 		case strings.HasPrefix(code[i:], "*/>}}"):
 			// Escaped already.
 			out.WriteString("*/>}}")
@@ -58,6 +67,10 @@ func escapeShortcodes(code string) string {
 		case pending && strings.HasPrefix(code[i:], ">}}"):
 			out.WriteString("*/>}}")
 			i += len(">}}")
+			pending = false
+		case pending && strings.HasPrefix(code[i:], "%}}"):
+			out.WriteString("*/>}}")
+			i += len("%}}")
 			pending = false
 		default:
 			out.WriteByte(code[i])

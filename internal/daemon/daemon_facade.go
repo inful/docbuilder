@@ -57,6 +57,12 @@ type buildStack struct {
 	buildQueue     *queue.BuildQueue
 	buildDebouncer *BuildDebouncer
 	repoUpdater    *RepoUpdater
+
+	// afterRemoval says that a repository was removed. The next build
+	// has to run even when no repository is left: the pages of the
+	// removed repository are still published, and only a build takes
+	// them away.
+	afterRemoval atomic.Bool
 }
 
 // discoveryStack owns the discovery pipeline: the forge manager, the

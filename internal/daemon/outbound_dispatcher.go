@@ -29,6 +29,10 @@ const (
 	ragabastPreflightPath = "/api/documents/%s/fingerprint"
 )
 
+// drainTimeout bounds the time the dispatcher spends on the documents
+// that are still in the queue when the daemon stops.
+const drainTimeout = 30 * time.Second
+
 // maxUploadedEntries bounds how many documents the dispatcher remembers.
 // The oldest entries are dropped when the limit is reached.
 const maxUploadedEntries = 10000
@@ -73,6 +77,11 @@ type OutboundDispatcher struct {
 	closed   bool
 	workers  int
 	queueCap int
+
+	// cancelDrain ends the context of the workers. The workers do not
+	// use the context of the run: it is canceled when the daemon
+	// stops, and every upload with a canceled context fails.
+	cancelDrain context.CancelFunc
 
 	// uploaded remembers the fingerprint this dispatcher last uploaded
 	// for a document uid. A document whose fingerprint did not change
@@ -239,10 +248,16 @@ func (d *OutboundDispatcher) Start(ctx context.Context) {
 		d.closed = false
 	}
 	queue := d.queue
+	// The context of the run is canceled when the daemon stops, and
+	// every upload with a canceled context fails: the documents that
+	// are still in the queue would be lost. The drain has a context of
+	// its own, with an end.
+	drainCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), drainTimeout)
+	d.cancelDrain = cancel
 	d.mu.Unlock()
 	for range d.workers {
 		d.wg.Add(1)
-		go d.worker(ctx, queue)
+		go d.worker(drainCtx, queue)
 	}
 	slog.Info("outbound dispatcher started",
 		slog.String("base_url", d.baseURL),
@@ -269,8 +284,12 @@ func (d *OutboundDispatcher) Stop() {
 		d.closed = true
 		close(d.queue)
 	}
+	cancelDrain := d.cancelDrain
 	d.mu.Unlock()
 	d.wg.Wait()
+	if cancelDrain != nil {
+		cancelDrain()
+	}
 	slog.Info("outbound dispatcher stopped",
 		slog.Int64("sends_total", d.sendsTotal.Load()),
 		slog.Int64("drops_total", d.dropsTotal.Load()),
@@ -396,10 +415,18 @@ func (d *OutboundDispatcher) send(ctx context.Context, job ingestJob) {
 
 	if d.preflightBase != "" {
 		if uid != "" && fp != "" {
-			if !d.preflight(ctx, uid, fp, job.path) {
-				// preflight returned false → skip the upload
+			switch d.preflight(ctx, uid, fp, job.path) {
+			case preflightSkip:
+				// ragabast holds this document already.
 				d.rememberUploaded(uid, fp)
 				return
+			case preflightAuthFailed:
+				// The document was not uploaded: it must not be
+				// remembered as uploaded, or the next build skips it
+				// for ever - even after the auth is fixed.
+				return
+			case preflightUpload:
+				// The document must be uploaded.
 			}
 		}
 		// Anything missing (uid or fingerprint, or no frontmatter at all)
@@ -526,7 +553,21 @@ func (d *OutboundDispatcher) upload(ctx context.Context, job ingestJob, uid, fin
 //	5xx / network / timeout      → true (fail-open, preflight_errors++)
 //	empty UID or fingerprint     → true (caller already short-circuited;
 //	                                 we don't get here in normal flow)
-func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string) bool {
+//
+// preflightResult says what the preflight found.
+type preflightResult int
+
+const (
+	// preflightUpload: the document must be uploaded.
+	preflightUpload preflightResult = iota
+	// preflightSkip: ragabast holds this document already.
+	preflightSkip
+	// preflightAuthFailed: the auth is broken. The document was not
+	// uploaded.
+	preflightAuthFailed
+)
+
+func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string) preflightResult {
 	target := d.preflightBase + fmt.Sprintf(ragabastPreflightPath, url.PathEscape(uid))
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
@@ -536,7 +577,7 @@ func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string
 		slog.Warn("outbound dispatcher: preflight build request failed",
 			slog.String("path", path),
 			slog.String("error", err.Error()))
-		return true
+		return preflightUpload
 	}
 	if d.token != "" {
 		req.Header.Set("Authorization", "Bearer "+d.token)
@@ -548,7 +589,7 @@ func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string
 		slog.Warn("outbound dispatcher: preflight GET failed",
 			slog.String("path", path),
 			slog.String("error", err.Error()))
-		return true
+		return preflightUpload
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -563,25 +604,25 @@ func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string
 			slog.Warn("outbound dispatcher: preflight body parse failed",
 				slog.String("path", path),
 				slog.String("error", err.Error()))
-			return true
+			return preflightUpload
 		}
 		if stored.Fingerprint == fp {
 			d.preflightSkipsTotal.Add(1)
 			slog.Debug("outbound dispatcher: preflight match, skipping upload",
 				slog.String("path", path),
 				slog.String("uid", uid))
-			return false
+			return preflightSkip
 		}
 		slog.Debug("outbound dispatcher: preflight fingerprint mismatch, will upload",
 			slog.String("path", path),
 			slog.String("uid", uid),
 			slog.String("stored", stored.Fingerprint),
 			slog.String("local", fp))
-		return true
+		return preflightUpload
 
 	case http.StatusNotFound:
 		// Document not present on the server yet. Upload.
-		return true
+		return preflightUpload
 
 	case http.StatusUnauthorized, http.StatusForbidden:
 		// Auth is broken; retrying the upload would just waste bandwidth
@@ -591,7 +632,7 @@ func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string
 		slog.Error("outbound dispatcher: preflight auth failed; not uploading",
 			slog.String("path", path),
 			slog.Int("status", resp.StatusCode))
-		return false
+		return preflightAuthFailed
 
 	default:
 		// 5xx and any other unexpected status: fail-open so transient
@@ -601,7 +642,7 @@ func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string
 		slog.Warn("outbound dispatcher: preflight non-2xx, falling through to upload",
 			slog.String("path", path),
 			slog.Int("status", resp.StatusCode))
-		return true
+		return preflightUpload
 	}
 }
 

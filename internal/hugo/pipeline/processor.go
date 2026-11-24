@@ -75,8 +75,14 @@ func (p *Processor) ProcessContent(documents []*Document, repoMetadata map[strin
 
 	slog.Info("Pipeline: Generation phase complete", slog.Int("generated", len(generated)))
 
-	// Phase 2: Transformation - Process all documents, including generated ones
-	documents = append(documents, generated...)
+	// Phase 2: Transformation - Process all documents, including generated ones.
+	// The context holds the documents of the build: a generator may have
+	// taken one of them out (the readme of the root becomes the landing
+	// page of the site).
+	all := make([]*Document, 0, len(ctx.Discovered)+len(generated))
+	all = append(all, ctx.Discovered...)
+	all = append(all, generated...)
+	documents = all
 	slog.Info("Pipeline: Starting transformation phase", slog.Int("total_docs", len(documents)))
 
 	// A README whose directory has an index of its own is a page of its

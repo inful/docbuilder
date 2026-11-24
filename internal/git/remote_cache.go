@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -56,9 +57,13 @@ func NewRemoteHeadCache(cacheDir string) (*RemoteHeadCache, error) {
 	return cache, nil
 }
 
+// remoteHeadTimeout bounds the time the check of the head of a remote
+// takes.
+const remoteHeadTimeout = 30 * time.Second
+
 // GetRemoteHead performs a lightweight ls-remote to check the current remote HEAD
 // without fetching the entire repository. Returns the commit SHA or error.
-func (c *Client) GetRemoteHead(repo appcfg.Repository, branch string) (string, error) {
+func (c *Client) GetRemoteHead(ctx context.Context, repo appcfg.Repository, branch string) (string, error) {
 	if branch == "" {
 		branch = "main" // default fallback
 	}
@@ -79,12 +84,15 @@ func (c *Client) GetRemoteHead(repo appcfg.Repository, branch string) (string, e
 		auth = a
 	}
 
-	listOpts := &git.ListOptions{}
+	// The check has a deadline: a forge that accepts the connection and
+	// never answers would hold the repo updater for ever, and every
+	// webhook-driven build behind it.
+	listOpts := &git.ListOptions{Timeout: int(remoteHeadTimeout / time.Second)}
 	if auth != nil {
 		listOpts.Auth = auth
 	}
 
-	refs, err := rem.List(listOpts)
+	refs, err := rem.ListContext(ctx, listOpts)
 	if err != nil {
 		return "", ClassifyGitError(err, "ls-remote", repo.URL)
 	}
@@ -110,13 +118,13 @@ func (c *Client) GetRemoteHead(repo appcfg.Repository, branch string) (string, e
 
 // CheckRemoteChanged checks if remote HEAD has changed since last fetch.
 // Returns: changed (true if fetch needed), currentSHA, error.
-func (c *Client) CheckRemoteChanged(cache *RemoteHeadCache, repo appcfg.Repository, branch string) (bool, string, error) {
+func (c *Client) CheckRemoteChanged(ctx context.Context, cache *RemoteHeadCache, repo appcfg.Repository, branch string) (bool, string, error) {
 	if cache == nil {
 		return true, "", nil // No cache, assume changed
 	}
 
 	// Get current remote HEAD
-	currentSHA, err := c.GetRemoteHead(repo, branch)
+	currentSHA, err := c.GetRemoteHead(ctx, repo, branch)
 	if err != nil {
 		slog.Debug("Failed to check remote HEAD, will fetch",
 			logfields.Name(repo.Name),
@@ -201,8 +209,11 @@ func (c *RemoteHeadCache) Save() error {
 		return nil // No persistence
 	}
 
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	// The write is exclusive: two saves write the same temporary file
+	// and rename it over the cache - one of them renames the file the
+	// other is about to rename.
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(c.path), 0o750); err != nil {

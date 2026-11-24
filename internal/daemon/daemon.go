@@ -823,6 +823,11 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	// it during the shutdown - a repository that was removed - must not
 	// lose the change.
 	if stateManager != nil {
+		// The status of the daemon is part of its state: the file said
+		// "running" while the process was gone.
+		if res := stateManager.UpdateStatus(ctx, StatusStopped); res.IsErr() {
+			slog.Warn("Failed to record the status of the daemon", "error", res.UnwrapErr())
+		}
 		if err := stateManager.Save(); err != nil {
 			slog.Error("Failed to save state", "error", err)
 		}
