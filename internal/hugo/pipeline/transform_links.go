@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/markdown"
 )
 
 // rewriteRelativeLinks rewrites relative markdown links to work with Hugo.
@@ -25,10 +26,21 @@ func rewriteLinksIterative(content, repository, forge string, isIndex bool, docP
 	var result strings.Builder
 	result.Grow(len(content))
 
+	// The code of the document holds examples, not links: ADR-012 keeps
+	// the links of the code blocks out of the rewriting.
+	regions := markdown.CodeRegions([]byte(content))
+
 	i := 0
 	for i < len(content) {
 		// Check if we're at the start of a potential link
 		if i < len(content)-1 && content[i] == '[' {
+			// A link in a code block is an example: it is left as it is.
+			if markdown.ContainsCode(regions, i) {
+				result.WriteByte(content[i])
+				i++
+				continue
+			}
+
 			// Try to process as a link; if successful, advance i and continue
 			if newI, processed := tryProcessLink(content, i, repository, forge, isIndex, docPath, isSingleRepo, &result); processed {
 				i = newI
@@ -184,60 +196,67 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 		return strings.ToLower(p[:cut]) + p[cut:]
 	}
 
-	doc.Content = imagePattern.ReplaceAllStringFunc(doc.Content, func(match string) string {
-		submatches := imagePattern.FindStringSubmatch(match)
-		if len(submatches) < 3 {
-			return match
-		}
+	// The code of the document holds examples, not images: the images in
+	// a code block are left as they are.
+	regions := markdown.CodeRegions([]byte(doc.Content))
 
-		alt := submatches[1]
-		path := submatches[2]
+	doc.Content = markdown.ApplyOutsideCode(doc.Content, regions, func(part string) string {
+		part = imagePattern.ReplaceAllStringFunc(part, func(match string) string {
+			submatches := imagePattern.FindStringSubmatch(match)
+			if len(submatches) < 3 {
+				return match
+			}
 
-		// Skip absolute URLs
-		if strings.HasPrefix(path, "http://") ||
-			strings.HasPrefix(path, "https://") {
-			return match
-		}
+			alt := submatches[1]
+			path := submatches[2]
 
-		// Normalize root-relative paths to lowercase (DocBuilder writes content paths lowercased)
-		if strings.HasPrefix(path, "/") {
-			newPath := lowerPathPreserveQueryAndFragment(path)
+			// Skip absolute URLs
+			if strings.HasPrefix(path, "http://") ||
+				strings.HasPrefix(path, "https://") {
+				return match
+			}
+
+			// Normalize root-relative paths to lowercase (DocBuilder writes content paths lowercased)
+			if strings.HasPrefix(path, "/") {
+				newPath := lowerPathPreserveQueryAndFragment(path)
+				return fmt.Sprintf("![%s](%s)", alt, newPath)
+			}
+
+			// Rewrite relative image path accounting for document's section and repo mode
+			newPath := rewriteImagePath(path, doc.Repository, doc.Forge, doc.Section, doc.IsSingleRepo)
 			return fmt.Sprintf("![%s](%s)", alt, newPath)
-		}
+		})
 
-		// Rewrite relative image path accounting for document's section and repo mode
-		newPath := rewriteImagePath(path, doc.Repository, doc.Forge, doc.Section, doc.IsSingleRepo)
-		return fmt.Sprintf("![%s](%s)", alt, newPath)
-	})
+		// Also handle HTML img tags: <img src="path" ...>
+		htmlImgPattern := htmlImagePattern
 
-	// Also handle HTML img tags: <img src="path" ...>
-	htmlImgPattern := htmlImagePattern
+		part = htmlImgPattern.ReplaceAllStringFunc(part, func(match string) string {
+			submatches := htmlImgPattern.FindStringSubmatch(match)
+			if len(submatches) < 4 {
+				return match
+			}
 
-	doc.Content = htmlImgPattern.ReplaceAllStringFunc(doc.Content, func(match string) string {
-		submatches := htmlImgPattern.FindStringSubmatch(match)
-		if len(submatches) < 4 {
-			return match
-		}
+			beforeSrc := submatches[1]
+			path := submatches[2]
+			afterSrc := submatches[3]
 
-		beforeSrc := submatches[1]
-		path := submatches[2]
-		afterSrc := submatches[3]
+			// Skip absolute URLs
+			if strings.HasPrefix(path, "http://") ||
+				strings.HasPrefix(path, "https://") {
+				return match
+			}
 
-		// Skip absolute URLs
-		if strings.HasPrefix(path, "http://") ||
-			strings.HasPrefix(path, "https://") {
-			return match
-		}
+			// Normalize root-relative paths to lowercase
+			if strings.HasPrefix(path, "/") {
+				newPath := lowerPathPreserveQueryAndFragment(path)
+				return fmt.Sprintf("<img %ssrc=\"%s\"%s>", beforeSrc, newPath, afterSrc)
+			}
 
-		// Normalize root-relative paths to lowercase
-		if strings.HasPrefix(path, "/") {
-			newPath := lowerPathPreserveQueryAndFragment(path)
+			// Rewrite relative image path accounting for document's section and repo mode
+			newPath := rewriteImagePath(path, doc.Repository, doc.Forge, doc.Section, doc.IsSingleRepo)
 			return fmt.Sprintf("<img %ssrc=\"%s\"%s>", beforeSrc, newPath, afterSrc)
-		}
-
-		// Rewrite relative image path accounting for document's section and repo mode
-		newPath := rewriteImagePath(path, doc.Repository, doc.Forge, doc.Section, doc.IsSingleRepo)
-		return fmt.Sprintf("<img %ssrc=\"%s\"%s>", beforeSrc, newPath, afterSrc)
+		})
+		return part
 	})
 
 	return nil, nil
