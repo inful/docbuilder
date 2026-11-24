@@ -140,6 +140,18 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	return f.applyFixes(path, result)
 }
 
+// FixPaths applies the fixes to the given files and directories.
+//
+// The links are searched in the tree that holds them: the link of a
+// file that is fixed points at a file of the tree.
+func (f *Fixer) FixPaths(paths []string) (*FixResult, error) {
+	result, err := f.linter.LintPaths(paths)
+	if err != nil {
+		return nil, fmt.Errorf("failed to lint paths: %w", err)
+	}
+	return f.applyFixes(commonRoot(paths), result)
+}
+
 // fix is the internal implementation that actually performs the fixes.
 func (f *Fixer) fix(path string) (*FixResult, error) {
 	// First, run linter to find issues

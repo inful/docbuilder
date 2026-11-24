@@ -90,23 +90,29 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 	}
 	result.brokenLinks = brokenLinks
 	for _, bl := range brokenLinks {
-		result.Issues = append(result.Issues, Issue{
-			FilePath: bl.SourceFile,
-			Severity: SeverityError,
-			Rule:     "broken-links",
-			Message:  "broken link target does not exist",
-			Explanation: strings.TrimSpace(strings.Join([]string{
-				"The documentation contains a link to a file that does not exist.",
-				"This will break navigation and may cause build/link-check failures.",
-				"",
-				"Target: " + bl.Target,
-			}, "\n")),
-			Fix:  "Update the link target or add the missing file.",
-			Line: bl.LineNumber,
-		})
+		result.Issues = append(result.Issues, brokenLinkIssue(bl))
 	}
 
 	return result, err
+}
+
+// brokenLinkIssue is the issue of a link that points at a file that does
+// not exist.
+func brokenLinkIssue(bl BrokenLink) Issue {
+	return Issue{
+		FilePath: bl.SourceFile,
+		Severity: SeverityError,
+		Rule:     "broken-links",
+		Message:  "broken link target does not exist",
+		Explanation: strings.TrimSpace(strings.Join([]string{
+			"The documentation contains a link to a file that does not exist.",
+			"This will break navigation and may cause build/link-check failures.",
+			"",
+			"Target: " + bl.Target,
+		}, "\n")),
+		Fix:  "Update the link target or add the missing file.",
+		Line: bl.LineNumber,
+	}
 }
 
 // lintDirectory recursively lints all documentation files in a directory.
@@ -167,6 +173,81 @@ func (l *Linter) lintFile(filePath string, result *Result) error {
 	}
 
 	return nil
+}
+
+// LintPaths lints the given files and directories.
+//
+// The broken links are detected in the tree that holds them: a link of a
+// file that is linted points at a file of the tree.
+func (l *Linter) LintPaths(paths []string) (*Result, error) {
+	if len(paths) == 1 {
+		return l.LintPath(paths[0])
+	}
+
+	result := &Result{
+		Issues:     []Issue{},
+		FilesTotal: 0,
+	}
+	for _, path := range paths {
+		info, err := os.Stat(path)
+		if err != nil {
+			continue
+		}
+		if info.IsDir() {
+			if err := l.lintDirectory(path, result); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		if l.isExcluded(path, "") {
+			continue
+		}
+		if !IsDocFile(path) && !IsAssetFile(path) {
+			continue
+		}
+		result.FilesTotal++
+		if err := l.lintFile(path, result); err != nil {
+			return nil, err
+		}
+	}
+
+	brokenLinks, blErr := detectBrokenLinks(commonRoot(paths), l.excludePatterns())
+	if blErr != nil {
+		return nil, blErr
+	}
+	result.brokenLinks = brokenLinks
+	for _, bl := range brokenLinks {
+		result.Issues = append(result.Issues, brokenLinkIssue(bl))
+	}
+
+	return result, nil
+}
+
+// commonRoot returns the directory that holds all the paths.
+func commonRoot(paths []string) string {
+	root := ""
+	for _, path := range paths {
+		dir := path
+		if info, err := os.Stat(path); err == nil && !info.IsDir() {
+			dir = filepath.Dir(path)
+		}
+		abs, err := filepath.Abs(dir)
+		if err != nil {
+			continue
+		}
+		if root == "" {
+			root = abs
+			continue
+		}
+		// The root climbs until it holds the other path.
+		for root != filepath.Dir(root) && !strings.HasPrefix(abs, root+string(filepath.Separator)) {
+			root = filepath.Dir(root)
+		}
+	}
+	if root == "" {
+		return "."
+	}
+	return root
 }
 
 // LintFiles lints a specific list of files (useful for Git hooks).
