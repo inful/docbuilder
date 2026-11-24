@@ -117,6 +117,14 @@ func (g *Generator) finalizeStaging() error {
 	// Remove old backup if present
 	g.removeOldBackup(prev)
 
+	// The parent of the output directory may not exist: a nested output
+	// directory is a directory that has to be made before the site can
+	// be moved into it. It is made before the backup, so a directory
+	// that cannot be made does not cost the published site.
+	if err := os.MkdirAll(filepath.Dir(g.outputDir), 0o750); err != nil {
+		return fmt.Errorf("create the parent of the output directory: %w", err)
+	}
+
 	// Step 1: Backup current output (if exists)
 	if stat, err := os.Stat(g.outputDir); err == nil {
 		slog.Info("Backing up current output directory",
@@ -137,12 +145,6 @@ func (g *Generator) finalizeStaging() error {
 	}
 
 	// Step 2: Promote staging to output
-	// The parent of the output directory may not exist: a nested output
-	// directory is a directory that has to be made before the site can
-	// be moved into it.
-	if err := os.MkdirAll(filepath.Dir(g.outputDir), 0o750); err != nil {
-		return fmt.Errorf("create the parent of the output directory: %w", err)
-	}
 	slog.Info("Promoting staging directory to output",
 		slog.String("from", g.stageDir),
 		slog.String("to", g.outputDir))
