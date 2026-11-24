@@ -384,7 +384,7 @@ func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository)
 	// Check for .docignore file
 	// Only check if docs folder exists, otherwise skip
 	if hasDocs {
-		hasDocIgnore, err := c.checkPathExists(ctx, projectID, ".docignore", branch)
+		hasDocIgnore, err := c.checkIgnoreFiles(ctx, projectID, branch)
 		if err != nil {
 			return errors.ForgeError("failed to check .docignore existence on GitLab").
 				WithCause(err).
@@ -397,6 +397,21 @@ func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository)
 	}
 
 	return nil
+}
+
+// checkIgnoreFiles reports whether the project holds one of the files
+// that keep it out of the site.
+func (c *GitLabClient) checkIgnoreFiles(ctx context.Context, projectID, branch string) (bool, error) {
+	for _, file := range ignoreFiles(c.config) {
+		found, err := c.checkPathExists(ctx, projectID, file, branch)
+		if err != nil {
+			return false, err
+		}
+		if found {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // checkPathExists checks if a path exists in the project

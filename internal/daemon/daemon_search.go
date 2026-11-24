@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -28,6 +29,12 @@ const defaultMaxResults = 10
 type SearchService struct {
 	index      *search.Index
 	maxResults int
+
+	// writeMu holds the writing of the index. Two builds that finish
+	// close together start two index jobs, and the slower one of them
+	// wrote the pages of the older build into the index of the newer
+	// one: the site held pages that are not published any more.
+	writeMu sync.Mutex
 }
 
 // initSearch opens the search index when the configuration asks for the
@@ -91,6 +98,23 @@ func (d *Daemon) indexSearch(ctx context.Context, outputDir string) {
 	if d.optional.search == nil {
 		return
 	}
+	d.optional.search.writeIndex(ctx, outputDir)
+}
+
+// writeIndex collects the pages of the site and writes them into the
+// index.
+//
+// One write at a time: two builds that finish close together start two
+// index jobs, and the slower one of them wrote the pages of the older
+// build into the index of the newer one: the site held pages that are
+// not published any more.
+func (s *SearchService) writeIndex(ctx context.Context, outputDir string) {
+	if s == nil || s.index == nil {
+		return
+	}
+
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
 
 	start := time.Now()
 	docs, err := search.Collect(outputDir)
@@ -99,7 +123,7 @@ func (d *Daemon) indexSearch(ctx context.Context, outputDir string) {
 			logfields.Error(err), logfields.Path(outputDir))
 		return
 	}
-	if err := d.optional.search.index.Upsert(ctx, docs); err != nil {
+	if err := s.index.Upsert(ctx, docs); err != nil {
 		slog.Warn("Failed to update the search index", logfields.Error(err))
 		return
 	}

@@ -93,6 +93,11 @@ type ForgeConfig struct {
 	Auth          *AuthConfig    `yaml:"auth"`          // Authentication config
 	Webhook       *WebhookConfig `yaml:"webhook"`       // Webhook configuration
 	Options       map[string]any `yaml:"options"`       // Forge-specific options
+
+	// IgnoreFiles are the files that keep a repository out of the
+	// site. The daemon fills them from filtering.ignore_files: the
+	// files are a setting of the site, not of one forge.
+	IgnoreFiles []string `yaml:"-"`
 }
 
 // WebhookConfig represents webhook configuration for a forge, including secret, path, and events.

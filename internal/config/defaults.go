@@ -79,7 +79,9 @@ func (b *BuildDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Build.MaxRetries < 0 {
 		cfg.Build.MaxRetries = 0
 	}
-	if cfg.Build.MaxRetries == 0 { // default 2 retries (3 total attempts) unless explicitly set >0
+	if cfg.Build.MaxRetries == 0 && !cfg.Build.maxRetriesSpecified {
+		// The default is 2 retries (3 attempts). An operator who wrote
+		// "max_retries: 0" means "no retries".
 		cfg.Build.MaxRetries = 2
 	}
 

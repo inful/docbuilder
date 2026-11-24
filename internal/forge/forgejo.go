@@ -49,8 +49,19 @@ func NewForgejoClient(fg *Config) (*ForgejoClient, error) {
 	return &ForgejoClient{
 		BaseForge: baseForge,
 		config:    fg,
-		baseURL:   fg.BaseURL,
+		baseURL:   forgejoBaseURL(fg.BaseURL, fg.APIURL),
 	}, nil
+}
+
+// forgejoBaseURL returns the web address of the forge. Without one the
+// API address is used without its API path: the edit links of the site
+// point at the web address of the forge, and an empty one points at
+// nothing.
+func forgejoBaseURL(baseURL, apiURL string) string {
+	if baseURL != "" {
+		return baseURL
+	}
+	return strings.TrimSuffix(strings.TrimSuffix(apiURL, "/"), "/api/v1")
 }
 
 // GetType returns the forge type.
@@ -284,7 +295,7 @@ func (c *ForgejoClient) CheckDocumentation(ctx context.Context, repo *Repository
 	repo.HasDocs = hasDocs
 
 	// Check for .docignore file
-	hasDocIgnore, err := c.checkPathExists(ctx, owner, repoName, ".docignore", repo.DefaultBranch)
+	hasDocIgnore, err := c.checkIgnoreFiles(ctx, owner, repoName, repo.DefaultBranch)
 	if err != nil {
 		return errors.ForgeError("failed to check .docignore existence on Forgejo").
 			WithCause(err).
@@ -294,6 +305,21 @@ func (c *ForgejoClient) CheckDocumentation(ctx context.Context, repo *Repository
 	repo.HasDocIgnore = hasDocIgnore
 
 	return nil
+}
+
+// checkIgnoreFiles reports whether the repository holds one of the
+// files that keep it out of the site.
+func (c *ForgejoClient) checkIgnoreFiles(ctx context.Context, owner, repo, branch string) (bool, error) {
+	for _, file := range ignoreFiles(c.config) {
+		found, err := c.checkPathExists(ctx, owner, repo, file, branch)
+		if err != nil {
+			return false, err
+		}
+		if found {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // checkPathExists checks if a path exists in the repository.

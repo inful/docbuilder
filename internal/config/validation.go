@@ -201,6 +201,10 @@ func (cv *configurationValidator) validateForges() error {
 		}
 
 		// Validate organizations/groups requirement
+		if err := cv.validateForgeURLs(forge); err != nil {
+			return err
+		}
+
 		if err := cv.validateForgeScopes(forge); err != nil {
 			return err
 		}
@@ -229,6 +233,24 @@ func (cv *configurationValidator) validateForgeType(forge *ForgeConfig) error {
 	// Apply the normalized value (this maintains existing behavior)
 	forge.Type = norm
 
+	return nil
+}
+
+// validateForgeURLs validates the addresses of a forge. A self-hosted
+// forge has no default: without an api_url the first request dies with
+// "unsupported protocol scheme", and without a base_url the edit links
+// of the site point at nothing.
+func (cv *configurationValidator) validateForgeURLs(forge *ForgeConfig) error {
+	if forge.Type == ForgeGitHub || forge.Type == ForgeGitLab {
+		// GitHub and GitLab have a default address.
+		return nil
+	}
+	if strings.TrimSpace(forge.APIURL) == "" {
+		return errors.NewError(errors.CategoryValidation, "forge must have an api_url").
+			WithContext("forge", forge.Name).
+			WithContext("type", string(forge.Type)).
+			Build()
+	}
 	return nil
 }
 

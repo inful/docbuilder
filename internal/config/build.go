@@ -41,6 +41,10 @@ type BuildConfig struct {
 	// skipIfUnchangedSpecified is set internally during load when the YAML explicitly sets skip_if_unchanged.
 	// This lets the daemon default apply (true) only when user omitted the field entirely.
 	skipIfUnchangedSpecified bool `yaml:"-"`
+	// maxRetriesSpecified is set internally during load when the YAML explicitly sets max_retries.
+	// This lets the default apply (2) only when user omitted the field entirely: an
+	// operator who wrote "max_retries: 0" means "no retries".
+	maxRetriesSpecified bool `yaml:"-"`
 }
 
 // UnmarshalYAML is a custom unmarshal to detect if detect_deletions was explicitly set by user.
@@ -54,22 +58,33 @@ func (b *BuildConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	*b = BuildConfig(aux)
 	// Heuristic: if the YAML explicitly mentioned the key, the unmarshaller will have set the bool (even if false).
 	// We can't directly know presence, so we re-unmarshal into a generic map to check.
-	var m map[string]any
-	if err := unmarshal(&m); err == nil {
-		if _, ok := m["detect_deletions"]; ok {
-			b.detectDeletionsSpecified = true
-		}
-		if _, ok := m["shallow_depth"]; ok {
-			b.shallowDepthSpecified = true
-		}
-		if _, ok := m["hard_reset_on_diverge"]; ok {
-			b.hardResetOnDivergeSpecified = true
-		}
-		if _, ok := m["skip_if_unchanged"]; ok {
-			b.skipIfUnchangedSpecified = true
-		}
+	m := specifiedFields(unmarshal)
+	if _, ok := m["detect_deletions"]; ok {
+		b.detectDeletionsSpecified = true
+	}
+	if _, ok := m["shallow_depth"]; ok {
+		b.shallowDepthSpecified = true
+	}
+	if _, ok := m["hard_reset_on_diverge"]; ok {
+		b.hardResetOnDivergeSpecified = true
+	}
+	if _, ok := m["skip_if_unchanged"]; ok {
+		b.skipIfUnchangedSpecified = true
+	}
+	if _, ok := m["max_retries"]; ok {
+		b.maxRetriesSpecified = true
 	}
 	return nil
+}
+
+// specifiedFields returns the fields the YAML holds. It is empty when
+// the YAML cannot be read as a map.
+func specifiedFields(unmarshal func(any) error) map[string]any {
+	var m map[string]any
+	if err := unmarshal(&m); err != nil {
+		return nil
+	}
+	return m
 }
 
 // (type BuildConfig is defined above to satisfy typeDefFirst linter)
