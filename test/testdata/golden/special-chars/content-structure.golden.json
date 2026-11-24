@@ -5,7 +5,7 @@
         "title": "Special Characters Test",
         "type": "docs"
       },
-      "contentHash": "sha256:ce46c3d718fdce26"
+      "contentHash": "sha256:0bdbf168e433f09a"
     },
     "content/file with spaces.md": {
       "frontmatter": {
@@ -13,14 +13,14 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:0fefd4d2264d4d26"
+      "contentHash": "sha256:cd869f9a03998bd8"
     },
     "content/special-chars (test)/_index.md": {
       "frontmatter": {
         "title": "special-chars (test)",
         "type": "docs"
       },
-      "contentHash": "sha256:1649e25de4988d11"
+      "contentHash": "sha256:8573a9f7674903c7"
     },
     "content/special-chars (test)/doc-[brackets].md": {
       "frontmatter": {
@@ -28,7 +28,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:15eaec470a5c99da"
+      "contentHash": "sha256:2bd582b401e68bed"
     }
   },
   "structure": {

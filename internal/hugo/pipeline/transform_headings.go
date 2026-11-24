@@ -49,8 +49,12 @@ func extractH1AsTitle(doc *Document) ([]*Document, error) {
 	// Skip if title already exists and is not a fallback
 	// Fallback titles to replace: "Untitled", "_index", or the doc name (auto-generated from filename)
 	if existingTitle, hasTitle := doc.FrontMatter["title"].(string); hasTitle {
-		// Keep existing non-fallback titles
-		if existingTitle != untitledDocTitle && existingTitle != indexFileSuffix && existingTitle != doc.Name {
+		// Keep existing non-fallback titles. The fallback is the title
+		// of the file name, in the same shape the base front matter
+		// gives it: "install" becomes "Install", and the H1 of the
+		// document replaces it either way.
+		fallbackTitle := formatTitle(doc.Name)
+		if existingTitle != untitledDocTitle && existingTitle != indexFileSuffix && existingTitle != fallbackTitle {
 			return nil, nil
 		}
 	}

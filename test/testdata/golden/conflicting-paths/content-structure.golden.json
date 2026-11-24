@@ -5,14 +5,14 @@
         "title": "Conflicting Paths Test",
         "type": "docs"
       },
-      "contentHash": "sha256:9b0fd864516a8100"
+      "contentHash": "sha256:12d6d60f9d60d143"
     },
     "content/repo-a/_index.md": {
       "frontmatter": {
         "title": "Repo A",
         "type": "docs"
       },
-      "contentHash": "sha256:bcffb39669762705"
+      "contentHash": "sha256:e2cfaa83449b1292"
     },
     "content/repo-a/api.md": {
       "frontmatter": {
@@ -20,7 +20,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:937e5e7697e41af0"
+      "contentHash": "sha256:9d2f9e746ddb50c8"
     },
     "content/repo-a/setup.md": {
       "frontmatter": {
@@ -28,14 +28,14 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:c20c5e7aac1b3dbc"
+      "contentHash": "sha256:4235bf99191d6b33"
     },
     "content/repo-b/_index.md": {
       "frontmatter": {
         "title": "Repo B",
         "type": "docs"
       },
-      "contentHash": "sha256:9fed0faade5b13b7"
+      "contentHash": "sha256:4ff58e98e12634bb"
     },
     "content/repo-b/setup.md": {
       "frontmatter": {
@@ -43,7 +43,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:c7b25d5a416d8757"
+      "contentHash": "sha256:63fa0183b4026993"
     },
     "content/repo-b/tutorial.md": {
       "frontmatter": {
@@ -51,7 +51,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:d67a0780103272e0"
+      "contentHash": "sha256:eb035d2d64c37aca"
     }
   },
   "structure": {

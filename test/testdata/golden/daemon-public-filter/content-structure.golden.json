@@ -6,7 +6,7 @@
         "title": "Public Filter Demo",
         "type": "docs"
       },
-      "contentHash": "sha256:7fd86f72d63aa0a0"
+      "contentHash": "sha256:23a82c6dfedc7837"
     },
     "content/other/_index.md": {
       "frontmatter": {
@@ -14,15 +14,15 @@
         "title": "other",
         "type": "docs"
       },
-      "contentHash": "sha256:fce8379bdc8b02fa"
+      "contentHash": "sha256:e55a00fa5055536e"
     },
     "content/other/nested-public.md": {
       "frontmatter": {
         "public": true,
-        "title": "Nested Public",
+        "title": "Nested Public Page",
         "type": "docs"
       },
-      "contentHash": "sha256:f1490da339a0c27a"
+      "contentHash": "sha256:8e5eb9e74a27ef91"
     },
     "content/public-announcement.md": {
       "frontmatter": {
@@ -30,7 +30,7 @@
         "title": "Public Announcement",
         "type": "docs"
       },
-      "contentHash": "sha256:933c18967aa2aea0"
+      "contentHash": "sha256:28fcc16a2bd71058"
     },
     "content/public-page.md": {
       "frontmatter": {
@@ -38,7 +38,7 @@
         "title": "Public Page",
         "type": "docs"
       },
-      "contentHash": "sha256:01c2f86f1f5de12f"
+      "contentHash": "sha256:61c4a6b9d810669c"
     }
   },
   "structure": {

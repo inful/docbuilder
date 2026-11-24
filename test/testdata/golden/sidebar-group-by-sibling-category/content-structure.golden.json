@@ -5,35 +5,35 @@
         "title": "Sidebar Group By Sibling Category Demo",
         "type": "docs"
       },
-      "contentHash": "sha256:7d5b3ef602910b93"
+      "contentHash": "sha256:d5190d032f6f2ffa"
     },
     "content/operations.md": {
       "frontmatter": {
         "title": "Operations Runbook",
         "type": "docs"
       },
-      "contentHash": "sha256:1a4239e5f2cdafd1"
+      "contentHash": "sha256:2cc89ba8e7ad6aa8"
     },
     "content/orphan-sync.md": {
       "frontmatter": {
         "title": "Orphan Sync",
         "type": "docs"
       },
-      "contentHash": "sha256:9d3992350486eef3"
+      "contentHash": "sha256:9d342e2d72f24f46"
     },
     "content/team-alpha-sync.md": {
       "frontmatter": {
         "title": "Team Alpha Sync",
         "type": "docs"
       },
-      "contentHash": "sha256:d0fa72505c780518"
+      "contentHash": "sha256:773390666d50c2ed"
     },
     "content/team-beta-sync.md": {
       "frontmatter": {
         "title": "Team Beta Sync",
         "type": "docs"
       },
-      "contentHash": "sha256:04e4ccb613bcf052"
+      "contentHash": "sha256:6dbbd58812fe9bfe"
     }
   },
   "structure": {

@@ -5,21 +5,21 @@
         "title": "Sidebar Group By Multi-Value Demo",
         "type": "docs"
       },
-      "contentHash": "sha256:5d5d983ec339cfeb"
+      "contentHash": "sha256:e5566eb22ca6d2d7"
     },
     "content/cross-team.md": {
       "frontmatter": {
         "title": "Cross-Team Doc",
         "type": "docs"
       },
-      "contentHash": "sha256:e399b5f3d652ff64"
+      "contentHash": "sha256:8124430b74f6cab1"
     },
     "content/solo.md": {
       "frontmatter": {
         "title": "Solo Doc",
         "type": "docs"
       },
-      "contentHash": "sha256:016f0758eea817a0"
+      "contentHash": "sha256:06864e70bf0ef3b2"
     }
   },
   "structure": {

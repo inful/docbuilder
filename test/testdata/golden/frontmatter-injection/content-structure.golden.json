@@ -5,7 +5,7 @@
         "title": "Frontmatter Injection Test",
         "type": "docs"
       },
-      "contentHash": "sha256:dc43beca87da1083"
+      "contentHash": "sha256:c929e1ef4ddd3faf"
     },
     "content/metadata.md": {
       "frontmatter": {
@@ -13,14 +13,14 @@
         "type": "docs",
         "weight": 10
       },
-      "contentHash": "sha256:312838dad4162c47"
+      "contentHash": "sha256:57ceda6f6e395862"
     },
     "content/no-editurl.md": {
       "frontmatter": {
         "title": "Page Without EditURL",
         "type": "docs"
       },
-      "contentHash": "sha256:52f5f06e661990cf"
+      "contentHash": "sha256:72158f1585b32ed0"
     }
   },
   "structure": {

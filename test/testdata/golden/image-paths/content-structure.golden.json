@@ -5,7 +5,7 @@
         "title": "Image Path Testing",
         "type": "docs"
       },
-      "contentHash": "sha256:4ffd3f133c11eb4a"
+      "contentHash": "sha256:d8a36b93b60b9044"
     },
     "content/images-guide.md": {
       "frontmatter": {
@@ -13,7 +13,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:5cec6c37f40aa5da"
+      "contentHash": "sha256:b88abddec496e365"
     }
   },
   "structure": {

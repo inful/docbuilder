@@ -5,28 +5,28 @@
         "title": "Sidebar Group By Demo",
         "type": "docs"
       },
-      "contentHash": "sha256:5142a83c33e5c0d7"
+      "contentHash": "sha256:ad195edd50a3ad1a"
     },
     "content/operations.md": {
       "frontmatter": {
         "title": "Operations Runbook",
         "type": "docs"
       },
-      "contentHash": "sha256:b9654856f129ed7f"
+      "contentHash": "sha256:63b034bef7c8701d"
     },
     "content/team-alpha-sync.md": {
       "frontmatter": {
         "title": "Team Alpha Sync",
         "type": "docs"
       },
-      "contentHash": "sha256:bcb846063fdac433"
+      "contentHash": "sha256:71a9b72f6796dcc0"
     },
     "content/team-beta-sync.md": {
       "frontmatter": {
         "title": "Team Beta Sync",
         "type": "docs"
       },
-      "contentHash": "sha256:be90964f4d9dcaf5"
+      "contentHash": "sha256:8bd0c33a2b90faa5"
     }
   },
   "structure": {
