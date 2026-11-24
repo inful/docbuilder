@@ -199,6 +199,11 @@ type Config struct {
 	// git-forge-conventional files). When an explicit empty slice is
 	// supplied, no files are excluded.
 	Excludes []string
+
+	// AllowedCategoryPairs are the category pairs that a document may
+	// hold together: the key is the child category, the value the
+	// parent categories it may live under.
+	AllowedCategoryPairs map[string]map[string]bool
 }
 
 // IsDocFile returns true if the file is a documentation file.

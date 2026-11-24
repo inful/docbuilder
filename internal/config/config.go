@@ -74,6 +74,39 @@ type LintConfig struct {
 	// built-in DefaultExcludes applies. An explicit empty slice disables
 	// all excludes.
 	Excludes []string `yaml:"excludes,omitempty"`
+
+	// AllowedCategoryPairs are the category pairs that a document may
+	// hold together: the key is the child category, the value the
+	// parent categories it may live under. A document with two
+	// doc-mode categories that are not a pair of this list is an
+	// error.
+	AllowedCategoryPairs map[string][]string `yaml:"allowed_category_pairs,omitempty"`
+}
+
+// LintExcludes returns the files that the linter skips. A nil result
+// means: the built-in defaults of the linter apply.
+func (c *Config) LintExcludes() []string {
+	if c == nil || c.Lint == nil {
+		return nil
+	}
+	return c.Lint.Excludes
+}
+
+// LintAllowedCategoryPairs returns the category pairs that the linter
+// allows a document to hold together.
+func (c *Config) LintAllowedCategoryPairs() map[string]map[string]bool {
+	if c == nil || c.Lint == nil || len(c.Lint.AllowedCategoryPairs) == 0 {
+		return nil
+	}
+	pairs := make(map[string]map[string]bool, len(c.Lint.AllowedCategoryPairs))
+	for child, parents := range c.Lint.AllowedCategoryPairs {
+		allowed := make(map[string]bool, len(parents))
+		for _, parent := range parents {
+			allowed[parent] = true
+		}
+		pairs[child] = allowed
+	}
+	return pairs
 }
 
 // IsDaemonPublicOnlyEnabled returns true if the daemon is configured and public-only mode is enabled.

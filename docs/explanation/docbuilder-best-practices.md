@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-01T00:00:00Z
-fingerprint: 10f3d1a3301bd8861c2c4257f353a30ec2fd4ffac06e17e734ece8cb263d2232
-lastmod: "2026-11-21"
+fingerprint: fec76df6d61a65f9fc5fa9ef029c29d2091b0276fa98efa434a56b8fcdcf2b55
+lastmod: "2026-11-24"
 tags:
   - best-practices
   - documentation
@@ -553,7 +553,6 @@ This is what you can rely on without re-reading code:
 | `body-h1` | WARNING if the markdown body opens with `# ` (duplicates the rendered `title`) | `internal/lint/rule_body_h1.go` |
 | `sequence-prefix-filename` | ERROR if a file in a configured sequence directory (`adr/` by default) doesn't match `<prefix>-NNN-slug.md` | `internal/lint/rule_sequence_prefix_filename.go` |
 | `tag-count` | WARNING when `len(tags) > 10` (threshold configurable) | `internal/lint/rule_tag_count.go` |
-| `internal-link-style` | WARNING when internal link starts with `/` (site-rooted) — links without `.md` extension are intentionally not flagged because Hugo resolves directory links (`./api/`) via `_index.md`, and broken links are caught by the `broken-links` rule instead | `internal/lint/rule_internal_link_style.go` |
 | `category-naming` | ERROR when a category doesn't match `^[a-z][a-z0-9-]*$` (kebab-case) | `internal/lint/rule_category_naming.go` |
 | `cross-mode-category` | ERROR when `categories:` lists two distinct doc modes not in `AllowedPairs` | `internal/lint/rule_cross_mode_category.go` |
 | `directory-category-consistency` | ERROR when a doc in a mode-specific directory (how-to/reference/explanation/security/adr/tutorials/examples) doesn't carry the matching `categories:` value | `internal/lint/rule_directory_category_consistency.go` |

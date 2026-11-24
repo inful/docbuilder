@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 )
 
@@ -72,6 +73,9 @@ func NewFixer(linter *Linter, dryRun, force bool) *Fixer {
 // Fix attempts to automatically fix issues found in the given path.
 // For interactive use with confirmation prompts, use FixWithConfirmation instead.
 func (f *Fixer) Fix(path string) (*FixResult, error) {
+	// The tree may have changed since the last run: the cached
+	// listings of the directories are of no use any more.
+	forgetDirectoryListings()
 	return f.fix(path)
 }
 
@@ -446,20 +450,29 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 		nowFn = time.Now
 	}
 
-	_, _, upsertErr := frontmatterops.UpsertFingerprintAndMaybeLastmod(fields, bodyBytes, nowFn())
+	fingerprint, _, upsertErr := frontmatterops.UpsertFingerprintAndMaybeLastmod(fields, bodyBytes, nowFn())
 	if upsertErr != nil {
 		op.Success = false
 		op.Error = fmt.Errorf("upsert fingerprint: %w", upsertErr)
 		return op
 	}
 
-	updatedBytes, writeErr := frontmatterops.Write(fields, bodyBytes, had, style)
-	if writeErr != nil {
+	// The fingerprint and the lastmod are patched in the raw
+	// frontmatter: the comments of the file and the order of its keys
+	// survive the fix, and the diff is the fingerprint (ADR-014).
+	frontmatterBytes, _, hadFrontmatter, frontmatterStyle, splitErr := frontmatter.Split(data)
+	if splitErr != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("write frontmatter for fingerprint update: %w", writeErr)
+		op.Error = fmt.Errorf("split frontmatter for fingerprint update: %w", splitErr)
 		return op
 	}
-	updated := string(updatedBytes)
+	if !hadFrontmatter {
+		frontmatterBytes = nil
+		frontmatterStyle = style
+	}
+	lastmod, _ := fields["lastmod"].(string)
+	patched := frontmatterops.PatchFingerprint(frontmatterBytes, fingerprint, lastmod)
+	updated := string(frontmatter.Join(patched, bodyBytes, had, frontmatterStyle))
 
 	// The fixer historically preserves uid across any rewrite; keep that behavior.
 	updated = preserveUIDAcrossContentRewrite(original, updated)

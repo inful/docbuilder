@@ -50,9 +50,8 @@ func NewLinter(cfg *Config) *Linter {
 			&BodyH1Rule{},
 			&SequencePrefixFilenameRule{},
 			&TagCountRule{},
-			&InternalLinkStyleRule{},
 			&CategoryNamingRule{},
-			&CrossModeCategoryRule{},
+			&CrossModeCategoryRule{AllowedPairs: cfg.AllowedCategoryPairs},
 			&DirectoryCategoryConsistencyRule{},
 			&FrontmatterRequiredFieldsRule{},
 			&TemplateUIDBindingRule{},
@@ -67,6 +66,10 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// The tree may have changed since the last run: the cached
+	// listings of the directories are of no use any more.
+	forgetDirectoryListings()
 
 	result := &Result{
 		Issues: []Issue{},

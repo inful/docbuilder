@@ -5,8 +5,29 @@ import (
 	"fmt"
 	"os"
 
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
 )
+
+// lintSettingsFromConfig returns the settings of the linter that the
+// configuration holds: the files that are not linted and the category
+// pairs a document may hold together. A configuration that is not
+// there is no error: the linter works without one.
+func lintSettingsFromConfig(root *CLI) ([]string, map[string]map[string]bool, error) {
+	if root == nil || root.Config == "" {
+		return nil, nil, nil
+	}
+	if _, err := os.Stat(root.Config); err != nil {
+		// The linter works without a configuration file.
+		//nolint:nilerr // a configuration that is not there is no error
+		return nil, nil, nil
+	}
+	_, cfg, err := config.LoadWithResult(root.Config)
+	if err != nil {
+		return nil, nil, fmt.Errorf("load config: %w", err)
+	}
+	return cfg.LintExcludes(), cfg.LintAllowedCategoryPairs(), nil
+}
 
 // LintCmd implements the 'lint' command.
 type LintCmd struct {
@@ -58,13 +79,23 @@ func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 		return fmt.Errorf("path does not exist: %s", path)
 	}
 
+	// The files that are not linted come from the configuration: the
+	// documented lint.excludes was ignored by the command line.
+	excludes, pairs, err := lintSettingsFromConfig(root)
+	if err != nil {
+		return err
+	}
+
 	// Create linter configuration
 	cfg := &lint.Config{
-		Quiet:  parent.Quiet,
-		Format: parent.Format,
-		Fix:    parent.Fix,
-		DryRun: parent.DryRun,
-		Yes:    parent.Yes,
+		Quiet:    parent.Quiet,
+		Format:   parent.Format,
+		Fix:      parent.Fix,
+		DryRun:   parent.DryRun,
+		Yes:      parent.Yes,
+		Excludes: excludes,
+
+		AllowedCategoryPairs: pairs,
 	}
 
 	// Create linter

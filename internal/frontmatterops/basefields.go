@@ -104,6 +104,39 @@ func EnsureTags(fields map[string]any) (changed bool) {
 	return true
 }
 
+// SetCategory sets the categories of a document to the given one.
+//
+// The categories of a document are its doc mode, and a document has
+// one mode: the list is replaced, not appended to. A document with two
+// modes is an error that no fixer can remove.
+func SetCategory(fields map[string]any, category string) (changed bool) {
+	if fields == nil || category == "" {
+		return false
+	}
+
+	existing, ok := fields["categories"]
+	if !ok || existing == nil {
+		fields["categories"] = []string{category}
+		return true
+	}
+
+	switch v := existing.(type) {
+	case []any:
+		if len(v) == 1 {
+			if s, ok := v[0].(string); ok && s == category {
+				return false
+			}
+		}
+	case []string:
+		if len(v) == 1 && v[0] == category {
+			return false
+		}
+	}
+
+	fields["categories"] = []string{category}
+	return true
+}
+
 // EnsureCategory appends a category to the categories list if not
 // already present. Returns true if the list was modified.
 func EnsureCategory(fields map[string]any, category string) (changed bool) {

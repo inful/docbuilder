@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: c987312baabafef3575148246cdfd52c139a8650c66aeccd363263110d692a43
+fingerprint: 7ef673c9b60be86da77ec93c3755fad269a93e570fea8726cfd9d77f9cb14395
 lastmod: "2026-11-24"
 tags:
   - configuration
@@ -585,6 +585,7 @@ you override that list or extend it.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `excludes` | `[]string` | (built-in union) | Glob patterns matching files to skip from lint and schema enforcement. An explicit empty list disables all excludes. |
+| `allowed_category_pairs` | `map[string][]string` | `{}` | The category pairs a document may hold together: the key is the child category, the value the parent categories it may live under. A document with two doc-mode categories that are not a pair of this list is an error. |
 
 ### Default excludes (when `lint` is absent)
 
@@ -646,6 +647,14 @@ lint:
 # Empty list — disable all excludes (every file is linted):
 lint:
   excludes: []
+```
+
+```yaml
+# A document may be a tutorial and a reference page at the same time:
+lint:
+  allowed_category_pairs:
+    reference:
+      - tutorials
 ```
 
 ```yaml

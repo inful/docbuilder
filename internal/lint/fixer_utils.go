@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 // fileExists checks if a file exists (case-insensitive on applicable filesystems).
@@ -14,23 +15,62 @@ func fileExists(path string) bool {
 		return true
 	}
 
-	// On case-insensitive filesystems, try case-insensitive lookup
-	// by checking the directory listing
-	dir := filepath.Dir(path)
-	base := filepath.Base(path)
+	// The file may be there with another case: the file systems that
+	// keep the case of a name need a lookup that ignores it.
+	names := listDirectory(filepath.Dir(path))
+	_, ok := names[strings.ToLower(filepath.Base(path))]
+	return ok
+}
 
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return false
+// dirListingCacheSize is the number of directories whose listing is
+// kept. Every broken link reads the directory of its target, and a
+// documentation set in one directory turns the check quadratic: 3000
+// documents with one broken link each read the listing of 3000 entries
+// 3000 times.
+const dirListingCacheSize = 32
+
+var (
+	dirListingMu    sync.Mutex
+	dirListingCache = map[string]map[string]struct{}{}
+	dirListingOrder []string
+)
+
+// listDirectory returns the names of the entries of the directory in
+// lower case. The listing is kept: the check asks for the same
+// directory again and again.
+func listDirectory(dir string) map[string]struct{} {
+	dirListingMu.Lock()
+	defer dirListingMu.Unlock()
+
+	if names, ok := dirListingCache[dir]; ok {
+		return names
 	}
 
-	for _, entry := range entries {
-		if strings.EqualFold(entry.Name(), base) {
-			return true
+	names := map[string]struct{}{}
+	if entries, err := os.ReadDir(dir); err == nil {
+		for _, entry := range entries {
+			names[strings.ToLower(entry.Name())] = struct{}{}
 		}
 	}
 
-	return false
+	if len(dirListingOrder) >= dirListingCacheSize {
+		delete(dirListingCache, dirListingOrder[0])
+		dirListingOrder = dirListingOrder[1:]
+	}
+	dirListingCache[dir] = names
+	dirListingOrder = append(dirListingOrder, dir)
+
+	return names
+}
+
+// forgetDirectoryListings drops the cached listings of the directories.
+// A file that was renamed or removed changes the listing of its
+// directory.
+func forgetDirectoryListings() {
+	dirListingMu.Lock()
+	defer dirListingMu.Unlock()
+	dirListingCache = map[string]map[string]struct{}{}
+	dirListingOrder = nil
 }
 
 // pathsEqualCaseInsensitive compares two paths case-insensitively.

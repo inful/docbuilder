@@ -58,6 +58,8 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 	if f.shouldUseGitMv(oldPath) {
 		// Use git mv to preserve history
 		err := f.gitMv(oldPath, newPath)
+		// The listing of the directory changed.
+		forgetDirectoryListings()
 		if err != nil {
 			op.Error = fmt.Errorf("git mv failed: %w", err)
 			return op
@@ -65,6 +67,8 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 	} else {
 		// Use regular file system rename
 		err := os.Rename(oldPath, newPath)
+		// The listing of the directory changed.
+		forgetDirectoryListings()
 		if err != nil {
 			op.Error = fmt.Errorf("rename failed: %w", err)
 			return op

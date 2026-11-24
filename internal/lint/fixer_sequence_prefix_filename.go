@@ -76,6 +76,8 @@ func (f *Fixer) applySequencePrefixFilenameFixes(targets map[string]struct{}, is
 				Success: true,
 			}
 			if !f.dryRun {
+				// The listing of the directory changed.
+				forgetDirectoryListings()
 				if err := os.Rename(p, newPath); err != nil {
 					op.Success = false
 					op.Error = fmt.Errorf("rename: %w", err)
@@ -86,7 +88,11 @@ func (f *Fixer) applySequencePrefixFilenameFixes(targets map[string]struct{}, is
 			}
 			fixResult.FilesRenamed = append(fixResult.FilesRenamed, op)
 			fixResult.ErrorsFixed += issueCounts[p]
-			// Renames invalidate content hashes.
+			// Renames invalidate content hashes. The old path is
+			// gone: the fingerprint of a file that was renamed is
+			// written to the new path, and the old one would be
+			// read and reported as an error.
+			delete(fingerprintTargets, p)
 			fingerprintTargets[newPath] = struct{}{}
 
 			// Update links from the old path to the new path. The
@@ -114,16 +120,18 @@ func (f *Fixer) applySequencePrefixFilenameFixes(targets map[string]struct{}, is
 // sequence is used.
 func buildSequenceName(prefix string, seq int, original string) string {
 	base := strings.TrimSuffix(original, ".md")
-	slug := base
-	if i := strings.Index(base, "-"); i >= 0 {
-		// Strip an existing leading "<digits>-" prefix if present.
-		head := base[:i]
-		if isAllDigits(head) {
-			if j := strings.Index(base[i+1:], "-"); j >= 0 {
-				slug = base[i+j+2:]
-			}
-		}
+
+	// The prefix of the directory is part of the name: the sequence
+	// number brings it back. Without this the name read
+	// "adr-001-adr-something.md".
+	slug := strings.TrimPrefix(base, prefix)
+
+	// An existing sequence number is dropped: the new one takes its
+	// place.
+	if i := strings.Index(slug, "-"); i >= 0 && isAllDigits(slug[:i]) {
+		slug = slug[i+1:]
 	}
+
 	if slug == "" {
 		slug = base
 	}
