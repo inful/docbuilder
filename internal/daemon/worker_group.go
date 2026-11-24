@@ -17,14 +17,16 @@ type WorkerGroup struct {
 
 // Reset prepares the group for reuse after a full stop.
 //
-// This must only be called when all workers have already exited.
+// The wait group is not replaced: a worker that outlived the deadline
+// of the last stop still holds a reference to it and would call Done()
+// on a group that was thrown away - the counter of the new group goes
+// below zero and the process dies.
 func (g *WorkerGroup) Reset() {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
 	g.stopping = false
 	g.warnedStopping = false
-	g.wg = sync.WaitGroup{}
 }
 
 // Go starts a worker if the group is not stopping.
