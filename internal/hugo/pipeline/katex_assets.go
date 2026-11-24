@@ -17,12 +17,14 @@ var katexStylesheet []byte
 //go:embed assets/katex/fonts/*.woff2
 var katexFonts embed.FS
 
-// katexVendoredAssets returns the vendored KaTeX files as static
-// assets, keyed by their path relative to the Hugo project root.
+// katexVendoredAssets returns the vendored KaTeX files as assets, keyed
+// by their path relative to the Hugo project root.
 //
-// The stylesheet lives under assets/ so Hugo publishes it through its
-// resource pipeline, and the fonts live under static/ because the
-// stylesheet asks for them by a relative path.
+// The stylesheet and the fonts live under assets/, so Hugo publishes
+// them through its resource pipeline: they are published when a page
+// with math pulls the stylesheet in, and not in every build. The fonts
+// sat under static/ before, and every build carried 296 KB of fonts
+// that no page asked for.
 func katexVendoredAssets() ([]*StaticAsset, error) {
 	assets := []*StaticAsset{
 		{Path: filepath.Join("assets", "katex", "katex.min.css"), Content: katexStylesheet},
@@ -41,7 +43,7 @@ func katexVendoredAssets() ([]*StaticAsset, error) {
 			return nil, fmt.Errorf("read the vendored KaTeX font %s: %w", entry.Name(), err)
 		}
 		assets = append(assets, &StaticAsset{
-			Path:    filepath.Join("static", "katex", "fonts", entry.Name()),
+			Path:    filepath.Join("assets", "katex", "fonts", entry.Name()),
 			Content: content,
 		})
 	}
