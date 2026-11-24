@@ -1023,7 +1023,11 @@ Canonical link: /_uid/{{ .UID }}/
 
 	// The lint fixer must have added the /_uid/<uid>/ alias derived from
 	// the template-generated UID.
-	require.Contains(t, content, "uid: "+uids[0])
+	// The uid of the frontmatter may be quoted: the fixer does not
+	// rewrite the frontmatter, so the form of the template survives.
+	require.True(t,
+		strings.Contains(content, "uid: "+uids[0]) || strings.Contains(content, `uid: "`+uids[0]+`"`),
+		"the frontmatter holds no uid: %q", content)
 	require.Contains(t, content, "/_uid/"+uids[0]+"/")
 }
 

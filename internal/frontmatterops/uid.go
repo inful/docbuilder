@@ -57,11 +57,16 @@ func EnsureUIDInContent(content []byte) ([]byte, bool) {
 	}
 
 	// Best-effort: if this fails, keep UID but skip alias.
-	_, _ = EnsureUIDAlias(fields, uid)
+	aliasChanged, _ := EnsureUIDAlias(fields, uid)
 
-	body, had = withFrontmatter(body, had, style)
-	out, err := Write(fields, body, had, style)
-	if err != nil {
+	// The frontmatter is patched, not written again: the comments of
+	// the file and the order of its keys survive the fix (ADR-014).
+	fieldsToPatch := map[string]any{"uid": uid}
+	if aliasChanged {
+		fieldsToPatch["aliases"] = fields["aliases"]
+	}
+	out, ok := patchFrontmatter(content, body, had, style, fieldsToPatch)
+	if !ok {
 		return content, false
 	}
 	return out, true
@@ -112,11 +117,38 @@ func EnsureUIDAliasInContent(content []byte, uid string) ([]byte, bool) {
 		return content, false
 	}
 
-	out, err := Write(fields, body, had, style)
-	if err != nil {
+	// The frontmatter is patched, not written again: the comments of
+	// the file and the order of its keys survive the fix (ADR-014).
+	out, ok := patchFrontmatter(content, body, had, style, map[string]any{"aliases": fields["aliases"]})
+	if !ok {
 		return content, false
 	}
 	return out, true
+}
+
+// patchFrontmatter writes the given fields into the raw frontmatter of
+// the document and joins it with the body.
+//
+// The frontmatter is not parsed and written again: the comments of the
+// file and the order of its keys survive the fix (ADR-014).
+func patchFrontmatter(content, body []byte, had bool, style frontmatter.Style, fields map[string]any) ([]byte, bool) {
+	fmBytes, _, hadFrontmatter, _, splitErr := frontmatter.Split(content)
+	if splitErr != nil {
+		return nil, false
+	}
+	if !hadFrontmatter {
+		// The document has no frontmatter: it is written from the
+		// fields, there is nothing to preserve.
+		raw, err := frontmatter.SerializeYAML(fields, style)
+		if err != nil {
+			return nil, false
+		}
+		body, had = withFrontmatter(body, had, style)
+		return frontmatter.Join(raw, body, had, style), true
+	}
+
+	patched := PatchFields(fmBytes, fields, style.Newline)
+	return frontmatter.Join(patched, body, hadFrontmatter, style), true
 }
 
 // withNewline returns the style with a newline set, for documents
