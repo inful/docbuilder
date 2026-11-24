@@ -128,10 +128,13 @@ func (f *Fixer) kebabCaseCategories(filePath string) CategoryRenameUpdate {
 		return op
 	}
 
-	updated, writeErr := frontmatterops.Write(fields, body, had, style)
-	if writeErr != nil {
+	// The categories are patched into the raw frontmatter: the
+	// comments of the file and the order of its keys survive the fix
+	// (ADR-014).
+	updated, patched := frontmatterops.PatchFrontmatter(data, body, had, style, map[string]any{"categories": fields["categories"]})
+	if !patched {
 		op.Success = false
-		op.Error = fmt.Errorf("write frontmatter: %w", writeErr)
+		op.Error = fmt.Errorf("write frontmatter: the frontmatter of %s could not be patched", filePath)
 		return op
 	}
 
