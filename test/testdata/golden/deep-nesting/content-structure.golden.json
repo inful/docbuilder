@@ -5,14 +5,14 @@
         "title": "Deep Nesting Test",
         "type": "docs"
       },
-      "contentHash": "sha256:eb97b5ac9b815f7e"
+      "contentHash": "sha256:b4d46f14c90ab5bf"
     },
     "content/level1/_index.md": {
       "frontmatter": {
         "title": "level1",
         "type": "docs"
       },
-      "contentHash": "sha256:26946ece95263781"
+      "contentHash": "sha256:d93f9f143c25cd50"
     },
     "content/level1/doc.md": {
       "frontmatter": {
@@ -20,14 +20,14 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:49f24f844db20e7e"
+      "contentHash": "sha256:adb077354a99548b"
     },
     "content/level1/level2/_index.md": {
       "frontmatter": {
         "title": "level2",
         "type": "docs"
       },
-      "contentHash": "sha256:f604b1dcaf43864a"
+      "contentHash": "sha256:224a4c43bd2decf4"
     },
     "content/level1/level2/doc.md": {
       "frontmatter": {
@@ -35,14 +35,14 @@
         "type": "docs",
         "weight": 3
       },
-      "contentHash": "sha256:d0aadeb534834fe6"
+      "contentHash": "sha256:d2fa73dd4db34e86"
     },
     "content/level1/level2/level3/_index.md": {
       "frontmatter": {
         "title": "level3",
         "type": "docs"
       },
-      "contentHash": "sha256:c1de2e2f227602f2"
+      "contentHash": "sha256:bce434dbd869b116"
     },
     "content/level1/level2/level3/doc.md": {
       "frontmatter": {
@@ -50,14 +50,14 @@
         "type": "docs",
         "weight": 4
       },
-      "contentHash": "sha256:74002845466c60b4"
+      "contentHash": "sha256:73808ff2eeffda52"
     },
     "content/level1/level2/level3/level4/_index.md": {
       "frontmatter": {
         "title": "level4",
         "type": "docs"
       },
-      "contentHash": "sha256:628b0e7cde8a6b5d"
+      "contentHash": "sha256:55a1da60e6c2baef"
     },
     "content/level1/level2/level3/level4/deep-doc.md": {
       "frontmatter": {
@@ -65,7 +65,7 @@
         "type": "docs",
         "weight": 5
       },
-      "contentHash": "sha256:3f95c23aae786fbf"
+      "contentHash": "sha256:d9c0ea9e7f8ade4f"
     },
     "content/root.md": {
       "frontmatter": {
@@ -73,7 +73,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:e88af3072c597736"
+      "contentHash": "sha256:12697477c25946a0"
     }
   },
   "structure": {

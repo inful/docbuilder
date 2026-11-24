@@ -5,14 +5,14 @@
         "title": "Section Index Testing",
         "type": "docs"
       },
-      "contentHash": "sha256:fca9078e6a48fc3f"
+      "contentHash": "sha256:1990848bd13b3d56"
     },
     "content/advanced/_index.md": {
       "frontmatter": {
         "title": "advanced",
         "type": "docs"
       },
-      "contentHash": "sha256:0083001d626a1736"
+      "contentHash": "sha256:5092f9dabda898c1"
     },
     "content/advanced/plugins.md": {
       "frontmatter": {
@@ -20,7 +20,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:e2084f73028fdcf0"
+      "contentHash": "sha256:ba689b6a332af132"
     },
     "content/advanced/themes.md": {
       "frontmatter": {
@@ -28,14 +28,14 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:e278346a5d790faa"
+      "contentHash": "sha256:ed1f8f74b47acaab"
     },
     "content/getting-started/_index.md": {
       "frontmatter": {
         "title": "getting-started",
         "type": "docs"
       },
-      "contentHash": "sha256:b4c4b3abd70b01ee"
+      "contentHash": "sha256:4b71e029b87cf014"
     },
     "content/getting-started/configuration.md": {
       "frontmatter": {
@@ -43,7 +43,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:f94b078e68d540a4"
+      "contentHash": "sha256:afc0a822baa8caa8"
     },
     "content/getting-started/installation.md": {
       "frontmatter": {
@@ -51,7 +51,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:a5a9a6de89e0e05a"
+      "contentHash": "sha256:bb3eea1dc9e23363"
     }
   },
   "structure": {

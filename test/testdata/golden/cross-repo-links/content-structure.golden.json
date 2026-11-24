@@ -5,14 +5,14 @@
         "title": "Cross-Repository Links",
         "type": "docs"
       },
-      "contentHash": "sha256:a94e9bad983e01e5"
+      "contentHash": "sha256:f605eef59d55223e"
     },
     "content/backend/_index.md": {
       "frontmatter": {
         "title": "Backend",
         "type": "docs"
       },
-      "contentHash": "sha256:28b543ba79fd2dcd"
+      "contentHash": "sha256:b6c08fd9feb030c2"
     },
     "content/backend/api.md": {
       "frontmatter": {
@@ -20,7 +20,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:610685335a2b183e"
+      "contentHash": "sha256:a86010589b0abf7a"
     },
     "content/backend/auth.md": {
       "frontmatter": {
@@ -28,14 +28,14 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:79c50e4cd600c2c2"
+      "contentHash": "sha256:2868a11ad2f88900"
     },
     "content/frontend/_index.md": {
       "frontmatter": {
         "title": "Frontend",
         "type": "docs"
       },
-      "contentHash": "sha256:762d29eb59e759d3"
+      "contentHash": "sha256:c48c4a1ad922e0b6"
     },
     "content/frontend/guide.md": {
       "frontmatter": {
@@ -43,7 +43,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:9c9b5b33be6a328c"
+      "contentHash": "sha256:c4235d01b92246e5"
     },
     "content/frontend/setup.md": {
       "frontmatter": {
@@ -51,7 +51,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:1aa0f5355524622d"
+      "contentHash": "sha256:87d09efddd7cef64"
     }
   },
   "structure": {

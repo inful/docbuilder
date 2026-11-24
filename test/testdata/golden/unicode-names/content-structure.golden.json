@@ -5,7 +5,7 @@
         "title": "Unicode Names Test",
         "type": "docs"
       },
-      "contentHash": "sha256:8b529b67176878db"
+      "contentHash": "sha256:c7e9db45990045b5"
     },
     "content/español.md": {
       "frontmatter": {
@@ -13,7 +13,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:7b7f76f7f12d2867"
+      "contentHash": "sha256:8e60498d2604eaf2"
     },
     "content/русский.md": {
       "frontmatter": {
@@ -21,7 +21,7 @@
         "type": "docs",
         "weight": 3
       },
-      "contentHash": "sha256:12289332be97cd2e"
+      "contentHash": "sha256:065dbdc469ed045c"
     },
     "content/中文.md": {
       "frontmatter": {
@@ -29,7 +29,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:5013337cc0e9b426"
+      "contentHash": "sha256:a678c26108ec0d47"
     }
   },
   "structure": {
