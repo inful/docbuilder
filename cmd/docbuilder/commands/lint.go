@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
@@ -43,7 +44,10 @@ type LintCmd struct {
 
 // LintPathCmd handles linting a specific path.
 type LintPathCmd struct {
-	Path string `help:"Path to lint (file or directory). Defaults to intelligent detection (docs/, documentation/, or .)" arg:"" optional:""`
+	// Paths are the files and directories to lint. The pre-commit hook
+	// of the documentation passes the staged files, and there are often
+	// more than one of them.
+	Paths []string `help:"Paths to lint (files or directories). Defaults to intelligent detection (docs/, documentation/, or .)" arg:"" optional:""`
 }
 
 // Run executes the lint path command.
@@ -55,14 +59,15 @@ func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 		return errors.New("--dry-run requires --fix flag")
 	}
 
-	// Determine path to lint
-	path := lp.Path
+	// Determine the paths to lint
+	paths := lp.Paths
 	wasAutoDetected := false
 
-	if path == "" {
+	if len(paths) == 0 {
 		var found bool
-		path, found = lint.DetectDefaultPath()
+		path, found := lint.DetectDefaultPath()
 		wasAutoDetected = found
+		paths = []string{path}
 
 		if root.Verbose {
 			if found {
@@ -74,9 +79,11 @@ func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 		}
 	}
 
-	// Validate path exists
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return fmt.Errorf("path does not exist: %s", path)
+	// Validate that every path exists
+	for _, path := range paths {
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			return fmt.Errorf("path does not exist: %s", path)
+		}
 	}
 
 	// The files that are not linted come from the configuration: the
@@ -103,11 +110,11 @@ func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 
 	// If fix mode is enabled, run fixer instead
 	if parent.Fix {
-		return runFixer(linter, path, parent.DryRun)
+		return runFixer(linter, paths, parent.DryRun)
 	}
 
 	// Run linting
-	result, err := linter.LintPath(path)
+	result, err := linter.LintPaths(paths)
 	if err != nil {
 		return fmt.Errorf("linting failed: %w", err)
 	}
@@ -117,7 +124,7 @@ func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 
 	// Format and output results
 	formatter := lint.NewFormatter(parent.Format, useColor)
-	if err := formatter.Format(os.Stdout, result, path, wasAutoDetected); err != nil {
+	if err := formatter.Format(os.Stdout, result, strings.Join(paths, ", "), wasAutoDetected); err != nil {
 		return fmt.Errorf("formatting output: %w", err)
 	}
 
@@ -153,9 +160,9 @@ func isColorSupported() bool {
 }
 
 // runFixer executes the fixer and displays results.
-func runFixer(linter *lint.Linter, path string, dryRun bool) error {
+func runFixer(linter *lint.Linter, paths []string, dryRun bool) error {
 	fixer := lint.NewFixer(linter, dryRun, false) // force=false for safety
-	fixResult, err := fixer.Fix(path)
+	fixResult, err := fixer.FixPaths(paths)
 	if err != nil {
 		return fmt.Errorf("fixing failed: %w", err)
 	}

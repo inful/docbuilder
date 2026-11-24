@@ -720,6 +720,27 @@ func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 	}
 }
 
+// stopAfterFailedStart stops a daemon whose start failed halfway.
+//
+// The context of the start is canceled by then, so the teardown gets a
+// context of its own: the ports have to be released and the state has
+// to be written.
+func (d *Daemon) stopAfterFailedStart(ctx context.Context) {
+	if d == nil {
+		return
+	}
+	teardownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), failedStartTeardownTimeout)
+	defer cancel()
+
+	if err := d.Stop(teardownCtx); err != nil {
+		slog.Warn("Failed to stop the daemon after a failed start", "error", err)
+	}
+}
+
+// failedStartTeardownTimeout bounds the teardown of a daemon whose
+// start failed.
+const failedStartTeardownTimeout = 15 * time.Second
+
 // Stop gracefully shuts down the daemon.
 func (d *Daemon) Stop(ctx context.Context) error {
 	d.lifecycle.mu.Lock()

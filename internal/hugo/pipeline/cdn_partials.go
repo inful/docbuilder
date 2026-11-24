@@ -7,12 +7,16 @@ package pipeline
 // answer: the operator builds the site without a network, and the build
 // died with "Could not retrieve KaTeX css file from CDN" (issue #129).
 //
-// The site serves its own copy: the stylesheet is published through the
-// resource pipeline of Hugo, and the fonts sit next to it, where the
-// stylesheet asks for them.
+// The site serves its own copy: the stylesheet and the fonts are
+// published through the resource pipeline of Hugo, so they are published
+// when a page with math pulls the stylesheet in - and not in every
+// build.
 const katexPartial = `{{- $css := resources.Get "katex/katex.min.css" -}}
 {{- with $css -}}
 <link rel="stylesheet" href="{{- .RelPermalink -}}" integrity="{{- (. | fingerprint "sha512").Data.Integrity -}}" crossorigin="anonymous">
+{{- end -}}
+{{- range (resources.Match "katex/fonts/*.woff2") }}
+{{- $_ := .RelPermalink }}
 {{- end -}}
 `
 

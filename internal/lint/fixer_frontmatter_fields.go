@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 )
 
@@ -140,11 +141,33 @@ func (f *Fixer) fillFrontmatterFields(filePath string) FrontmatterFieldsUpdate {
 		}
 	}
 
-	updated, writeErr := frontmatterops.Write(fields, body, had, style)
-	if writeErr != nil {
+	// The fields that were filled are patched into the raw
+	// frontmatter: the comments of the file and the order of its keys
+	// survive the fix (ADR-014).
+	patch := make(map[string]any, len(filled))
+	for _, name := range filled {
+		if value, ok := fields[name]; ok {
+			patch[name] = value
+		}
+	}
+
+	frontmatterBytes, _, hadFrontmatter, _, splitErr := frontmatter.Split(data)
+	if splitErr != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("write frontmatter: %w", writeErr)
+		op.Error = fmt.Errorf("split frontmatter: %w", splitErr)
 		return op
+	}
+	var updated []byte
+	if hadFrontmatter {
+		updated = frontmatter.Join(frontmatterops.PatchFields(frontmatterBytes, patch, style.Newline), body, had, style)
+	} else {
+		raw, writeErr := frontmatter.SerializeYAML(patch, style)
+		if writeErr != nil {
+			op.Success = false
+			op.Error = fmt.Errorf("write frontmatter: %w", writeErr)
+			return op
+		}
+		updated = frontmatter.Join(raw, body, had, style)
 	}
 
 	if f.dryRun {

@@ -177,7 +177,9 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 				slog.String("reason", reason),
 				slog.Any("paths", repo.Paths))
 		}
-		slog.Info("Documentation discovered", logfields.Repository(repoName), slog.Int("files", len(d.docFiles)))
+		// The number of the files of this repository, not the total of
+		// every repository that was walked before it.
+		slog.Info("Documentation discovered", logfields.Repository(repoName), slog.Int("files", filesAfterRepo-filesBeforeRepo))
 	}
 
 	slog.Info("Total documentation files discovered", slog.Int("count", len(d.docFiles)))

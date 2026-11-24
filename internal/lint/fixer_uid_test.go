@@ -323,11 +323,25 @@ Some **bold** and *italic* text.
 	assert.Contains(t, contentStr, "Some **bold** and *italic* text.")
 
 	// Verify other frontmatter fields are preserved
-	assert.Contains(t, contentStr, "title: Test Document")
+	assertField(t, contentStr, "title", "Test Document")
 	assert.Contains(t, contentStr, "date: 2024-01-01")
 	assert.Contains(t, contentStr, "tags:")
 	assert.Contains(t, contentStr, "- documentation")
 	assert.Contains(t, contentStr, "- testing")
+}
+
+// assertField checks that the frontmatter holds the value of the key.
+// The value may be quoted or not: the fixer does not rewrite the
+// frontmatter, so the form of the file survives the fix (ADR-014).
+func assertField(t *testing.T, content, key, value string) {
+	t.Helper()
+	if strings.Contains(content, key+": "+value) {
+		return
+	}
+	if strings.Contains(content, key+": \""+value+"\"") {
+		return
+	}
+	t.Errorf("the frontmatter holds no %q: %s", key, content)
 }
 
 func TestFixer_FixUID_HandlesComplexFrontmatter(t *testing.T) {
@@ -371,13 +385,13 @@ related:
 
 	contentStr := string(modifiedContent)
 	assert.Contains(t, contentStr, "author:")
-	assert.Contains(t, contentStr, "name: John Doe")
-	assert.Contains(t, contentStr, "email: john@example.com")
+	assertField(t, contentStr, "name", "John Doe")
+	assertField(t, contentStr, "email", "john@example.com")
 	assert.Contains(t, contentStr, "metadata:")
-	assert.Contains(t, contentStr, "category: testing")
+	assertField(t, contentStr, "category", "testing")
 	assert.Contains(t, contentStr, "priority: high")
 	assert.Contains(t, contentStr, "related:")
-	assert.Contains(t, contentStr, "link: /doc1")
+	assertField(t, contentStr, "link", "/doc1")
 
 	// Verify uid and aliases were added
 	assert.Contains(t, contentStr, "uid:")

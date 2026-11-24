@@ -29,8 +29,13 @@ func TestTheSiteCarriesItsOwnKatexAndMermaid(t *testing.T) {
 	}
 	fonts := 0
 	for path := range paths {
-		if strings.HasPrefix(path, "static/katex/fonts/") {
+		if strings.HasPrefix(path, "assets/katex/fonts/") {
 			fonts++
+		}
+		if strings.HasPrefix(path, "static/katex/") {
+			// The fonts under static/ are published in every build,
+			// and no page asks for them.
+			t.Errorf("the files of KaTeX are published in every build: %s", path)
 		}
 	}
 	if fonts == 0 {

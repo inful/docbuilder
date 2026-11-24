@@ -51,6 +51,13 @@ func (c *Config) Snapshot() string {
 		w("repository.display_name", repository.DisplayName)
 		w("repository.description", repository.Description)
 		w("repository.paths", strings.Join(repository.Paths, ","))
+		// The namespace and the tags of a repository decide the path of
+		// every page of that repository: a change of them moves the
+		// tree, and the site has to be built again.
+		w("repository.namespace", repository.Namespace)
+		for _, key := range sortedKeys(repository.Tags) {
+			w("repository.tags."+key, repository.Tags[key])
+		}
 		if repository.Auth != nil {
 			// The secret itself is not part of the hash: a secret that
 			// changes does not change the site, and the repositories
@@ -65,6 +72,8 @@ func (c *Config) Snapshot() string {
 	w("build.namespace_forges", string(c.Build.NamespaceForges))
 	w("build.clone_strategy", string(c.Build.CloneStrategy))
 	w("build.retry_backoff", string(c.Build.RetryBackoff))
+	// The limit of an asset decides whether the asset is copied at all.
+	w("build.max_asset_size", strconv.FormatInt(c.Build.MaxAssetSize, 10))
 	// Versioning
 	if c.Versioning != nil {
 		w("versioning.enabled", boolToString(c.Versioning.Enabled))

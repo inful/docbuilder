@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-29T00:00:00Z
-fingerprint: 12d836a3c0bb4050c8a44001dcfb599ba82b48b40892f0bb9f42380ad57bb384
-lastmod: "2026-11-19"
+fingerprint: 26f74a561d3aff145f8bd5a048fc1e049d9eb65e6cdd3127618c8effbf3b228a
+lastmod: "2026-11-24"
 tags:
   - ci-cd
   - linting
@@ -134,8 +134,8 @@ jobs:
           echo "exit_code=$LINT_EXIT" >> $GITHUB_OUTPUT
           
           # Generate summary
-          ERROR_COUNT=$(jq '[.issues[] | select(.severity=="error")] | length' lint-report.json)
-          WARNING_COUNT=$(jq '[.issues[] | select(.severity=="warning")] | length' lint-report.json)
+          ERROR_COUNT=$(jq '[.issues[] | select(.severity=="ERROR")] | length' lint-report.json)
+          WARNING_COUNT=$(jq '[.issues[] | select(.severity=="WARNING")] | length' lint-report.json)
           
           echo "errors=$ERROR_COUNT" >> $GITHUB_OUTPUT
           echo "warnings=$WARNING_COUNT" >> $GITHUB_OUTPUT
@@ -174,13 +174,13 @@ jobs:
           script: |
             const fs = require('fs');
             const report = JSON.parse(fs.readFileSync('lint-report.json', 'utf8'));
-            const errors = report.issues.filter(i => i.severity === 'error');
+            const errors = report.issues.filter(i => i.severity === 'ERROR');
             
             let comment = `❌ **Documentation linting failed with ${errors.length} error(s)**\n\n`;
             comment += '### Errors\n\n';
             
             errors.slice(0, 10).forEach(issue => {
-              comment += `- **${issue.file}**\n`;
+              comment += `- **${issue.file_path}**\n`;
               comment += `  \`${issue.message}\`\n\n`;
             });
             
@@ -354,8 +354,8 @@ lint-docs-with-comments:
       docbuilder lint --format=json > lint-report.json
       LINT_EXIT=$?
       
-      ERROR_COUNT=$(jq '[.issues[] | select(.severity=="error")] | length' lint-report.json)
-      WARNING_COUNT=$(jq '[.issues[] | select(.severity=="warning")] | length' lint-report.json)
+      ERROR_COUNT=$(jq '[.issues[] | select(.severity=="ERROR")] | length' lint-report.json)
+      WARNING_COUNT=$(jq '[.issues[] | select(.severity=="WARNING")] | length' lint-report.json)
       
       if [ "$LINT_EXIT" -eq 2 ]; then
         STATUS="❌ **Linting failed** with $ERROR_COUNT error(s)"
@@ -674,7 +674,7 @@ jobs:
       
       - name: Generate Report
         run: |
-          jq -r '.issues[] | "\(.severity): \(.file) - \(.message)"' weekly-audit.json > weekly-report.txt
+          jq -r '.issues[] | "\(.severity): \(.file_path) - \(.message)"' weekly-audit.json > weekly-report.txt
       
       - name: Email Report
         uses: dawidd6/action-send-mail@v3
@@ -776,8 +776,8 @@ Export metrics to dashboard tools:
 - name: Export to DataDog
   if: always()
   run: |
-    ERROR_COUNT=$(jq '[.issues[] | select(.severity=="error")] | length' lint-report.json)
-    WARNING_COUNT=$(jq '[.issues[] | select(.severity=="warning")] | length' lint-report.json)
+    ERROR_COUNT=$(jq '[.issues[] | select(.severity=="ERROR")] | length' lint-report.json)
+    WARNING_COUNT=$(jq '[.issues[] | select(.severity=="WARNING")] | length' lint-report.json)
     
     echo "lint.errors:$ERROR_COUNT|g|#repo:${{ github.repository }}" | nc -u -w1 datadog-agent 8125
     echo "lint.warnings:$WARNING_COUNT|g|#repo:${{ github.repository }}" | nc -u -w1 datadog-agent 8125

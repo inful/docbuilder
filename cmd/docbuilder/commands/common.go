@@ -105,16 +105,26 @@ func LoadEnvFile() error {
 
 // ResolveOutputDir determines the final output directory based on CLI flag, config, and base_directory.
 // Priority: CLI flag > config base_directory + directory > config directory.
-func ResolveOutputDir(cliOutput string, cfg *config.Config) string {
-	// If CLI flag is provided and not the default, use it directly
-	if cliOutput != "" && cliOutput != "./site" {
-		return cliOutput
+func ResolveOutputDir(cliOutput *string, cfg *config.Config) string {
+	// The flag wins: the operator typed it. A flag that was not given
+	// is not the same as a flag that was given the default value.
+	if cliOutput != nil && *cliOutput != "" {
+		return *cliOutput
 	}
 
 	// The configuration decides, with the same rules the daemon and
 	// the server use: the site is published in the same place whoever
 	// looks for it.
 	return cfg.ResolveOutputDir()
+}
+
+// outputFlag returns the value of the output flag, or the default when
+// the flag was not given.
+func outputFlag(output *string) string {
+	if output != nil && *output != "" {
+		return *output
+	}
+	return "./site"
 }
 
 // CopyDir recursively copies a directory tree, handling cross-device scenarios.

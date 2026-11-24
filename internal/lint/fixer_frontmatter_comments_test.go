@@ -7,24 +7,21 @@ import (
 	"testing"
 )
 
-// A fingerprint fix must not rewrite the whole frontmatter: the
-// comments of the file and the order of its keys survive the fix, and
-// the diff is the fingerprint (ADR-014).
-func TestTheFingerprintFixKeepsTheCommentsAndTheOrder(t *testing.T) {
+// A fix must not rewrite the whole frontmatter: the comments of the
+// file and the order of its keys survive the fix, and the diff is the
+// field that was added (ADR-014).
+//
+// The fingerprint fix, the uid fix and the fix that fills the required
+// fields all patch the raw frontmatter.
+func TestTheFixesKeepTheCommentsAndTheOrder(t *testing.T) {
 	dir := t.TempDir()
 	doc := filepath.Join(dir, "page.md")
 	content := `---
 # NOTE: this comment must survive a fix
 title: Page
 uid: 55555555-aaaa-aaaa-aaaa-555555555555
-aliases:
-  - /_uid/55555555-aaaa-aaaa-aaaa-555555555555/
 categories:
   - reference
-date: 2026-01-01T00:00:00Z
-lastmod: "2026-01-01"
-tags:
-  - test
 ---
 
 # Page
@@ -51,8 +48,11 @@ body
 	if !strings.Contains(text, "# NOTE: this comment must survive a fix") {
 		t.Fatalf("the comment is gone: %s", text)
 	}
-	if !strings.Contains(text, "fingerprint:") {
-		t.Fatalf("the fingerprint is missing: %s", text)
+	// The fields the fixers added are there.
+	for _, field := range []string{"fingerprint:", "aliases:", "date:", "lastmod:", "tags:"} {
+		if !strings.Contains(text, field) {
+			t.Fatalf("the fixer did not add %q: %s", field, text)
+		}
 	}
 
 	// The order of the keys is the order of the file.

@@ -147,4 +147,18 @@ func TestSkippedBuildKeepsTheNumbersOfTheLastBuild(t *testing.T) {
 	if got["repositories"] != float64(1) {
 		t.Fatalf("the report holds %v repositories, want 1", got["repositories"])
 	}
+	// The pages of the site are the pages of the last build that ran:
+	// the report said "files: 7" and "rendered_pages: 0".
+	// The numbers of the pages of the last build that ran: the report
+	// said "files: 7" and "rendered_pages: 0" - the site holds seven
+	// pages and the report said that none were written.
+	if got["rendered_pages"] != float64(0) {
+		t.Fatalf("the report holds %v rendered pages, want 0", got["rendered_pages"])
+	}
+	if got["static_rendered"] != true {
+		t.Fatalf("the report holds %v static_rendered, want true", got["static_rendered"])
+	}
+	if got["cloned_repositories"] != float64(1) {
+		t.Fatalf("the report holds %v cloned repositories, want 1", got["cloned_repositories"])
+	}
 }
