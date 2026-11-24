@@ -648,7 +648,7 @@ func (d *Daemon) schedulePeriodicJobs(ctx context.Context) error {
 		if d.GetStatus() != StatusRunning {
 			return
 		}
-		d.updateStatus()
+		d.updateStatus(ctx)
 	})
 	if err != nil {
 		return err

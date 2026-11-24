@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+// maxLiveReloadClients is the number of LiveReload clients the hub
+// takes. Every client holds a goroutine and a channel for as long as
+// it lives, and any page of the internet may open them.
+const maxLiveReloadClients = 32
+
 // LiveReloadHub manages SSE clients for hash-change broadcasts.
 type LiveReloadHub struct {
 	mu       sync.RWMutex
@@ -49,6 +54,15 @@ func (h *LiveReloadHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Register client
 	client := &lrClient{ch: make(chan string, 8), done: make(chan struct{})}
 	h.mu.Lock()
+	if len(h.clients) >= maxLiveReloadClients {
+		h.mu.Unlock()
+		// Every connection holds a goroutine and a channel for as
+		// long as it lives. A page of the internet can open them
+		// without a limit, so the number of them has a limit.
+		slog.Warn("livereload refused a client", "clients", maxLiveReloadClients)
+		http.Error(w, "too many livereload clients", http.StatusServiceUnavailable)
+		return
+	}
 	client.id = h.nextID
 	h.nextID++
 	h.clients[client.id] = client

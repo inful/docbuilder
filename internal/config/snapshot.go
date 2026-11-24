@@ -67,6 +67,8 @@ func (c *Config) Snapshot() string {
 	w("build.retry_backoff", string(c.Build.RetryBackoff))
 	// Versioning
 	if c.Versioning != nil {
+		w("versioning.enabled", boolToString(c.Versioning.Enabled))
+		w("versioning.default_branch_only", boolToString(c.Versioning.DefaultBranchOnly))
 		w("versioning.strategy", string(c.Versioning.Strategy))
 		w("versioning.max_versions", intToString(c.Versioning.MaxVersionsPerRepo))
 		if len(c.Versioning.BranchPatterns) > 0 {

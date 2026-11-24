@@ -146,12 +146,18 @@ func (d *Daemon) requestInitialBuild(ctx context.Context) {
 }
 
 // updateStatus updates runtime status and metrics.
-func (d *Daemon) updateStatus() {
+func (d *Daemon) updateStatus(ctx context.Context) {
 	d.lifecycle.mu.Lock()
 	defer d.lifecycle.mu.Unlock()
 
 	// Periodic state save
 	if d.state.stateManager != nil {
+		// The status of the daemon is part of its state. Nothing
+		// wrote it: the file said "starting" for the whole life of
+		// the daemon.
+		if res := d.state.stateManager.UpdateStatus(ctx, d.GetStatus()); res.IsErr() {
+			slog.Warn("Failed to record the status of the daemon", "error", res.UnwrapErr())
+		}
 		if err := d.state.stateManager.Save(); err != nil {
 			slog.Warn("Failed to save state", "error", err)
 		}

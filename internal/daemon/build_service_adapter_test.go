@@ -13,6 +13,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
@@ -77,6 +78,11 @@ type fakeDaemonStateManager struct {
 
 func newFakeDaemonStateManager() *fakeDaemonStateManager {
 	return &fakeDaemonStateManager{repoLastCommit: map[string]string{}}
+}
+
+// UpdateStatus records the status of the daemon.
+func (f *fakeDaemonStateManager) UpdateStatus(_ context.Context, _ string) foundation.Result[struct{}, error] {
+	return foundation.Ok[struct{}, error](struct{}{})
 }
 
 func (f *fakeDaemonStateManager) GetRepoLastCommit(url string) string {

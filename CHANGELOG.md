@@ -9,6 +9,27 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.15] - 2026-11-24
+
+### Fixed
+- **The hash of the configuration holds the versioning.** A change of the
+  versioning left the hash the same, and the daemon served the old site.
+- **The status of the daemon is written to its state.** Nothing wrote it:
+  the state file said "starting" for the whole life of the daemon.
+- **A self-hosted GitHub is a GitHub.** Only "github.com" was recognized,
+  so a GitHub Enterprise was taken for a Forgejo and its edit links
+  pointed at the wrong place.
+- **The wait for the subscribers of the bus has an end.** The bus waits
+  for the subscriber to take the event; the wait had no end, so a
+  subscriber that did not take it held the request for ever.
+- **The output directory may not hold the working directory.** The site
+  is moved aside when the build is done: an output directory that holds
+  the working directory of the process replaced it under its feet.
+- **The LiveReload port takes a limited number of clients.** Every client
+  holds a goroutine and a channel for as long as it lives, and any page
+  of the internet can open them.
+
+
 ## [0.35.14] - 2026-11-24
 
 ### Fixed

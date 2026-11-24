@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
@@ -36,6 +37,14 @@ func (g *Generator) CreateHugoStructure() error {
 
 // beginStaging creates an isolated staging directory for atomic build output.
 func (g *Generator) beginStaging() error {
+	// The site is moved aside and the staging tree is put in its place
+	// when the build is done. The output directory must not hold the
+	// working directory of the process: the process would find its
+	// working directory gone under its feet.
+	if wd, err := os.Getwd(); err == nil && containsDirectory(g.outputDir, wd) {
+		return fmt.Errorf("the output directory %q holds the working directory %q: the site would be moved away from under the process", g.outputDir, wd)
+	}
+
 	// Determine staging directory based on base_directory configuration
 	var stage string
 	if g.config.Output.BaseDirectory != "" {
@@ -264,6 +273,25 @@ func (g *Generator) removeOldBackup(prev string) {
 			// Continue anyway - rename will fail if prev still exists
 		}
 	}
+}
+
+// containsDirectory reports whether the parent directory holds the
+// other one.
+func containsDirectory(parent, child string) bool {
+	absParent, err := filepath.Abs(parent)
+	if err != nil {
+		return false
+	}
+	absChild, err := filepath.Abs(child)
+	if err != nil {
+		return false
+	}
+	absParent = filepath.Clean(absParent)
+	absChild = filepath.Clean(absChild)
+	if absParent == absChild {
+		return true
+	}
+	return strings.HasPrefix(absChild, absParent+string(filepath.Separator))
 }
 
 // sameDirectory reports whether two paths are the same directory.

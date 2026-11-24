@@ -20,6 +20,11 @@ func (d *Daemon) TriggerDiscovery() string {
 	return d.discover.discoveryRunner.TriggerManual(func() bool { return d.GetStatus() == StatusRunning })
 }
 
+// publishTimeout bounds the wait for the subscribers of the bus. The
+// request that asked for the build waits for it, and a subscriber that
+// does not take the event must not hold the request for ever.
+const publishTimeout = 30 * time.Second
+
 // TriggerBuild manually triggers a site build.
 func (d *Daemon) TriggerBuild() string {
 	if d.GetStatus() != StatusRunning {
@@ -39,7 +44,10 @@ func (d *Daemon) TriggerBuild() string {
 		jobID = fmt.Sprintf("manual-%d", time.Now().UnixNano())
 	}
 
-	if err := d.publishOrchestrationEvent(context.Background(), events.BuildRequested{
+	ctx, cancel := context.WithTimeout(context.Background(), publishTimeout)
+	defer cancel()
+
+	if err := d.publishOrchestrationEvent(ctx, events.BuildRequested{
 		JobID:       jobID,
 		Immediate:   true,
 		Reason:      "manual",
@@ -83,7 +91,10 @@ func (d *Daemon) TriggerWebhookBuild(forgeName, repoFullName, branch string, cha
 
 	filesCopy := append([]string(nil), changedFiles...)
 
-	if err := d.publishOrchestrationEvent(context.Background(), events.WebhookReceived{
+	ctx, cancel := context.WithTimeout(context.Background(), publishTimeout)
+	defer cancel()
+
+	if err := d.publishOrchestrationEvent(ctx, events.WebhookReceived{
 		JobID:        jobID,
 		ForgeName:    forgeName,
 		RepoFullName: repoFullName,

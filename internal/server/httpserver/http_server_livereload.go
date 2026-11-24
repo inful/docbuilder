@@ -55,8 +55,17 @@ func (s *Server) startLiveReloadServerWithListener(_ context.Context, ln net.Lis
 		slog.Info("LiveReload dedicated server registered")
 	}
 
-	// LiveReload server needs no timeouts for long-lived SSE connections
-	s.liveReloadServer = &http.Server{Handler: mux, ReadTimeout: 0, WriteTimeout: 0, IdleTimeout: 300 * time.Second}
+	// LiveReload server needs no timeouts for long-lived SSE
+	// connections: the stream has to stay open. The header of the
+	// request has a deadline: a connection that sends nothing holds a
+	// goroutine.
+	s.liveReloadServer = &http.Server{
+		Handler:           mux,
+		ReadTimeout:       0,
+		WriteTimeout:      0,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       300 * time.Second,
+	}
 	return s.startServerWithListener("livereload", s.liveReloadServer, ln)
 }
 
