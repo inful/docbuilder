@@ -52,12 +52,11 @@ func (c *Config) Snapshot() string {
 		w("repository.description", repository.Description)
 		w("repository.paths", strings.Join(repository.Paths, ","))
 		if repository.Auth != nil {
+			// The secret itself is not part of the hash: a secret that
+			// changes does not change the site, and the repositories
+			// that the secret gives access to are hashed on their own.
 			w("repository.auth.type", string(repository.Auth.Type))
 			w("repository.auth.username", repository.Auth.Username)
-			// The secret itself is not part of the hash: its own hash
-			// says whether it changed.
-			w("repository.auth.token", hashOf(repository.Auth.Token))
-			w("repository.auth.password", hashOf(repository.Auth.Password))
 			w("repository.auth.key_path", repository.Auth.KeyPath)
 		}
 	}
@@ -162,16 +161,6 @@ func sortedKeys[V any](values map[string]V) []string {
 	}
 	sort.Strings(keys)
 	return keys
-}
-
-// hashOf returns the hash of a secret: the hash says whether the secret
-// changed, and it does not hold the secret.
-func hashOf(secret string) string {
-	if secret == "" {
-		return ""
-	}
-	sum := sha256.Sum256([]byte(secret))
-	return hex.EncodeToString(sum[:])
 }
 
 func boolToString(b bool) string { return strconv.FormatBool(b) }

@@ -9,6 +9,33 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.13] - 2026-11-24
+
+### Fixed
+- **Every shortcode of a code block is escaped.** The check for an escaped
+  shortcode was per line, so a second, unescaped shortcode on that line
+  reached Hugo - and Hugo fails the whole site build when a shortcode has
+  no template. The shortcodes are escaped one by one now, and the indented
+  code blocks are escaped as well. The document keeps its bytes: the
+  transform no longer adds a newline to every page, which changed the
+  fingerprint of every page and was not idempotent.
+- **The links and the images of a code block are left alone.** A markdown
+  example inside a fenced block was rewritten into a site-absolute path, and
+  the example showed a path that does not exist. ADR-012 keeps the links of
+  the code blocks out of the rewriting.
+- **The H1 of a document replaces the title of the file name.** A file called
+  `install.md` lost the H1 of the author, while `Install.md` with the same
+  content kept it. The two files are the same page.
+- **The hash of the configuration holds the settings that change the site.**
+  A change of the custom CSS, of the params, of the menu or of the URL of a
+  repository left the hash the same, and the daemon skipped the build and
+  served the old site. The documentation says that a change of any of them
+  triggers a rebuild.
+- **The parent of the output directory is made.** An output directory nested
+  under the base directory failed every build with "no such file or
+  directory".
+
+
 ## [0.35.12] - 2026-11-24
 
 ### Fixed
