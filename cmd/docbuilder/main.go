@@ -11,6 +11,14 @@ import (
 )
 
 func main() {
+	// The .env file is loaded before the flags are parsed: the
+	// variables in it name the configuration file and the log level,
+	// and kong reads them while it parses. Loaded afterwards, they
+	// had no effect.
+	if err := commands.LoadEnvFile(); err != nil {
+		slog.Debug("No .env file loaded", "error", err)
+	}
+
 	cli := &commands.CLI{}
 	parser := kong.Parse(cli,
 		kong.Description("DocBuilder: aggregate multi-repo documentation into a Hugo site."),

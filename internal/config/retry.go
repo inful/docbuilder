@@ -14,11 +14,16 @@ const (
 )
 
 // NormalizeRetryBackoff converts arbitrary user input (case-insensitive) into a typed mode, returning empty string for unknown.
+//
+// The fallback is the empty string: a field that was left out is not
+// a value the operator wrote, and the defaults apply to it. The
+// fallback of "fixed" rewrote every configuration that left the field
+// out and printed a warning about it.
 var retryBackoffNormalizer = normalization.NewNormalizer(map[string]RetryBackoffMode{
 	"fixed":       RetryBackoffFixed,
 	"linear":      RetryBackoffLinear,
 	"exponential": RetryBackoffExponential,
-}, RetryBackoffFixed)
+}, "")
 
 func NormalizeRetryBackoff(raw string) RetryBackoffMode {
 	return retryBackoffNormalizer.Normalize(raw)

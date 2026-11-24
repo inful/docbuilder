@@ -31,7 +31,7 @@ A Go utility for creating documentation sites from multiple Git repositories usi
 - **Incremental builds**: Cache-aware execution skips unchanged repositories for faster CI pipelines
 - Conditional forge-level namespacing: when multiple distinct forge types are present (via `tags.forge_type`), content paths become `content/<forge>/<repository>/...`; single-forge builds keep `content/<repository>/...`.
 - Stable documentation set fingerprint: `BuildReport.DocFilesHash` (SHA-256 of sorted Hugo paths) now computed for both full (discovery) and direct generation paths. Persisted globally plus per‑repository (single‑repo builds share the same value) enabling fast incremental skip decisions across daemon restarts.
-- Optional unchanged repository deletion detection (`build.detect_deletions`, default true) keeps global docs hash accurate after file removals in skipped repos.
+- The hash of the documents of every repository is kept in the state, and a build that is skipped keeps the hash of the last build that ran.
 - Metrics: `docbuilder_daemon_builds_total`, `docbuilder_daemon_builds_failed_total`, `docbuilder_daemon_active_jobs` and `docbuilder_daemon_queue_length` are exposed by the Prometheus endpoint.
 
 ## Recommended Filesystem Layouts

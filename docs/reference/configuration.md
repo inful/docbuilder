@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 7ef673c9b60be86da77ec93c3755fad269a93e570fea8726cfd9d77f9cb14395
+fingerprint: 84a3b39a5b745f14637c5c4bb91242b5882407e94be6ca15247c9cac79332226
 lastmod: "2026-11-24"
 tags:
   - configuration
@@ -681,7 +681,7 @@ them, supply an explicit `excludes` list.
 
 ## Environment Variable Expansion
 
-Values like `${GIT_ACCESS_TOKEN}` in YAML are expanded using the current process environment. `.env` and `.env.local` files are loaded automatically (last one wins on conflicts).
+Values like `${GIT_ACCESS_TOKEN}` in YAML are expanded using the current process environment. `.env` and `.env.local` files are loaded automatically (`.env.local` wins over `.env`, and the environment of the process wins over both).
 
 ## Health and Readiness Endpoints
 

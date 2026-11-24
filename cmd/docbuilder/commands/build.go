@@ -38,6 +38,11 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 	var useLocalMode bool
 
 	if root.Config == "" || !fileExists(root.Config) {
+		// The operator named a configuration file that is not there:
+		// that is an error, not a reason to build something else.
+		if root.Config != "" && root.Config != DefaultConfigFileName {
+			return fmt.Errorf("the configuration file %s does not exist", root.Config)
+		}
 		// No config file - use local docs directory mode
 		cfg = b.createLocalConfig()
 		useLocalMode = true

@@ -9,6 +9,28 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.20] - 2026-11-24
+
+### Fixed
+- **The retry backoff defaults to linear.** The normalizer had "fixed"
+  as its fallback: a configuration that left the field out was
+  rewritten to "fixed" and the configuration warned about it. The
+  documented default is linear.
+- **The images carry the version.** The Docker configuration injected
+  the version into a variable that does not exist, so the image
+  reported the version "unknown".
+- **The .env file is loaded before the flags are parsed.** The
+  variables in it name the configuration file and the log level, and
+  kong reads them while it parses the flags. Loaded afterwards, they
+  had no effect.
+- **The flags of the commands are what the documentation says.** The
+  preview command, the init command and the build command: the table of
+  the preview command named a short port flag that does not exist, the
+  init command wrote a file that every other command does not read,
+  and the build built the local docs directory when the configuration
+  file that was named did not exist.
+
+
 ## [0.35.19] - 2026-11-24
 
 ### Fixed
