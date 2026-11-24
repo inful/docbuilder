@@ -76,6 +76,8 @@ func (f *Fixer) applySequencePrefixFilenameFixes(targets map[string]struct{}, is
 				Success: true,
 			}
 			if !f.dryRun {
+				// The listing of the directory changed.
+				forgetDirectoryListings()
 				if err := os.Rename(p, newPath); err != nil {
 					op.Success = false
 					op.Error = fmt.Errorf("rename: %w", err)
