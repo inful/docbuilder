@@ -73,6 +73,9 @@ func NewFixer(linter *Linter, dryRun, force bool) *Fixer {
 // Fix attempts to automatically fix issues found in the given path.
 // For interactive use with confirmation prompts, use FixWithConfirmation instead.
 func (f *Fixer) Fix(path string) (*FixResult, error) {
+	// The tree may have changed since the last run: the cached
+	// listings of the directories are of no use any more.
+	forgetDirectoryListings()
 	return f.fix(path)
 }
 

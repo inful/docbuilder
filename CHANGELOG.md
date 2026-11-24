@@ -9,6 +9,45 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.17] - 2026-11-24
+
+### Fixed
+- **The conventional names are not renamed.** The rule reported the
+  uppercase letters of a README.md and the fixer renamed it to
+  readme.md: the home page of the repository was gone. The names the
+  git forges recognize are the exception - the exception was only in
+  the text of the rule.
+- **A renamed file is fingerprinted under its new name.** The fixer
+  renamed the file and then tried to fingerprint the old path: the read
+  failed and the command exited with 2 after it had done the work.
+- **The wrong category is replaced, not joined.** The categories of a
+  document are its doc mode, and a document has one mode. The fixer
+  joined the category of the directory to the wrong one and produced a
+  document that no fixer could repair.
+- **A fingerprint fix does not rewrite the frontmatter.** The fix parsed
+  the frontmatter and wrote it again: the comments of the file were lost
+  and the keys were sorted alphabetically. Only the fingerprint and the
+  lastmod are patched now.
+- **The recommended link style is not reported.** The rule flagged every
+  link that starts with a slash. The how-to guide calls the
+  repository-root-relative links the best practice and the
+  broken-link detector understands them. The rule is gone.
+- **The broken-link check reads every directory once.** Every broken link
+  read the listing of the directory of its target: 2000 documents with
+  one broken link each read the listing of 2000 entries 2000 times.
+- **The closing delimiter can be the last line of the file.** A document
+  whose frontmatter ended without a newline behind the closing delimiter
+  had no frontmatter at all.
+- **The lint command reads the excludes of the configuration.** The
+  documented `lint.excludes` was ignored: only the MCP server read it.
+- **The allowed category pairs come from the configuration.** The rule
+  had a field for the pairs that nobody could set.
+- **The sequence name does not repeat the prefix.** A file called
+  `adr-something.md` was renamed to `adr-001-adr-something.md`.
+- **The page of the lint rules lists the rules that exist.** Six rules
+  were documented that no code implements.
+
+
 ## [0.35.16] - 2026-11-24
 
 ### Fixed

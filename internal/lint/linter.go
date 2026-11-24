@@ -67,6 +67,10 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 		return nil, err
 	}
 
+	// The tree may have changed since the last run: the cached
+	// listings of the directories are of no use any more.
+	forgetDirectoryListings()
+
 	result := &Result{
 		Issues: []Issue{},
 	}
