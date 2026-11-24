@@ -59,7 +59,7 @@ func (r *FrontmatterRequiredFieldsRule) Check(filePath string) ([]Issue, error) 
 	fmBytes, _, had, _, splitErr := frontmatter.Split(data)
 	if splitErr != nil || !had {
 		//nolint:nilerr // reported as lint issue, not a hard error
-		return []Issue{r.missingIssue(filePath, "frontmatter")}, nil
+		return []Issue{r.missingFrontmatterIssue(filePath)}, nil
 	}
 	fields, parseErr := frontmatter.ParseYAML(fmBytes)
 	if parseErr != nil {
@@ -145,6 +145,23 @@ func lastmodStringValue(v any) (string, bool) {
 		return value.Format(lastmodLayout), true
 	default:
 		return "", false
+	}
+}
+
+// missingFrontmatterIssue reports a document without frontmatter. The
+// field is not one of the required fields: the document has no
+// frontmatter at all.
+func (r *FrontmatterRequiredFieldsRule) missingFrontmatterIssue(filePath string) Issue {
+	return Issue{
+		FilePath: filePath,
+		Severity: SeverityError,
+		Rule:     r.Name(),
+		Message:  "Document has no YAML frontmatter",
+		Explanation: "Every doc starts with a YAML frontmatter between two `---` lines. " +
+			"It holds the `title`, the `date`, the `lastmod`, the `categories` and the " +
+			"`tags` of the doc.",
+		Fix:  "Add a frontmatter block at the top of the document.",
+		Line: 0,
 	}
 }
 
