@@ -147,9 +147,9 @@ func (d *Daemon) requestInitialBuild(ctx context.Context) {
 
 // updateStatus updates runtime status and metrics.
 func (d *Daemon) updateStatus(ctx context.Context) {
-	d.lifecycle.mu.Lock()
-	defer d.lifecycle.mu.Unlock()
-
+	// The lock of the lifecycle is not held: the status is atomic and
+	// the two writes below are slow - one of them syncs the disk. The
+	// /status endpoint and the shutdown waited behind them.
 	// Periodic state save
 	if d.state.stateManager != nil {
 		// The status of the daemon is part of its state. Nothing
