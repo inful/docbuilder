@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 4bd61bcf34cb87025068023559161fe3bb085dae8046fe885f667e54046b52fe
+fingerprint: 75d20ca5a90d13b45a215d358aef8a1dafd238c771d37c70d2c1e82209ce5c3a
 lastmod: "2026-11-24"
 tags:
   - cli
@@ -85,6 +85,7 @@ docbuilder build [flags]
 | `-d, --docs-dir DIR` | Local docs directory when no config provided (default: `./docs`) |
 | `--title TEXT` | Site title for local mode (default: `"Documentation"`) |
 | `--base-url URL` | Override Hugo base_url |
+| `--edit-url-base URL` | Base URL of the edit links (the forge the pages are edited in) |
 | `--relocatable` | Generate fully relocatable site (relative links) |
 | `--keep-workspace` | Keep workspace directories for debugging |
 
