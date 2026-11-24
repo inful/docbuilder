@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -191,54 +192,22 @@ func (s *Server) startDocsServerWithListener(_ context.Context, ln net.Listener)
 			return
 		}
 
-		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
-	})
-
-	// Wrap with 404 fallback that redirects to nearest parent path on LiveReload
-	rootWithFallback := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Only a LiveReload request can end up at the nearest parent
-		// page, and only that request needs its response captured.
-		// Every other request goes straight to the file server: the
-		// capture holds the whole file in memory until the response
-		// has been written, so a big file and a few readers at once
-		// is a lot of memory for nothing.
-		if r.Method != http.MethodGet || !s.cfg.Build.LiveReload || !hasLiveReloadCookie(r) {
-			rootHandler.ServeHTTP(w, r)
-			return
-		}
-
-		// Capture the response to detect 404s
-		rec := &responseRecorder{ResponseWriter: w, statusCode: http.StatusOK}
-		rootHandler.ServeHTTP(rec, r)
-
-		// If we got a 404, try to redirect to the nearest parent
-		if rec.statusCode == http.StatusNotFound {
-			root := s.resolveDocsRoot()
-			redirectPath := s.findNearestValidParent(root, r.URL.Path)
-			if redirectPath != "" && redirectPath != r.URL.Path {
-				// Clear the cookie and redirect
-				//nolint:gosec // local preview commonly runs on HTTP; Secure cookies would not be sent
-				http.SetCookie(w, &http.Cookie{
-					Name:     "docbuilder_lr_reload",
-					Value:    "",
-					MaxAge:   -1,
-					Path:     "/",
-					HttpOnly: true,
-					Secure:   r.TLS != nil,
-					SameSite: http.SameSiteLaxMode,
-				})
-				w.Header().Set("Location", redirectPath)
-				w.WriteHeader(http.StatusTemporaryRedirect)
+		// A LiveReload request for a page that does not exist is sent
+		// to the nearest page that exists. The check comes before the
+		// file server: the answer of the file server would have to be
+		// held in memory to find out that it is a 404, and a big file
+		// and a few readers at once is a lot of memory for nothing.
+		if r.Method == http.MethodGet && s.cfg.Build.LiveReload && hasLiveReloadCookie(r) {
+			if s.redirectToNearestParent(w, r, root) {
 				return
 			}
 		}
 
-		// If not redirecting, flush the captured response
-		rec.Flush()
+		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
 	})
 
 	// Wrap with Cache-Control headers for static assets
-	rootWithCaching := s.addCacheControlHeaders(rootWithFallback)
+	rootWithCaching := s.addCacheControlHeaders(rootHandler)
 
 	// Wrap with LiveReload injection middleware if enabled
 	rootWithMiddleware := rootWithCaching
@@ -471,57 +440,63 @@ func hasLiveReloadCookie(r *http.Request) bool {
 	return err == nil && cookie.Value == "1"
 }
 
-// maxRecorderBody is the amount of a response the recorder holds in
-// memory. The recorder is only there to see whether the page is
-// missing: a bigger response is written through, so one request cannot
-// hold a whole big file in the memory of the server.
-const maxRecorderBody = 512 << 10
-
-// responseRecorder captures the status code and body from the underlying handler.
-type responseRecorder struct {
-	http.ResponseWriter
-	statusCode int
-	written    bool
-	body       []byte
+// redirectToNearestParent sends a request for a page that does not exist
+// to the nearest page that exists. It reports whether it redirected.
+//
+// The page is looked for before the file server runs: the answer of the
+// file server would have to be held in memory to find out that it is a
+// 404, and every reader of a big file would hold its own copy of it.
+func (s *Server) redirectToNearestParent(w http.ResponseWriter, r *http.Request, root string) bool {
+	if s.pageExists(root, r.URL.Path) {
+		return false
+	}
+	redirectPath := s.findNearestValidParent(root, r.URL.Path)
+	if redirectPath == "" || redirectPath == r.URL.Path {
+		return false
+	}
+	// Clear the cookie and redirect
+	//nolint:gosec // local preview commonly runs on HTTP; Secure cookies would not be sent
+	http.SetCookie(w, &http.Cookie{
+		Name:     "docbuilder_lr_reload",
+		Value:    "",
+		MaxAge:   -1,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   r.TLS != nil,
+		SameSite: http.SameSiteLaxMode,
+	})
+	w.Header().Set("Location", redirectPath)
+	w.WriteHeader(http.StatusTemporaryRedirect)
+	return true
 }
 
-func (r *responseRecorder) WriteHeader(code int) {
-	if !r.written {
-		r.statusCode = code
-		r.written = true
-	}
-	// Don't write to underlying writer yet - we might redirect
-}
+// pageExists reports whether the path is a page of the site: a file, or
+// a directory that holds an index.html.
+//
+// The file is opened through the same directory the file server uses:
+// it keeps the path inside the docs root.
+func (s *Server) pageExists(root, urlPath string) bool {
+	dir := http.Dir(root)
 
-func (r *responseRecorder) Write(b []byte) (int, error) {
-	if len(r.body)+len(b) > maxRecorderBody {
-		// Too big to hold: what was captured goes to the client and
-		// the rest follows it straight away.
-		r.flushToClient()
-		// The bytes are the file the request asked for, not data the
-		// request carries, so there is nothing to escape.
-		// codeql[go/reflected-xss]
-		return r.ResponseWriter.Write(b)
+	file, err := dir.Open(urlPath)
+	if err != nil {
+		return false
 	}
-	r.body = append(r.body, b...)
-	return len(b), nil
-}
+	defer func() { _ = file.Close() }()
 
-// flushToClient writes the header and the captured body to the client.
-func (r *responseRecorder) flushToClient() {
-	if r.written {
-		r.ResponseWriter.WriteHeader(r.statusCode)
-		r.written = false
+	info, err := file.Stat()
+	if err != nil {
+		return false
 	}
-	if len(r.body) > 0 {
-		// The bytes are the file the request asked for, not data the
-		// request carries, so there is nothing to escape.
-		// codeql[go/reflected-xss]
-		_, _ = r.ResponseWriter.Write(r.body)
-		r.body = nil
+	if !info.IsDir() {
+		return true
 	}
-}
 
-func (r *responseRecorder) Flush() {
-	r.flushToClient()
+	// A directory is a page when it holds an index.html.
+	index, err := dir.Open(path.Join(urlPath, "index.html"))
+	if err != nil {
+		return false
+	}
+	defer func() { _ = index.Close() }()
+	return true
 }
