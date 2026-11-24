@@ -165,19 +165,43 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	// All ports bound successfully – now start servers handing them their pre-bound listeners.
+	//
+	// A server that fails leaves the ports bound: the daemon would hold
+	// a port that nobody answers on. The listeners are closed and the
+	// servers that already run are stopped.
+	abort := func() {
+		for _, b := range binds {
+			if b.ln != nil {
+				_ = b.ln.Close()
+			}
+		}
+		if s.docsServer != nil {
+			_ = s.docsServer.Close()
+		}
+		if s.webhookServer != nil {
+			_ = s.webhookServer.Close()
+		}
+		if s.adminServer != nil {
+			_ = s.adminServer.Close()
+		}
+	}
 	if err := s.startDocsServerWithListener(ctx, binds[0].ln); err != nil {
+		abort()
 		return fmt.Errorf("failed to start docs server: %w", err)
 	}
 	if err := s.startWebhookServerWithListener(ctx, binds[1].ln); err != nil {
+		abort()
 		return fmt.Errorf("failed to start webhook server: %w", err)
 	}
 	if err := s.startAdminServerWithListener(ctx, binds[2].ln); err != nil {
+		abort()
 		return fmt.Errorf("failed to start admin server: %w", err)
 	}
 
 	// Start LiveReload server if enabled
 	if s.cfg.Build.LiveReload && s.opts.LiveReloadHub != nil && len(binds) > 3 {
 		if err := s.startLiveReloadServerWithListener(ctx, binds[3].ln); err != nil {
+			abort()
 			return fmt.Errorf("failed to start livereload server: %w", err)
 		}
 		slog.Info("HTTP servers started",
