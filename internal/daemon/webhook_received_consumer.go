@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"strings"
@@ -370,7 +371,13 @@ func (d *Daemon) retryWebhookAfterDiscovery(ctx context.Context, evt events.Webh
 				slog.String("forge", evt.ForgeName),
 				slog.String("repo", evt.RepoFullName),
 				slog.String("branch", evt.Branch))
-			_ = d.publishOrchestrationEvent(ctx, evt)
+			// The retry is a new request: the debouncer drops a
+			// request whose job id it has already emitted, and the
+			// first attempt may have emitted it before the
+			// repository list was empty.
+			retry := evt
+			retry.JobID = fmt.Sprintf("%s-retry-%d", evt.JobID, time.Now().UnixNano())
+			_ = d.publishOrchestrationEvent(ctx, retry)
 			return
 		}
 	}

@@ -66,7 +66,10 @@ func TestDaemon_Webhook_WhenNoReposYet_RetriesAfterDiscovery(t *testing.T) {
 
 	select {
 	case got := <-reqCh:
-		require.Equal(t, jobID, got.JobID)
+		// The retry is a new request: the debouncer drops a request
+		// whose job id it has already emitted.
+		require.Contains(t, got.JobID, jobID)
+		require.NotEqual(t, jobID, got.JobID, "the retry must be a new request")
 		require.Equal(t, "https://forgejo.example.com/org/go-test-project.git", got.RepoURL)
 		require.Equal(t, "main", got.Branch)
 	case <-time.After(5 * time.Second):
