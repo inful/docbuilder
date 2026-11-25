@@ -2,3 +2,5 @@ Files to be renamed: 3
 Errors to fix: 28
 Fingerprints to update: 4
 Links to update: 0
+
+Frontmatter fields filled in: 4 files
