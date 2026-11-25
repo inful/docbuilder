@@ -15,12 +15,23 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
+// runWebhookReceivedConsumer subscribes to the webhook events and
+// consumes them.
+//
+// The daemon subscribes before it starts the goroutine that consumes
+// them (see startWorkers): the bus has no queue, and an event that is
+// published before the consumer is subscribed is lost.
 func (d *Daemon) runWebhookReceivedConsumer(ctx context.Context) {
 	if ctx == nil || d == nil || d.serve.orchestrationBus == nil {
 		return
 	}
 
 	ch, unsubscribe := events.Subscribe[events.WebhookReceived](d.serve.orchestrationBus, 32)
+	d.consumeWebhookReceived(ctx, ch, unsubscribe)
+}
+
+// consumeWebhookReceived consumes the webhook events of the bus.
+func (d *Daemon) consumeWebhookReceived(ctx context.Context, ch <-chan events.WebhookReceived, unsubscribe func()) {
 	defer unsubscribe()
 
 	for {

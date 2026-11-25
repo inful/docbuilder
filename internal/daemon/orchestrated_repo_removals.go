@@ -11,12 +11,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
-func (d *Daemon) runRepoRemovedConsumer(ctx context.Context) {
-	if ctx == nil || d == nil || d.serve.orchestrationBus == nil {
-		return
-	}
-
-	repoRemovedCh, unsubscribe := events.Subscribe[events.RepoRemoved](d.serve.orchestrationBus, 16)
+// consumeRepoRemoved consumes the removal events of the bus.
+func (d *Daemon) consumeRepoRemoved(ctx context.Context, repoRemovedCh <-chan events.RepoRemoved, unsubscribe func()) {
 	defer unsubscribe()
 
 	for {

@@ -31,8 +31,18 @@ func (d *Daemon) startWorkers(ctx context.Context) {
 		// published before the consumer is subscribed is lost.
 		buildNowCh, unsubscribe := events.Subscribe[events.BuildNow](d.serve.orchestrationBus, 16)
 		d.goWorker("build_now_consumer", func() { d.consumeBuildNow(ctx, buildNowCh, unsubscribe) })
-		d.goWorker("webhook_received_consumer", func() { d.runWebhookReceivedConsumer(ctx) })
-		d.goWorker("repo_removed_consumer", func() { d.runRepoRemovedConsumer(ctx) })
+
+		// The subscription of the webhooks happens here and not in the
+		// goroutine: the server accepts the requests before the
+		// consumers are subscribed, and a webhook that arrives in that
+		// window is lost.
+		webhookCh, unsubscribeWebhook := events.Subscribe[events.WebhookReceived](d.serve.orchestrationBus, 32)
+		d.goWorker("webhook_received_consumer", func() { d.consumeWebhookReceived(ctx, webhookCh, unsubscribeWebhook) })
+
+		// The removal of a repository is published by the discovery:
+		// the event is lost when nobody is subscribed to it.
+		repoRemovedCh, unsubscribeRepoRemoved := events.Subscribe[events.RepoRemoved](d.serve.orchestrationBus, 16)
+		d.goWorker("repo_removed_consumer", func() { d.consumeRepoRemoved(ctx, repoRemovedCh, unsubscribeRepoRemoved) })
 	}
 
 	if d.build.buildDebouncer != nil {
