@@ -83,6 +83,17 @@ func (d *BuildDebouncer) PlannedJobID() (string, bool) {
 	return d.lastJobID, true
 }
 
+// busOf returns the bus of the current run.
+//
+// The bus is written when the daemon starts and read by the goroutine
+// of the debouncer: the pointer is read under the lock, so the
+// debouncer never publishes onto the bus of the last run.
+func (d *BuildDebouncer) busOf() *events.Bus {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.bus
+}
+
 // SetBus gives the debouncer the bus of the current run. The bus of
 // the last run was closed when the daemon stopped, and a subscription
 // to a closed bus returns at once.
@@ -372,7 +383,7 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 		DebounceCause: cause,
 	}
 
-	if err := publishOrchestrationEventOnBus(ctx, d.bus, evt); err != nil {
+	if err := publishOrchestrationEventOnBus(ctx, d.busOf(), evt); err != nil {
 		slog.Warn("Failed to publish BuildNow; will retry",
 			slog.String("job_id", jobID),
 			slog.String("cause", cause),

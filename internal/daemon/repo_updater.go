@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -12,6 +13,9 @@ import (
 )
 
 type RepoUpdater struct {
+	// mu guards the bus: it is written when the daemon starts and read
+	// by the goroutine of the updater.
+	mu    sync.Mutex
 	bus   *events.Bus
 	ready chan struct{} // closed once Run has subscribed to events
 
@@ -32,7 +36,19 @@ func (u *RepoUpdater) SetBus(bus *events.Bus) {
 	if u == nil || bus == nil {
 		return
 	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
 	u.bus = bus
+}
+
+// busOf returns the bus of the current run.
+func (u *RepoUpdater) busOf() *events.Bus {
+	if u == nil {
+		return nil
+	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	return u.bus
 }
 
 func NewRepoUpdater(bus *events.Bus, checker RemoteHeadChecker, cache *git.RemoteHeadCache, reposForLookup func() []config.Repository) *RepoUpdater {
@@ -51,11 +67,12 @@ func (u *RepoUpdater) Ready() <-chan struct{} {
 }
 
 func (u *RepoUpdater) Run(ctx context.Context) {
-	if ctx == nil || u == nil || u.bus == nil || u.remoteChecker == nil {
+	bus := u.busOf()
+	if ctx == nil || u == nil || bus == nil || u.remoteChecker == nil {
 		return
 	}
 
-	reqCh, unsubscribe := events.Subscribe[events.RepoUpdateRequested](u.bus, 32)
+	reqCh, unsubscribe := events.Subscribe[events.RepoUpdateRequested](bus, 32)
 	defer unsubscribe()
 	if u.ready != nil {
 		select {
@@ -101,7 +118,7 @@ func (u *RepoUpdater) handleRequest(ctx context.Context, req events.RepoUpdateRe
 			logfields.URL(repo.URL),
 			logfields.Error(err))
 
-		if perr := publishOrchestrationEventOnBus(ctx, u.bus, events.RepoUpdateFailed{
+		if perr := publishOrchestrationEventOnBus(ctx, u.busOf(), events.RepoUpdateFailed{
 			JobID:     req.JobID,
 			RepoURL:   repo.URL,
 			Branch:    branch,
@@ -116,7 +133,7 @@ func (u *RepoUpdater) handleRequest(ctx context.Context, req events.RepoUpdateRe
 				logfields.Error(perr))
 		}
 
-		if berr := publishOrchestrationEventOnBus(ctx, u.bus, events.BuildRequested{
+		if berr := publishOrchestrationEventOnBus(ctx, u.busOf(), events.BuildRequested{
 			JobID:       req.JobID,
 			Immediate:   req.Immediate,
 			Reason:      "repo_update_failed",
@@ -134,7 +151,7 @@ func (u *RepoUpdater) handleRequest(ctx context.Context, req events.RepoUpdateRe
 		return
 	}
 
-	if err := publishOrchestrationEventOnBus(ctx, u.bus, events.RepoUpdated{
+	if err := publishOrchestrationEventOnBus(ctx, u.busOf(), events.RepoUpdated{
 		JobID:     req.JobID,
 		RepoURL:   repo.URL,
 		Branch:    branch,
@@ -162,7 +179,7 @@ func (u *RepoUpdater) handleRequest(ctx context.Context, req events.RepoUpdateRe
 	if sha != "" {
 		snapshot[repo.URL] = sha
 	}
-	if err := publishOrchestrationEventOnBus(ctx, u.bus, events.BuildRequested{
+	if err := publishOrchestrationEventOnBus(ctx, u.busOf(), events.BuildRequested{
 		JobID:       req.JobID,
 		Immediate:   req.Immediate,
 		Reason:      "webhook",
