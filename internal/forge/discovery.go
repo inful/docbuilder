@@ -427,7 +427,11 @@ func docsCacheKey(repo *Repository) string {
 	if repo == nil || repo.FullName == "" || repo.LastUpdated.IsZero() {
 		return ""
 	}
-	return fmt.Sprintf("%s|%s", repo.FullName, repo.DefaultBranch)
+	// The forge is part of the key: two forges hold repositories with
+	// the same full name, and the answer of one of them says nothing
+	// about the other. The "keep this repository out of the site" of
+	// one forge must not take the repository of the other one out.
+	return fmt.Sprintf("%s|%s|%s", repo.Metadata["forge_name"], repo.FullName, repo.DefaultBranch)
 }
 
 // cachedDocsCheck returns the cached answer for a repository that has not
