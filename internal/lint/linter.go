@@ -90,9 +90,20 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 
 	// Broken link detection is a lint-time check (not only a fixer feature).
 	// This ensures `docbuilder lint` fails the same way `docbuilder lint --fix` reports.
-	brokenLinks, blErr := detectBrokenLinks(path, l.excludePatterns())
-	if blErr != nil {
-		return nil, blErr
+	//
+	// The root of the tree is the root of the repository: the link
+	// "/bar" points at a file of the site, and a file is never inside a
+	// directory, so the walk that resolves the link stopped at once and
+	// the link was reported as broken.
+	var brokenLinks []BrokenLink
+	if info.IsDir() {
+		brokenLinks, err = detectBrokenLinks(path, l.excludePatterns())
+	} else if IsDocFile(path) {
+		// A file that cannot be read does not stop the lint.
+		brokenLinks, _ = detectBrokenLinksInFile(path, repositoryRoot(path))
+	}
+	if err != nil {
+		return nil, err
 	}
 	result.brokenLinks = brokenLinks
 	for _, bl := range brokenLinks {
