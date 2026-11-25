@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-29T00:00:00Z
-fingerprint: 4c782f6fa623dcc2170327ebdaa5757b78863a3e351b4a2ba55396b872691060
+fingerprint: a999872295cb6847f4426187e44694f2ea738d9c7a3e34eed27e7454651c843b
 lastmod: "2026-11-25"
 tags:
   - linting
@@ -586,10 +586,15 @@ INFO: Whitelisted double extension
 
 These files are **automatically excluded** from linting (never reported as errors):
 
-- `README.md` (at the root of the linted tree)
-- `CONTRIBUTING.md` (at the root of the linted tree)
-- `CHANGELOG.md` (at the root of the linted tree)
-- `LICENSE.md` (at the root of the linted tree)
+- `README.md` (at the root of the repository)
+- `CONTRIBUTING.md` (at the root of the repository)
+- `CHANGELOG.md` (at the root of the repository)
+- `LICENSE.md` (at the root of the repository)
+
+The path is the one relative to the root of the repository. A file with
+the same name in a directory of the documentation is a page of the site,
+and it is linted like every other page. Without a repository the linted
+tree is the root.
 - `CODE_OF_CONDUCT.md` (at the root of the linted tree)
 - Files in `.git/` directory
 
