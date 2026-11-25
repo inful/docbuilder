@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-29T00:00:00Z
-fingerprint: a999872295cb6847f4426187e44694f2ea738d9c7a3e34eed27e7454651c843b
+fingerprint: 51c46aad35f82b9e0709c94d72939a02ba7b7472840a005f13a92c13179eea51
 lastmod: "2026-11-25"
 tags:
   - linting
@@ -18,7 +18,7 @@ Complete reference for all documentation linting rules enforced by DocBuilder.
 
 ## Overview
 
-DocBuilder's linter enforces **opinionated, non-configurable** rules based on Hugo and DocBuilder best practices. Rules are classified by severity:
+DocBuilder's linter enforces **opinionated** rules based on Hugo and DocBuilder best practices. Two of them can be tuned in the configuration: `lint.excludes` (the files that are not linted) and `lint.allowed_category_pairs` (the category pairs a page may hold together). Rules are classified by severity:
 
 | Severity | Impact | Build Behavior |
 |----------|--------|----------------|
@@ -521,7 +521,7 @@ Asset rules apply to images and other non-markdown files.
 **Examples**:
 
 ```
-❌ Warning:
+❌ Invalid:
   Screenshot 2024.png
   Company_Logo.svg
   Diagram(final).png
@@ -534,9 +534,9 @@ Asset rules apply to images and other non-markdown files.
 
 **Auto-fix**: Applies same transformations as markdown files
 
-**Warning Message**:
+**Error Message**:
 ```
-WARNING: Invalid image filename
+ERROR: Filename contains uppercase letters
   File: docs/images/Screenshot 2024.png
   Issue: Contains spaces and uppercase letters
   

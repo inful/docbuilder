@@ -190,9 +190,3 @@ func highestSequenceInDir(dir, prefix string) int {
 	}
 	return highest
 }
-
-// sequencePrefixDirs mirrors the rule's static map. Kept as a package-
-// level variable so callers can extend it without copying the rule.
-var sequencePrefixDirs = map[string]string{
-	"adr": "adr-",
-}

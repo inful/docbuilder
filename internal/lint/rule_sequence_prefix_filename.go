@@ -66,9 +66,18 @@ func (r *SequencePrefixFilenameRule) badSequenceIssue(filePath, prefix string) I
 	}
 }
 
+// sequencePrefixDirs maps the basename of a directory to the prefix the
+// files in it must carry.
+//
+// The rule and the fixer share it: a second copy would let the linter
+// and the fixer disagree about the directories that carry a sequence.
+var sequencePrefixDirs = map[string]string{
+	"adr": "adr-",
+}
+
 func (r *SequencePrefixFilenameRule) sequenceDirs() map[string]string {
 	if r.SequenceDirs != nil {
 		return r.SequenceDirs
 	}
-	return map[string]string{"adr": "adr-"}
+	return sequencePrefixDirs
 }
