@@ -39,11 +39,18 @@ type RepoFetcher interface {
 type defaultRepoFetcher struct {
 	workspace string
 	buildCfg  *config.BuildConfig
+	// remoteHeadCache holds what the local clones have: the fetcher
+	// fetches only the repository whose remote moved.
+	remoteHeadCache *git.RemoteHeadCache
 }
 
 // NewDefaultRepoFetcher creates a new default repository fetcher (exported for commands package).
-func NewDefaultRepoFetcher(workspace string, buildCfg *config.BuildConfig) RepoFetcher {
-	return &defaultRepoFetcher{workspace: workspace, buildCfg: buildCfg}
+//
+// The cache of the remote heads is optional: without it every
+// repository is fetched on every build, even the ones whose remote did
+// not move.
+func NewDefaultRepoFetcher(workspace string, buildCfg *config.BuildConfig, remoteHeadCache *git.RemoteHeadCache) RepoFetcher {
+	return &defaultRepoFetcher{workspace: workspace, buildCfg: buildCfg, remoteHeadCache: remoteHeadCache}
 }
 
 func (f *defaultRepoFetcher) Fetch(ctx context.Context, strategy config.CloneStrategy, repo config.Repository) RepoFetchResult {
@@ -59,6 +66,9 @@ func (f *defaultRepoFetcher) Fetch(ctx context.Context, strategy config.CloneStr
 	client := git.NewClient(f.workspace)
 	if f.buildCfg != nil {
 		client = client.WithBuildConfig(f.buildCfg)
+	}
+	if f.remoteHeadCache != nil {
+		client = client.WithRemoteHeadCache(f.remoteHeadCache)
 	}
 
 	// Snapshot builds: if a specific commit SHA is pinned for this repo, ensure the

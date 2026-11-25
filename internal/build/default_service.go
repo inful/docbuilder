@@ -8,6 +8,7 @@ import (
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	dberrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/observability"
@@ -24,6 +25,11 @@ type DefaultBuildService struct {
 	workspaceFactory func() *workspace.Manager
 
 	recorder metrics.Recorder
+
+	// remoteHeadCache holds what the local clones have. The build
+	// fetches only the repository whose remote moved: the cache tells
+	// it which ones those are.
+	remoteHeadCache *git.RemoteHeadCache
 }
 
 // NewBuildService creates a new DefaultBuildService with default factories.
@@ -47,6 +53,17 @@ func (s *DefaultBuildService) WithRecorder(recorder metrics.Recorder) *DefaultBu
 	return s
 }
 
+// WithRemoteHeadCache injects the cache of the remote heads.
+//
+// Without it the build fetches every repository on every build, even
+// the ones whose remote did not move.
+func (s *DefaultBuildService) WithRemoteHeadCache(cache *git.RemoteHeadCache) *DefaultBuildService {
+	if cache != nil {
+		s.remoteHeadCache = cache
+	}
+	return s
+}
+
 // WithWorkspaceFactory allows injecting a custom workspace factory (for testing).
 func (s *DefaultBuildService) WithWorkspaceFactory(factory func() *workspace.Manager) *DefaultBuildService {
 	s.workspaceFactory = factory
@@ -56,13 +73,16 @@ func (s *DefaultBuildService) WithWorkspaceFactory(factory func() *workspace.Man
 // newHugoGenerator constructs the canonical Hugo site generator. Centralized
 // here so both Run and RunDirect build it the same way; tests can substitute
 // behavior by reaching for hugo.Generator.WithRenderer(&stages.NoopRenderer{}).
-func newHugoGenerator(cfg *appcfg.Config, outputDir string, sm state.RepositoryMetadataWriter, recorder metrics.Recorder) *hugo.Generator {
+func newHugoGenerator(cfg *appcfg.Config, outputDir string, sm state.RepositoryMetadataWriter, recorder metrics.Recorder, remoteHeadCache *git.RemoteHeadCache) *hugo.Generator {
 	gen := hugo.NewGenerator(cfg, outputDir)
 	if sm != nil {
 		gen = gen.WithStateManager(sm)
 	}
 	if recorder != nil {
 		gen = gen.SetRecorder(recorder)
+	}
+	if remoteHeadCache != nil {
+		gen = gen.WithRemoteHeadCache(remoteHeadCache)
 	}
 	return gen
 }
@@ -137,7 +157,7 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		req.Config = &cfg
 	}
 
-	generator := newHugoGenerator(req.Config, req.OutputDir, req.StateManager, s.recorder)
+	generator := newHugoGenerator(req.Config, req.OutputDir, req.StateManager, s.recorder, s.remoteHeadCache)
 	if req.OnDocumentReady != nil {
 		generator = generator.WithDocumentReady(req.OnDocumentReady)
 	}
@@ -209,7 +229,7 @@ func (s *DefaultBuildService) RunDirect(ctx context.Context, req DirectBuildRequ
 		return result, dberrors.ConfigError("config required").Build()
 	}
 
-	generator := newHugoGenerator(req.Config, req.OutputDir, nil, s.recorder)
+	generator := newHugoGenerator(req.Config, req.OutputDir, nil, s.recorder, nil)
 	if req.KeepStaging {
 		generator = generator.WithKeepStaging(true)
 	}
