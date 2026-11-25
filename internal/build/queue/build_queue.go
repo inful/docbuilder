@@ -230,7 +230,41 @@ func (bq *BuildQueue) ActiveCount() int {
 }
 
 // Enqueue adds a new build job to the queue.
+//
+// The queue is not waited for: the caller gets an error when it is
+// full. A caller that may not lose a build uses EnqueueWait.
 func (bq *BuildQueue) Enqueue(job *BuildJob) error {
+	if err := prepareJob(job); err != nil {
+		return err
+	}
+
+	select {
+	case bq.jobs <- job:
+		return nil
+	default:
+		return stdErrors.New("build queue is full")
+	}
+}
+
+// EnqueueWait adds a new build job to the queue and waits for room.
+//
+// The context bounds the wait: a build that does not fit in time is
+// lost, and the caller says so.
+func (bq *BuildQueue) EnqueueWait(ctx context.Context, job *BuildJob) error {
+	if err := prepareJob(job); err != nil {
+		return err
+	}
+
+	select {
+	case bq.jobs <- job:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+// prepareJob checks the job and marks it as queued.
+func prepareJob(job *BuildJob) error {
 	if job == nil {
 		return stdErrors.New("job cannot be nil")
 	}
@@ -239,13 +273,7 @@ func (bq *BuildQueue) Enqueue(job *BuildJob) error {
 	}
 
 	job.Status = BuildStatusQueued
-
-	select {
-	case bq.jobs <- job:
-		return nil
-	default:
-		return stdErrors.New("build queue is full")
-	}
+	return nil
 }
 
 // JobSnapshot returns a copy of a job (active first, then history).

@@ -39,12 +39,17 @@ func (d *Daemon) consumeBuildNow(ctx context.Context, buildNowCh <-chan events.B
 			if !ok {
 				return
 			}
-			d.enqueueOrchestratedBuild(evt)
+			d.enqueueOrchestratedBuild(ctx, evt)
 		}
 	}
 }
 
-func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
+// buildQueueWaitTimeout bounds the wait for room in the build queue. A
+// build that does not fit in that time is lost: the queue is full and
+// the daemon is overloaded.
+const buildQueueWaitTimeout = 30 * time.Second
+
+func (d *Daemon) enqueueOrchestratedBuild(ctx context.Context, evt events.BuildNow) {
 	if d == nil || d.GetStatus() != StatusRunning || d.build.buildQueue == nil {
 		return
 	}
@@ -100,7 +105,11 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 		TypedMeta: meta,
 	}
 
-	if err := d.build.buildQueue.Enqueue(job); err != nil {
+	// The queue may be full: the build waits for room instead of being
+	// dropped. A site that is not built stays as it was.
+	waitCtx, cancel := context.WithTimeout(ctx, buildQueueWaitTimeout)
+	defer cancel()
+	if err := d.build.buildQueue.EnqueueWait(waitCtx, job); err != nil {
 		slog.Error("Failed to enqueue orchestrated build",
 			logfields.JobID(jobID),
 			logfields.Error(err))
