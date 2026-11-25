@@ -73,9 +73,22 @@ func (b *BaseForge) NewRequest(ctx context.Context, method, endpoint string, bod
 
 	// Join paths while preserving base path
 	basePath := strings.TrimSuffix(u.Path, "/")
-	u.Path = path.Join(basePath, cleanEndpoint)
+	joined := path.Join(basePath, cleanEndpoint)
 	if rawQuery != "" {
 		u.RawQuery = rawQuery
+	}
+
+	// The endpoint holds the escaped form of the path: the path of a
+	// project of GitLab is "group%2Fproject", and the URL escapes it
+	// again when it is written. The URL holds the path in two forms:
+	// the decoded one in Path and the escaped one in RawPath.
+	decoded, err := url.PathUnescape(joined)
+	if err != nil {
+		decoded = joined
+	}
+	u.Path = decoded
+	if decoded != joined {
+		u.RawPath = joined
 	}
 
 	// Build request with optional body
