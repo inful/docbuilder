@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -80,35 +81,29 @@ func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 	return nil
 }
 
-// findGitDir locates the .git directory.
+// findGitDir locates the directory that holds the hooks of the
+// repository.
+//
+// The git command knows the answer in every case: a directory below the
+// root of the repository, a worktree, a submodule. The common directory
+// is the one git reads the hooks of: the worktree has a git directory
+// of its own, and the hooks of the repository live in the common one.
 func findGitDir() (string, error) {
-	// Check if .git directory exists
-	if info, err := os.Stat(".git"); err == nil && info.IsDir() {
+	cmd := exec.CommandContext(context.Background(), "git", "rev-parse", "--git-common-dir")
+	output, err := cmd.Output()
+	if err == nil {
+		// The output of the command ends with a newline: the path of
+		// the hooks would hold it, and the hook would be written to a
+		// directory that does not exist.
+		return strings.TrimSpace(string(output)), nil
+	}
+
+	// Without git: the .git directory of the current directory.
+	if info, statErr := os.Stat(".git"); statErr == nil && info.IsDir() {
 		return ".git", nil
 	}
 
-	// Check if .git is a file (worktree/submodule)
-	if info, err := os.Stat(".git"); err == nil && !info.IsDir() {
-		content, err := os.ReadFile(".git")
-		if err != nil {
-			return "", err
-		}
-
-		// Parse gitdir from .git file
-		line := string(content)
-		if len(line) > 8 && line[:8] == "gitdir: " {
-			return line[8:], nil
-		}
-	}
-
-	// Try git command as fallback
-	cmd := exec.CommandContext(context.Background(), "git", "rev-parse", "--git-dir")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", errors.New("not in a git repository")
-	}
-
-	return string(output), nil
+	return "", errors.New("not in a git repository")
 }
 
 // installHookScript returns the script of the pre-commit hook.
