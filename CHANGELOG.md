@@ -9,6 +9,88 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.29] - 2026-11-25
+
+### Fixed
+- **The code blocks of the site have their colors and their copy
+  button.** The theme loads the styles of the code blocks through its own
+  stylesheet, and the stylesheet we ship is built without them: the code
+  blocks had no colors and their line numbers stood in a column of their
+  own. The line numbers also stood between the theme and the code: the
+  theme adds the copy button to the code of the block, and a table
+  around the code hid it.
+- **The path of a project of GitLab is escaped once.** The path held the
+  escaped form, and the URL escaped it again: the request asked for the
+  project "group%2Fproject", and GitLab answered 404. A repository that
+  gained documentation never came back into the site through a webhook.
+- **A file that breaks two rules of the name is renamed once.** The
+  second rename used the path of the file before the first one, and the
+  fixer failed on a file it had already renamed: the tree still broke
+  the rule, and the next run of the fixer failed the same way.
+- **The example of the syntax in an inline code is not rewritten.** The
+  fixer looked for the last link of the line, and the example of the
+  syntax was the last one: the example was rewritten and the real link
+  pointed at a file that does not exist any more.
+- **The check of the repository waits for room in the queue of the
+  updater.** The request did not fit in the queue and was dropped: the
+  forge does not send the webhook again, and the commit it announced
+  was published only at the next sync of the daemon.
+- **The consumers are subscribed when the workers start.** The bus has
+  no queue: an event that is published before the consumer is subscribed
+  is lost. The server accepts the requests before the consumers are
+  subscribed, and a webhook that arrived in that window was thrown away.
+- **The groups of GitLab are listed once.** The listing is paginated,
+  and a listing per group burned the rate limit that the listing of the
+  repositories needs.
+- **The walk for the ancestor is bounded.** A branch that does not lead
+  to the commit read the whole history: a repository with a hundred
+  thousand commits took seconds for every update.
+- **A failed clone leaves the old copy of the repository alone.** The old
+  copy was removed before the clone, and a clone that failed took the
+  working copy with it: the pages of the repository were gone until a
+  later clone succeeded.
+- **The broken links of the readme of the documentation are reported.**
+  The walk of the rules and the walk of the broken links used a
+  different base for the excludes: the readme was linted by one and
+  skipped by the other, and its links were never checked.
+- **The admin server refuses a configuration without the monitoring
+  paths.** The paths of the monitoring endpoints come from the
+  configuration, and a configuration without them took the process down
+  when the server read the path.
+- **The retry of the git client watches the cancellation.** A build that
+  was canceled slept out the whole delay, and the daemon held a worker
+  slot meanwhile.
+- **The updater and the scheduler read their engine under the lock.**
+  The engine of the scheduler is replaced when the daemon starts again,
+  and the two schedule methods read it without the lock. The readiness
+  signal of the updater belonged to the last run.
+- **The stores are opened again when the daemon starts again.** The
+  event store and the search index are closed when the daemon stops,
+  and they are opened only in the constructor: a daemon that was started
+  again after a stop wrote no events and no search index.
+- **The report of the fixer names what changed.** The fixer changed the
+  categories of a page, and the report said nothing about it: the
+  operator saw a changed sidebar and no reason for it.
+- **The job ids of the discovery runs are unique.** Two runs in the same
+  nanosecond were the same job, and the debouncer dropped the second
+  one.
+
+### Changed
+- **The rule and the fixer share the sequence directories.** The fixer
+  had a second copy of the map: a change to one of them would let the
+  linter and the fixer disagree.
+
+### Documentation
+- **The exit codes and the comment of the lint are the ones of the
+  code.** The usage errors exit with 80 and not with 2, and the severity
+  of the JSON report is upper case: every error was marked with the
+  emoji of a warning in the comment of the pull request.
+- **The excludes are the paths of the repository.** The two reference
+  pages said different things about where the exclude patterns match,
+  and neither of them was the behaviour of the code.
+- **The documentation names no flag that does not exist.**
+
+
 ## [0.35.28] - 2026-11-25
 
 ### Fixed
