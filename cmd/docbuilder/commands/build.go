@@ -76,7 +76,14 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 		slog.Info("Relocatable mode enabled (base_url set to empty)")
 	}
 	if b.RenderMode != "" {
-		cfg.Build.RenderMode = config.NormalizeRenderMode(b.RenderMode)
+		mode := config.NormalizeRenderMode(b.RenderMode)
+		if mode == "" {
+			// A mode that is not known is "auto", and in "auto" the
+			// build does not run hugo: the site was published with
+			// no HTML at all, and the build said it was fine.
+			return fmt.Errorf("invalid render mode %q: use auto, always or never", b.RenderMode)
+		}
+		cfg.Build.RenderMode = mode
 		slog.Info("Render mode overridden via CLI flag", "render_mode", cfg.Build.RenderMode)
 	}
 
