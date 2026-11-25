@@ -46,6 +46,13 @@ type BuildDebouncer struct {
 	ready       chan struct{}
 	readyClosed bool
 
+	// reqCh and unsubscribe hold the subscription of the current run.
+	// The daemon subscribes the debouncer before it starts the worker:
+	// the bus has no queue, and a request that is published before the
+	// consumer is subscribed is lost.
+	reqCh       <-chan events.BuildRequested
+	unsubscribe func()
+
 	pending          bool
 	pendingAfterRun  bool
 	firstRequestAt   time.Time
@@ -94,6 +101,43 @@ func (d *BuildDebouncer) busOf() *events.Bus {
 	return d.bus
 }
 
+// Subscribe subscribes the debouncer to the build requests of the bus
+// of the current run.
+//
+// The daemon calls it before it starts the worker: the bus has no
+// queue, and a request that is published before the consumer is
+// subscribed is lost.
+func (d *BuildDebouncer) Subscribe() {
+	bus := d.busOf()
+	if bus == nil {
+		return
+	}
+	reqCh, unsubscribe := events.Subscribe[events.BuildRequested](bus, 64)
+
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.unsubscribe != nil {
+		d.unsubscribe()
+	}
+	d.reqCh = reqCh
+	d.unsubscribe = unsubscribe
+}
+
+// subscription returns the channel of the build requests of the
+// current run and the function that ends the subscription.
+//
+// The daemon subscribes the debouncer before it starts the worker (see
+// Subscribe). A direct user of the package gets the subscription here.
+func (d *BuildDebouncer) subscription() (<-chan events.BuildRequested, func()) {
+	d.mu.Lock()
+	reqCh, unsubscribe := d.reqCh, d.unsubscribe
+	d.mu.Unlock()
+	if reqCh != nil {
+		return reqCh, unsubscribe
+	}
+	return events.Subscribe[events.BuildRequested](d.busOf(), 64)
+}
+
 // SetBus gives the debouncer the bus of the current run. The bus of
 // the last run was closed when the daemon stopped, and a subscription
 // to a closed bus returns at once.
@@ -104,6 +148,10 @@ func (d *BuildDebouncer) SetBus(bus *events.Bus) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.bus = bus
+	// The subscription of the last run belongs to the bus of the last
+	// run: the daemon subscribes the debouncer again for this run.
+	d.reqCh = nil
+	d.unsubscribe = nil
 	// The new run needs a new readiness signal: the old one is closed
 	// and says nothing about the subscription of this run.
 	d.ready = make(chan struct{})
@@ -170,7 +218,7 @@ func (d *BuildDebouncer) Run(ctx context.Context) error {
 		return ferrors.ValidationError("context cannot be nil").Build()
 	}
 
-	reqCh, unsubscribe := events.Subscribe[events.BuildRequested](d.bus, 64)
+	reqCh, unsubscribe := d.subscription()
 	defer unsubscribe()
 
 	d.markReady()

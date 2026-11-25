@@ -149,10 +149,11 @@ func (c *Client) CheckRemoteChanged(ctx context.Context, cache *RemoteHeadCache,
 			slog.String("commit", shortSHA(currentSHA)))
 	}
 
-	// Remember what the remote holds now. Without this the cache stays
-	// empty, every check says "changed", and every webhook rebuilds the
-	// whole site.
-	cache.Set(repo.URL, branch, currentSHA)
+	// The cache is not written here. It holds what the local clone has,
+	// and the clone is updated by the build that follows: a cache that
+	// holds the SHA of the remote says that the clone is up to date
+	// while it is one commit behind, and the next build skips the
+	// fetch. The clone writes the cache when it is cloned or updated.
 	return changed, currentSHA, nil
 }
 
@@ -172,7 +173,7 @@ func (c *RemoteHeadCache) Set(url, branch, commitSHA string) {
 
 	key := cacheKey(url, branch)
 	c.entries[key] = &RemoteHeadEntry{
-		URL:       url,
+		URL:       logfields.RedactURL(url),
 		Branch:    branch,
 		CommitSHA: commitSHA,
 		UpdatedAt: time.Now(),
@@ -196,8 +197,9 @@ func (c *RemoteHeadCache) DeleteByURL(url string) {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	redacted := logfields.RedactURL(url)
 	for key, entry := range c.entries {
-		if entry != nil && entry.URL == url {
+		if entry != nil && entry.URL == redacted {
 			delete(c.entries, key)
 		}
 	}
@@ -290,8 +292,12 @@ func (c *RemoteHeadCache) load() error {
 	return nil
 }
 
+// cacheKey is the key of an entry of the cache.
+//
+// The address is redacted: it can hold a token, and the key is written
+// to disk with the entries.
 func cacheKey(url, branch string) string {
-	return fmt.Sprintf("%s:%s", url, branch)
+	return fmt.Sprintf("%s:%s", logfields.RedactURL(url), branch)
 }
 
 // shortSHA returns the first eight characters of a commit hash. The

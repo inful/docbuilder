@@ -19,6 +19,13 @@ type RepoUpdater struct {
 	bus   *events.Bus
 	ready chan struct{} // closed once Run has subscribed to events
 
+	// reqCh and unsubscribe hold the subscription of the current run.
+	// The daemon subscribes the updater before it starts the worker:
+	// the bus has no queue, and a request that is published before the
+	// consumer is subscribed is lost.
+	reqCh       <-chan events.RepoUpdateRequested
+	unsubscribe func()
+
 	remoteChecker RemoteHeadChecker
 	cache         *git.RemoteHeadCache
 
@@ -39,6 +46,10 @@ func (u *RepoUpdater) SetBus(bus *events.Bus) {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	u.bus = bus
+	// The subscription of the last run belongs to the bus of the last
+	// run: the daemon subscribes the updater again for this run.
+	u.reqCh = nil
+	u.unsubscribe = nil
 	// The new run needs a new readiness signal: the old one is closed
 	// and says nothing about the subscription of this run.
 	u.ready = make(chan struct{})
@@ -56,6 +67,43 @@ func (u *RepoUpdater) busOf() *events.Bus {
 
 func NewRepoUpdater(bus *events.Bus, checker RemoteHeadChecker, cache *git.RemoteHeadCache, reposForLookup func() []config.Repository) *RepoUpdater {
 	return &RepoUpdater{bus: bus, ready: make(chan struct{}), remoteChecker: checker, cache: cache, reposForLookup: reposForLookup}
+}
+
+// Subscribe subscribes the updater to the repository updates of the
+// bus of the current run.
+//
+// The daemon calls it before it starts the worker: the bus has no
+// queue, and a request that is published before the consumer is
+// subscribed is lost.
+func (u *RepoUpdater) Subscribe() {
+	bus := u.busOf()
+	if bus == nil {
+		return
+	}
+	reqCh, unsubscribe := events.Subscribe[events.RepoUpdateRequested](bus, 32)
+
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	if u.unsubscribe != nil {
+		u.unsubscribe()
+	}
+	u.reqCh = reqCh
+	u.unsubscribe = unsubscribe
+}
+
+// subscription returns the channel of the repository updates of the
+// current run and the function that ends the subscription.
+//
+// The daemon subscribes the updater before it starts the worker (see
+// Subscribe). A direct user of the package gets the subscription here.
+func (u *RepoUpdater) subscription() (<-chan events.RepoUpdateRequested, func()) {
+	u.mu.Lock()
+	reqCh, unsubscribe := u.reqCh, u.unsubscribe
+	u.mu.Unlock()
+	if reqCh != nil {
+		return reqCh, unsubscribe
+	}
+	return events.Subscribe[events.RepoUpdateRequested](u.busOf(), 32)
 }
 
 // Ready is closed once Run has subscribed to RepoUpdateRequested events.
@@ -77,7 +125,7 @@ func (u *RepoUpdater) Run(ctx context.Context) {
 		return
 	}
 
-	reqCh, unsubscribe := events.Subscribe[events.RepoUpdateRequested](bus, 32)
+	reqCh, unsubscribe := u.subscription()
 	defer unsubscribe()
 
 	// The readiness signal is closed under the lock: the daemon starts

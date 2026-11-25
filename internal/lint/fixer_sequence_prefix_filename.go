@@ -85,6 +85,11 @@ func (f *Fixer) applySequencePrefixFilenameFixes(targets map[string]struct{}, is
 					nextSeq++
 					continue
 				}
+				// The list of the files of the tree holds the old
+				// name: the file was read from a path that does not
+				// exist any more, and the links inside it were never
+				// rewritten.
+				f.replaceScannedFile(p, newPath)
 			}
 			fixResult.FilesRenamed = append(fixResult.FilesRenamed, op)
 			fixResult.ErrorsFixed += issueCounts[p]

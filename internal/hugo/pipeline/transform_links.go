@@ -201,15 +201,21 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 	// Pattern to match markdown images: ![alt](path)
 	imagePattern := imageLinkPattern
 
-	lowerPathPreserveQueryAndFragment := func(p string) string {
-		cut := len(p)
-		if i := strings.IndexByte(p, '?'); i >= 0 && i < cut {
-			cut = i
+	// A path that starts at the root of the site names a file in the
+	// tree of the repository: the link to it carries the repository and
+	// the forge, and the image has to carry them too. Without them the
+	// image is looked for at the root of the site, where it is not.
+	rootRelativeImagePath := func(p string) string {
+		path, suffix := splitQueryAndFragment(p)
+		path = strings.ToLower(path)
+		switch {
+		case !doc.IsSingleRepo && doc.Repository != "":
+			return buildFullPath(doc.Forge, doc.Repository, "", strings.TrimPrefix(path, "/")) + suffix
+		case doc.IsSingleRepo && doc.Forge != "":
+			return "/" + strings.ToLower(doc.Forge) + path + suffix
+		default:
+			return path + suffix
 		}
-		if i := strings.IndexByte(p, '#'); i >= 0 && i < cut {
-			cut = i
-		}
-		return strings.ToLower(p[:cut]) + p[cut:]
 	}
 
 	// The code of the document holds examples, not images: the images in
@@ -236,11 +242,7 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 			// A build that is namespaced by its forge keeps the forge in
 			// the path of the content, so the image needs it too.
 			if strings.HasPrefix(path, "/") {
-				newPath := lowerPathPreserveQueryAndFragment(path)
-				if doc.IsSingleRepo && doc.Forge != "" {
-					newPath = "/" + strings.ToLower(doc.Forge) + newPath
-				}
-				return fmt.Sprintf("![%s](%s)", alt, newPath)
+				return fmt.Sprintf("![%s](%s)", alt, rootRelativeImagePath(path))
 			}
 
 			// Rewrite relative image path accounting for document's section and repo mode
@@ -269,8 +271,7 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 
 			// Normalize root-relative paths to lowercase
 			if strings.HasPrefix(path, "/") {
-				newPath := lowerPathPreserveQueryAndFragment(path)
-				return fmt.Sprintf("<img %ssrc=\"%s\"%s>", beforeSrc, newPath, afterSrc)
+				return fmt.Sprintf("<img %ssrc=\"%s\"%s>", beforeSrc, rootRelativeImagePath(path), afterSrc)
 			}
 
 			// Rewrite relative image path accounting for document's section and repo mode
@@ -543,6 +544,19 @@ func rewriteImagePath(path, repository, forge, section string, isSingleRepo bool
 	}
 
 	return path
+}
+
+// splitQueryAndFragment splits the query and the anchor of a path from
+// the path itself.
+func splitQueryAndFragment(p string) (string, string) {
+	cut := len(p)
+	if i := strings.IndexByte(p, '?'); i >= 0 && i < cut {
+		cut = i
+	}
+	if i := strings.IndexByte(p, '#'); i >= 0 && i < cut {
+		cut = i
+	}
+	return p[:cut], p[cut:]
 }
 
 // buildFullPath constructs a full path with forge, repository, and section components.

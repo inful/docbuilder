@@ -12,7 +12,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
-	"git.home.luguber.info/inful/docbuilder/internal/server/httpserver"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
@@ -78,11 +77,20 @@ type discoveryStack struct {
 	discoveryRunner *DiscoveryRunner
 }
 
+// httpServer is the part of the HTTP server that the daemon uses.
+//
+// The interface keeps the daemon testable: a test can watch what the
+// daemon does when the server starts.
+type httpServer interface {
+	Start(ctx context.Context) error
+	Stop(ctx context.Context) error
+}
+
 // serveStack owns the daemon's runtime services: the HTTP server, the
 // cron-like scheduler, the in-process orchestration event bus, and the
 // metrics collector.
 type serveStack struct {
-	httpServer       *httpserver.Server
+	httpServer       httpServer
 	scheduler        *Scheduler
 	orchestrationBus *events.Bus
 	metrics          *MetricsCollector

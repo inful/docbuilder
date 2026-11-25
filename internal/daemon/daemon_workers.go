@@ -45,11 +45,16 @@ func (d *Daemon) startWorkers(ctx context.Context) {
 		d.goWorker("repo_removed_consumer", func() { d.consumeRepoRemoved(ctx, repoRemovedCh, unsubscribeRepoRemoved) })
 	}
 
+	// The subscription of the debouncer and of the updater happens here
+	// and not in the goroutine: the bus has no queue, and a request
+	// that is published before the consumer is subscribed is lost.
 	if d.build.buildDebouncer != nil {
+		d.build.buildDebouncer.Subscribe()
 		d.goWorker("build_debouncer", func() { _ = d.build.buildDebouncer.Run(ctx) })
 	}
 
 	if d.build.repoUpdater != nil {
+		d.build.repoUpdater.Subscribe()
 		d.goWorker("repo_updater", func() { d.build.repoUpdater.Run(ctx) })
 	}
 }

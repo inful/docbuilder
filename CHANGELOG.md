@@ -9,6 +9,54 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Fixed
+- **The debouncer reads the bus of the run under the lock.** The bus of
+  the current run is written when the daemon starts and read by the
+  goroutine of the debouncer: the pointer was read without the lock,
+  and the race detector reported it.
+- **The debouncer and the updater subscribe before their worker
+  starts.** The bus has no queue: a request that is published before
+  the consumer is subscribed is lost. The two subscribed inside their
+  own goroutine, and the request that was published in the window was
+  lost.
+- **The server accepts the requests after the consumers are
+  subscribed.** The server started before the consumers were
+  subscribed, and a webhook that arrived in that window was thrown
+  away.
+- **The cache of the remote head holds what the clone holds.** The
+  check wrote the SHA of the remote into the cache before the clone was
+  updated. The build that followed saw no change and skipped the fetch:
+  the site stayed at the old commit until the next sync of the daemon.
+- **The edit path of the preview follows the links of the path.** A
+  directory of the docs that is a link to another place took the file
+  out of the docs directory: the preview server opened a file anywhere
+  on the machine.
+- **The cache of the remote head holds no token.** The address of a
+  repository can hold a token, and the cache is written to disk: the
+  token was in the state file for the life of the install.
+- **A root-relative image carries the repository of its page.** A path
+  that starts with a slash is relative to the root of the repository,
+  and the links carry the repository (and the forge). The images did
+  not: they pointed at the root of the site, where the image is not
+  published.
+- **The lint fails when a file cannot be read.** The error of the walk
+  of the rules was overwritten by the error of the scan of the broken
+  links: a file that could not be read was reported as a clean lint.
+- **The lint of paths in different trees does not scan the disk.** The
+  common root of the paths climbed to the root of the file system, and
+  the scan of the broken links from there walked the whole disk.
+- **The excludes hold for the paths of the lint too.** The readme of
+  the repository was linted when the path was absolute and skipped when
+  it was relative.
+- **The renamer of the sequence rewrites the links of the file.** The
+  list of the files of the tree held the old name: the links inside the
+  renamed file were never rewritten, and the fixer reported an error.
+- **A renamed template file keeps its uid binding.** The binding ran
+  on the old name, the file was not there any more, and the fix was
+  lost.
+
+## [0.35.30] - 2026-11-25
+
 ### Added
 - **The template engine is a library.** The engine, the tri-state
   boolean field and the index that suggests file names live in

@@ -1,6 +1,7 @@
 package lint
 
 import (
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -84,6 +85,13 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 		}
 		err = l.lintFile(path, result)
 		result.FilesTotal = 1
+	}
+
+	// The error of the walk is returned here: the scan of the broken
+	// links below overwrites it, and a file that cannot be read was
+	// reported as a clean lint.
+	if err != nil {
+		return nil, err
 	}
 
 	// Broken link detection is a lint-time check (not only a fixer feature).
@@ -249,7 +257,9 @@ func (l *Linter) LintPaths(paths []string) (*Result, error) {
 			}
 			continue
 		}
-		if l.isExcluded(path, "") {
+		// The excludes are paths of the repository: the same file was
+		// linted or not depending on how the path was spelled.
+		if l.isExcluded(path, repositoryRoot(path)) {
 			continue
 		}
 		if !IsDocFile(path) && !IsAssetFile(path) {
@@ -261,7 +271,11 @@ func (l *Linter) LintPaths(paths []string) (*Result, error) {
 		}
 	}
 
-	brokenLinks, blErr := detectBrokenLinks(commonRoot(paths), l.excludePatterns())
+	root := commonRoot(paths)
+	if root == "" {
+		return nil, errors.New("the paths are in different trees: there is no common directory to scan")
+	}
+	brokenLinks, blErr := detectBrokenLinks(root, l.excludePatterns())
 	if blErr != nil {
 		return nil, blErr
 	}
@@ -274,6 +288,10 @@ func (l *Linter) LintPaths(paths []string) (*Result, error) {
 }
 
 // commonRoot returns the directory that holds all the paths.
+//
+// The root of the file system is not a root: the paths are in
+// different trees, and a scan of the broken links from there walks the
+// whole disk. The empty string says that there is no such directory.
 func commonRoot(paths []string) string {
 	root := ""
 	for _, path := range paths {
@@ -297,6 +315,9 @@ func commonRoot(paths []string) string {
 	if root == "" {
 		return "."
 	}
+	if root == string(filepath.Separator) {
+		return ""
+	}
 	return root
 }
 
@@ -308,8 +329,10 @@ func (l *Linter) LintFiles(files []string) (*Result, error) {
 	}
 
 	for _, file := range files {
-		// Skip files matched by the exclude list (git-forge-conventional files)
-		if l.isExcluded(file, "") {
+		// Skip files matched by the exclude list (git-forge-conventional
+		// files). The excludes are paths of the repository: the same
+		// file was linted or not depending on how the path was spelled.
+		if l.isExcluded(file, repositoryRoot(file)) {
 			continue
 		}
 

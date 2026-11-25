@@ -33,7 +33,7 @@ This is a guide with images.
 ![Test Image](/test-repo/guides/images/test.png)
 ![Another](/test-repo/guides/../assets/logo.png)
 ![Absolute](https://example.com/image.png)
-![Root](/static/banner.jpg)
+![Root](/test-repo/static/banner.jpg)
 `
 
 	assert.Equal(t, expected, doc.Content)
@@ -222,7 +222,7 @@ func TestRewriteImageLinks_HTMLImgTags(t *testing.T) {
 <img src="/test-repo/guides/images/banner.jpg" alt="Banner" />
 <img class="logo" src="/test-repo/guides/assets/logo.png" alt="Logo" width="100" />
 <img src="https://example.com/external.png" alt="External" />
-<img src="/static/absolute.png" alt="Absolute" />
+<img src="/test-repo/static/absolute.png" alt="Absolute" />
 `
 
 	assert.Equal(t, expected, doc.Content)
