@@ -281,6 +281,12 @@ func (c *RemoteHeadCache) load() error {
 			Build()
 	}
 
+	// The content "null" is a valid JSON, and it leaves the map empty
+	// and nil: the next write to the cache panics.
+	if c.entries == nil {
+		c.entries = make(map[string]*RemoteHeadEntry)
+	}
+
 	return nil
 }
 
