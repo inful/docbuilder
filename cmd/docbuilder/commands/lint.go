@@ -206,7 +206,12 @@ func runFixer(linter *lint.Linter, paths []string, dryRun, yes bool) error {
 	}
 
 	if len(fixResult.Fingerprints) > 0 {
-		_, _ = fmt.Fprintf(os.Stdout, "Frontmatter fingerprints updated in %d files:\n", len(fixResult.Fingerprints))
+		if dryRun {
+			// Nothing was written: the report says what would happen.
+			_, _ = fmt.Fprintf(os.Stdout, "Frontmatter fingerprints that would be updated in %d files:\n", len(fixResult.Fingerprints))
+		} else {
+			_, _ = fmt.Fprintf(os.Stdout, "Frontmatter fingerprints updated in %d files:\n", len(fixResult.Fingerprints))
+		}
 		for _, fp := range fixResult.Fingerprints {
 			if fp.Success {
 				_, _ = fmt.Fprintf(os.Stdout, "  %s\n", fp.FilePath)

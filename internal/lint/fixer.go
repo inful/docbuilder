@@ -198,6 +198,7 @@ func (f *Fixer) applyFixes(path string, result *Result) (*FixResult, error) {
 		BrokenLinks:       make([]BrokenLink, 0),
 		HealSkipped:       make([]BrokenLinkHealSkip, 0),
 		Errors:            make([]error, 0),
+		DryRun:            f.dryRun,
 	}
 
 	// Get absolute path for the root directory (for searching links)
