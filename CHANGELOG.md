@@ -10,6 +10,19 @@ commits; pin to a SHA for reproducibility per the README.
 ## [Unreleased]
 
 ### Fixed
+- **The build fetches only the repository whose remote moved.** The
+  clone stage of the build created its own git client, and the client
+  had no cache of the remote heads: the check that skips the fetch of a
+  repository that did not move was never taken, and every repository
+  was fetched on every build. The daemon creates the cache once and
+  shares it with the updater and with the build, so the check holds for
+  the build too. It also fills the cache again: the cache of the round
+  25 was never written, because the only client that had one never
+  fetched.
+
+## [0.35.31] - 2026-11-25
+
+### Fixed
 - **The debouncer reads the bus of the run under the lock.** The bus of
   the current run is written when the daemon starts and read by the
   goroutine of the debouncer: the pointer was read without the lock,
