@@ -195,13 +195,17 @@ func (c *GitLabClient) ListRepositories(ctx context.Context, groups []string) ([
 
 	// The API of GitLab needs the numeric id of a group. The operator
 	// names the group by its path, and the id is looked up.
+	//
+	// The groups are listed once: the listing is paginated, and a
+	// listing per group burns the rate limit that the listing of the
+	// repositories needs.
+	ids, err := c.resolveGroupIDs(ctx, groups)
+	if err != nil {
+		return nil, err
+	}
 	resolved := make([]string, len(groups))
 	for i, group := range groups {
-		id, err := c.resolveGroupID(ctx, group)
-		if err != nil {
-			return nil, err
-		}
-		resolved[i] = id
+		resolved[i] = ids[group]
 	}
 
 	results := runOrdered(resolved, 4, func(group string) ([]*Repository, error) {
@@ -240,19 +244,34 @@ func (c *GitLabClient) ListRepositories(ctx context.Context, groups []string) ([
 	return allRepos, nil
 }
 
-// resolveGroupID returns the numeric id of a group.
+// resolveGroupIDs returns the numeric id of every group.
 //
 // The API of GitLab needs the numeric id of a group for the projects of
 // the group: a group that the operator names by its path is not found,
 // and the discovery of the whole forge fails.
-func (c *GitLabClient) resolveGroupID(ctx context.Context, group string) (string, error) {
-	if isNumericID(group) {
-		return group, nil
+//
+// The groups are listed once: the listing is paginated, and a listing
+// per group burns the rate limit that the listing of the repositories
+// needs.
+func (c *GitLabClient) resolveGroupIDs(ctx context.Context, groups []string) (map[string]string, error) {
+	ids := make(map[string]string, len(groups))
+
+	// The groups that are named by their id need no listing.
+	var named []string
+	for _, group := range groups {
+		if isNumericID(group) {
+			ids[group] = group
+			continue
+		}
+		named = append(named, group)
+	}
+	if len(named) == 0 {
+		return ids, nil
 	}
 
 	orgs, err := c.ListOrganizations(ctx)
 	if err != nil {
-		return "", errors.ForgeError("failed to list the GitLab groups").
+		return nil, errors.ForgeError("failed to list the GitLab groups").
 			WithCause(err).
 			Build()
 	}
@@ -261,16 +280,27 @@ func (c *GitLabClient) resolveGroupID(ctx context.Context, group string) (string
 		if org == nil {
 			continue
 		}
-		if strings.EqualFold(org.DisplayName, group) ||
-			strings.EqualFold(org.Metadata["full_path"], group) ||
-			strings.EqualFold(org.Metadata["path"], group) {
-			return org.Name, nil
+		for _, name := range []string{org.DisplayName, org.Metadata["full_path"], org.Metadata["path"]} {
+			if name == "" {
+				continue
+			}
+			for _, group := range named {
+				if strings.EqualFold(group, name) {
+					ids[group] = org.Name
+				}
+			}
 		}
 	}
 
-	return "", errors.ForgeError("the GitLab group was not found").
-		WithContext("group", group).
-		Build()
+	for _, group := range named {
+		if _, ok := ids[group]; !ok {
+			return nil, errors.ForgeError("the GitLab group was not found").
+				WithContext("group", group).
+				Build()
+		}
+	}
+
+	return ids, nil
 }
 
 // isNumericID reports whether a value is a number.
