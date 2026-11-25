@@ -596,7 +596,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 	}
 
 	// Start scheduler
-	d.serve.scheduler.Start(ctx)
+	// The scheduler belongs to this run: the jobs carry the context of
+	// the run, and they stop with it.
+	d.serve.scheduler.Start(runCtx)
 
 	d.lifecycle.status.Store(StatusRunning)
 	d.serve.metrics.SetGauge("daemon_status", int64(2)) // 2 = running

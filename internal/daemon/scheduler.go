@@ -28,15 +28,24 @@ func NewScheduler() (*Scheduler, error) {
 }
 
 // Start begins the scheduler.
-func (s *Scheduler) Start(ctx context.Context) {
+//
+// The scheduler holds no job of its own: the jobs carry the context of
+// the run, and they stop with it.
+func (s *Scheduler) Start(_ context.Context) {
 	slog.Info("Starting scheduler")
 	s.scheduler.Start()
 }
 
 // Stop gracefully shuts down the scheduler.
+//
+// The deadline of the context is the deadline of the stop: a job that
+// runs longer than that does not hold the daemon.
 func (s *Scheduler) Stop(ctx context.Context) error {
 	slog.Info("Stopping scheduler")
-	return s.scheduler.Shutdown()
+	if ctx == nil {
+		return s.scheduler.Shutdown()
+	}
+	return s.scheduler.ShutdownWithContext(ctx)
 }
 
 // ScheduleEvery schedules a duration-based job.
