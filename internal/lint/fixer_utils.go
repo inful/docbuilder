@@ -102,8 +102,11 @@ func pathsEqualCaseInsensitive(path1, path2 string) bool {
 // The rootPath is the directory that was linted: the walk that looks
 // for the file of a repository-root-relative link stops there.
 func resolveRelativePath(sourceFile, linkTarget, rootPath string) (string, error) {
-	// Remove any URL fragments (#section).
+	// Remove any URL fragments (#section) and query strings (?ref=foo).
+	// The query is not part of the file: the link points at the file,
+	// and the query is what the reader sends to it.
 	targetPath, _, _ := strings.Cut(linkTarget, "#")
+	targetPath, _, _ = strings.Cut(targetPath, "?")
 
 	// A link target is a URL: the space of a file name is written as
 	// %20. The file on disk has the space, so the target is decoded
