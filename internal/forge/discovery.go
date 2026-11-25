@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -518,11 +519,22 @@ func toLowerCase(b byte) byte {
 // same name on two forges - and then one of them eats the other and
 // vanishes from the site without a word. So every name in the list must
 // be its own; the second one with a name gets a name from its full path.
+//
+// The list is sorted before the names are given: the forges are asked at
+// the same time, and the order of the answer is the order of the race.
+// The name of a repository is its address on the site, and it must not
+// change from one run to the next.
 func (ds *DiscoveryService) ConvertToConfigRepositories(repos []*Repository, forgeManager *Manager) []config.Repository {
 	configRepos := make([]config.Repository, 0, len(repos))
 	usedNames := make(map[string]struct{}, len(repos))
 
-	for _, repo := range repos {
+	sorted := make([]*Repository, len(repos))
+	copy(sorted, repos)
+	slices.SortStableFunc(sorted, func(a, b *Repository) int {
+		return strings.Compare(repoSortKey(a), repoSortKey(b))
+	})
+
+	for _, repo := range sorted {
 		// Find the forge config for this repository
 		var auth *config.AuthConfig
 		forgeNameMeta := repo.Metadata["forge_name"]
@@ -562,6 +574,16 @@ func (ds *DiscoveryService) ConvertToConfigRepositories(repos []*Repository, for
 	}
 
 	return configRepos
+}
+
+// repoSortKey is the key the repositories are sorted by: the forge they
+// live on, their full name and their clone URL. Every one of them is
+// the same from one run to the next.
+func repoSortKey(repo *Repository) string {
+	if repo == nil {
+		return ""
+	}
+	return repo.Metadata["forge_name"] + "\x00" + repo.FullName + "\x00" + repo.CloneURL
 }
 
 // uniqueRepoName builds a name that no other repository in the list
