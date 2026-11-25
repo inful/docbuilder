@@ -988,6 +988,11 @@ func (d *Daemon) Build(ctx context.Context, job *queue.BuildJob) (*models.BuildR
 		if result != nil && result.Report != nil {
 			return result.Report, err
 		}
+		// A build that failed before it wrote a report did not bring
+		// the site up to date: the state of the daemon still says that
+		// the old commit is current, and the next webhook skips the
+		// build.
+		d.updateStateAfterBuild(&models.BuildReport{Outcome: models.OutcomeFailed})
 		return nil, err
 	}
 	return result.Report, nil
