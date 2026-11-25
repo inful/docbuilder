@@ -42,9 +42,9 @@ type BuildDebouncer struct {
 	cfg     BuildDebouncerConfig
 	metrics *MetricsCollector
 
-	mu        sync.Mutex
-	readyOnce sync.Once
-	ready     chan struct{}
+	mu          sync.Mutex
+	ready       chan struct{}
+	readyClosed bool
 
 	pending          bool
 	pendingAfterRun  bool
@@ -93,6 +93,10 @@ func (d *BuildDebouncer) SetBus(bus *events.Bus) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.bus = bus
+	// The new run needs a new readiness signal: the old one is closed
+	// and says nothing about the subscription of this run.
+	d.ready = make(chan struct{})
+	d.readyClosed = false
 }
 
 func NewBuildDebouncer(bus *events.Bus, cfg BuildDebouncerConfig) (*BuildDebouncer, error) {
@@ -118,7 +122,20 @@ func NewBuildDebouncer(bus *events.Bus, cfg BuildDebouncerConfig) (*BuildDebounc
 // Ready is closed once Run has fully initialized and subscribed to events.
 // This is primarily intended for tests and deterministic startup sequencing.
 func (d *BuildDebouncer) Ready() <-chan struct{} {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	return d.ready
+}
+
+// markReady closes the readiness signal of the current run.
+func (d *BuildDebouncer) markReady() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.readyClosed {
+		return
+	}
+	d.readyClosed = true
+	close(d.ready)
 }
 
 func (d *BuildDebouncer) Run(ctx context.Context) error {
@@ -129,7 +146,7 @@ func (d *BuildDebouncer) Run(ctx context.Context) error {
 	reqCh, unsubscribe := events.Subscribe[events.BuildRequested](d.bus, 64)
 	defer unsubscribe()
 
-	d.readyOnce.Do(func() { close(d.ready) })
+	d.markReady()
 
 	quietTimer := time.NewTimer(time.Hour)
 	if !quietTimer.Stop() {

@@ -3,6 +3,8 @@ package daemon
 import (
 	"context"
 	"log/slog"
+
+	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 )
 
 func (d *Daemon) goWorker(name string, fn func()) {
@@ -24,7 +26,11 @@ func (d *Daemon) startWorkers(ctx context.Context) {
 	}
 
 	if d.serve.orchestrationBus != nil {
-		d.goWorker("build_now_consumer", func() { d.runBuildNowConsumer(ctx) })
+		// The subscription of the build-now events happens here and not
+		// in the goroutine: the bus has no queue, and an event that is
+		// published before the consumer is subscribed is lost.
+		buildNowCh, unsubscribe := events.Subscribe[events.BuildNow](d.serve.orchestrationBus, 16)
+		d.goWorker("build_now_consumer", func() { d.consumeBuildNow(ctx, buildNowCh, unsubscribe) })
 		d.goWorker("webhook_received_consumer", func() { d.runWebhookReceivedConsumer(ctx) })
 		d.goWorker("repo_removed_consumer", func() { d.runRepoRemovedConsumer(ctx) })
 	}

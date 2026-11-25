@@ -115,12 +115,49 @@ func runDiscoveryWithRetry(ctx context.Context, attempt func(context.Context) er
 	}
 }
 
+// buildDebouncerReadyTimeout bounds the wait for the build debouncer.
+// The daemon asks for the first build only when the debouncer is
+// subscribed: the bus has no queue, and a request that nobody receives
+// is lost.
+const buildDebouncerReadyTimeout = 30 * time.Second
+
+// waitForBuildDebouncer waits until the build debouncer is subscribed
+// to the events of the bus.
+func (d *Daemon) waitForBuildDebouncer(ctx context.Context) error {
+	if d.build.buildDebouncer == nil {
+		return nil
+	}
+	ready := d.build.buildDebouncer.Ready()
+	if ready == nil {
+		return nil
+	}
+
+	timer := time.NewTimer(buildDebouncerReadyTimeout)
+	defer timer.Stop()
+	select {
+	case <-ready:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return fmt.Errorf("the build debouncer is not subscribed after %s", buildDebouncerReadyTimeout)
+	}
+}
+
 func (d *Daemon) requestInitialBuild(ctx context.Context) {
 	if ctx == nil {
 		return
 	}
 	if d.serve.orchestrationBus == nil {
 		slog.Warn("Skipping initial build: orchestration bus not initialized")
+		return
+	}
+
+	// The debouncer has to be subscribed before the request is
+	// published, otherwise the request is lost and the site is never
+	// built.
+	if err := d.waitForBuildDebouncer(ctx); err != nil {
+		slog.Error("Skipping initial build: the build debouncer is not ready", logfields.Error(err))
 		return
 	}
 

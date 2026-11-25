@@ -12,12 +12,23 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
+// runBuildNowConsumer subscribes to the build-now events of the bus and
+// consumes them.
+//
+// The daemon subscribes before it starts the goroutine that consumes
+// them (see startWorkers): the bus has no queue, and an event that is
+// published before the consumer is subscribed is lost.
 func (d *Daemon) runBuildNowConsumer(ctx context.Context) {
 	if ctx == nil || d == nil || d.serve.orchestrationBus == nil {
 		return
 	}
 
 	buildNowCh, unsubscribe := events.Subscribe[events.BuildNow](d.serve.orchestrationBus, 16)
+	d.consumeBuildNow(ctx, buildNowCh, unsubscribe)
+}
+
+// consumeBuildNow turns the build-now events of the bus into builds.
+func (d *Daemon) consumeBuildNow(ctx context.Context, buildNowCh <-chan events.BuildNow, unsubscribe func()) {
 	defer unsubscribe()
 
 	for {
