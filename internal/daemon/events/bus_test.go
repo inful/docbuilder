@@ -2,6 +2,9 @@ package events
 
 import (
 	"context"
+	"errors"
+	"reflect"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -83,4 +86,36 @@ func TestBus_Close(t *testing.T) {
 
 	err := b.Publish(context.Background(), testEvent{Value: 1})
 	require.Error(t, err)
+}
+
+// A subscriber that fails must not keep the event from the other
+// subscribers: the error is reported, and every subscriber is served.
+func TestTheEventReachesEverySubscriberWhenOneFails(t *testing.T) {
+	b := NewBus()
+	defer b.Close()
+
+	var served atomic.Int32
+	failing := &subscriber{
+		send: func(context.Context, any) error {
+			served.Add(1)
+			return errors.New("the subscriber is full")
+		},
+		close: func() {},
+	}
+	working := &subscriber{
+		send: func(context.Context, any) error {
+			served.Add(1)
+			return nil
+		},
+		close: func() {},
+	}
+
+	eventType := reflect.TypeFor[testEvent]()
+	b.mu.Lock()
+	b.subs[eventType] = map[uint64]*subscriber{1: failing, 2: working}
+	b.mu.Unlock()
+
+	err := b.Publish(context.Background(), testEvent{Value: 1})
+	require.Error(t, err, "the failure of the subscriber is reported")
+	require.Equal(t, int32(2), served.Load(), "every subscriber was served")
 }

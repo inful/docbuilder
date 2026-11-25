@@ -206,13 +206,16 @@ func (b *Bus) Publish(ctx context.Context, evt any) error {
 	}
 	b.mu.RUnlock()
 
+	// Every subscriber is served: the failure of one does not keep the
+	// event from the others. The first failure is reported.
+	var firstErr error
 	for _, sub := range matched {
-		if err := sub.deliver(ctx, evt); err != nil {
-			return err
+		if err := sub.deliver(ctx, evt); err != nil && firstErr == nil {
+			firstErr = err
 		}
 	}
 
-	return nil
+	return firstErr
 }
 
 // Close closes the bus and all subscription channels.
