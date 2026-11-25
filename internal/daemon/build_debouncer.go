@@ -170,7 +170,10 @@ func (d *BuildDebouncer) Run(ctx context.Context) error {
 		return ferrors.ValidationError("context cannot be nil").Build()
 	}
 
-	reqCh, unsubscribe := events.Subscribe[events.BuildRequested](d.bus, 64)
+	// The bus is read under the lock: the daemon writes the bus of the
+	// next run while this goroutine starts, and the read without the
+	// lock was a race.
+	reqCh, unsubscribe := events.Subscribe[events.BuildRequested](d.busOf(), 64)
 	defer unsubscribe()
 
 	d.markReady()

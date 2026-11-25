@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
@@ -65,4 +66,40 @@ func TestTheBusOfTheRepoUpdaterIsReadUnderTheLock(t *testing.T) {
 		updater.SetBus(bus)
 	}()
 	wg.Wait()
+}
+
+// The goroutine of the debouncer reads the bus of the run while the
+// daemon writes the bus of the next one: the read was not under the
+// lock, and the race detector reported it.
+func TestTheBusOfTheDebouncerIsReadWhileTheRunStarts(t *testing.T) {
+	for range 20 {
+		bus := events.NewBus()
+
+		debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
+			QuietWindow:  time.Millisecond,
+			MaxDelay:     time.Millisecond,
+			PollInterval: time.Millisecond,
+		})
+		require.NoError(t, err)
+
+		ctx, cancel := context.WithCancel(t.Context())
+
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			_ = debouncer.Run(ctx)
+		}()
+		go func() {
+			defer wg.Done()
+			debouncer.SetBus(events.NewBus())
+		}()
+
+		// The run of the debouncer ends when the context is canceled.
+		time.Sleep(time.Millisecond)
+		cancel()
+		wg.Wait()
+
+		bus.Close()
+	}
 }
