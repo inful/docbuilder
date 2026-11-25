@@ -182,6 +182,13 @@ func (c *Client) cloneOnceWithMetadata(ctx context.Context, repo appcfg.Reposito
 			slog.Warn("prune non-doc paths failed", logfields.Name(repo.Name), slog.String("error", err.Error()))
 		}
 	}
+
+	// The cache holds what the local clone has: the check of the daemon
+	// compares the remote with the clone, and a clone that is at the head
+	// of the remote means that no build is needed.
+	if c.remoteHeadCache != nil && result.CommitSHA != "" {
+		c.remoteHeadCache.Set(repo.URL, resolveTargetBranch(repository, repo), result.CommitSHA)
+	}
 	return result, nil
 }
 

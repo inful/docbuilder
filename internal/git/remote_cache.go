@@ -149,10 +149,11 @@ func (c *Client) CheckRemoteChanged(ctx context.Context, cache *RemoteHeadCache,
 			slog.String("commit", shortSHA(currentSHA)))
 	}
 
-	// Remember what the remote holds now. Without this the cache stays
-	// empty, every check says "changed", and every webhook rebuilds the
-	// whole site.
-	cache.Set(repo.URL, branch, currentSHA)
+	// The cache is not written here. It holds what the local clone has,
+	// and the clone is updated by the build that follows: a cache that
+	// holds the SHA of the remote says that the clone is up to date
+	// while it is one commit behind, and the next build skips the
+	// fetch. The clone writes the cache when it is cloned or updated.
 	return changed, currentSHA, nil
 }
 
