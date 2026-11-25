@@ -141,15 +141,35 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 // last link on the line is the one that is rewritten, so a label that
 // holds the same text is not touched.
 func linkTargetIndex(line []byte, target string) int {
-	if idx := bytes.LastIndex(line, []byte("]("+target)); idx != -1 {
-		return idx + 2
+	text := string(line)
+
+	needles := []struct {
+		text   string
+		offset int
+	}{
+		{"](" + target, 2},
+		{"](<" + target + ">)", 3},
+		{"]: " + target, 3},
 	}
-	if idx := bytes.LastIndex(line, []byte("](<"+target+">)")); idx != -1 {
-		return idx + 3
+
+	for _, needle := range needles {
+		for offset := 0; ; {
+			idx := strings.Index(text[offset:], needle.text)
+			if idx == -1 {
+				break
+			}
+			idx += offset
+
+			// A link inside an inline code span is an example of the
+			// syntax, not a link: the fixer rewrote the example and
+			// left the real link pointing at the old name.
+			if !isInsideInlineCode(text, idx) {
+				return idx + needle.offset
+			}
+			offset = idx + len(needle.text)
+		}
 	}
-	if idx := bytes.LastIndex(line, []byte("]: "+target)); idx != -1 {
-		return idx + 3
-	}
+
 	return -1
 }
 
