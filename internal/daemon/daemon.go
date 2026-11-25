@@ -105,6 +105,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	d.initLifecycle()
 	d.initServeStack()
 	d.initDiscoveryStack()
+	d.initRemoteHeadCache(cfg)
 	if err := d.initForges(cfg); err != nil {
 		return nil, err
 	}
@@ -209,7 +210,10 @@ func (d *Daemon) initBuildStack(cfg *config.Config) {
 		// The metrics of the build go into the collector of the daemon.
 		// Without it every metric went to the no-op recorder, and the
 		// metrics of the build stayed at zero.
-		WithRecorder(metrics.CollectorRecorder{Collector: d.serve.metrics})
+		WithRecorder(metrics.CollectorRecorder{Collector: d.serve.metrics}).
+		// The build fetches only the repository whose remote moved: the
+		// cache tells it which ones those are.
+		WithRemoteHeadCache(d.build.remoteHeadCache)
 
 	d.build.buildQueue = queue.NewBuildQueue(cfg.Daemon.Sync.QueueSize, cfg.Daemon.Sync.ConcurrentBuilds, d)
 	// The retries of the build are metrics as well.
@@ -417,15 +421,15 @@ func (d *Daemon) initBuildDebouncer(cfg *config.Config) error {
 	return nil
 }
 
-// initRepoUpdater constructs the git-backed repo updater that polls
-// remote HEADs and publishes RepoUpdated events on the orchestration
-// bus. If the persistent remote-head cache cannot be created
-// (e.g. permission error on the storage dir) the cache is degraded to
-// in-memory and a warning is logged — repo-updates keep working, just
-// without persistence across restarts.
-func (d *Daemon) initRepoUpdater(cfg *config.Config) {
-	// The remote-head cache is daemon state, not a clone: it belongs in the
-	// state directory, not with the repositories.
+// initRemoteHeadCache creates the cache of the remote heads.
+//
+// The cache holds what the local clones have: the updater reads it to
+// know whether a repository moved, and the build writes it when it
+// fetches a repository. One cache for both, or the updater would not
+// see what the build learned.
+func (d *Daemon) initRemoteHeadCache(cfg *config.Config) {
+	// The remote-head cache is daemon state, not a clone: it belongs in
+	// the state directory, not with the repositories.
 	stateDir := cfg.Daemon.Storage.StateDir
 	if stateDir == "" {
 		stateDir = config.DefaultStateDir
@@ -435,8 +439,18 @@ func (d *Daemon) initRepoUpdater(cfg *config.Config) {
 		slog.Warn("Failed to initialize remote HEAD cache; disabling persistence", logfields.Error(cacheErr))
 		remoteCache, _ = git.NewRemoteHeadCache("")
 	}
-	gitClient := git.NewClient(cfg.Daemon.Storage.RepoCacheDir).WithRemoteHeadCache(remoteCache)
-	d.build.repoUpdater = NewRepoUpdater(d.serve.orchestrationBus, gitClient, remoteCache, d.currentReposForOrchestratedBuild)
+	d.build.remoteHeadCache = remoteCache
+}
+
+// initRepoUpdater constructs the git-backed repo updater that polls
+// remote HEADs and publishes RepoUpdated events on the orchestration
+// bus. If the persistent remote-head cache cannot be created
+// (e.g. permission error on the storage dir) the cache is degraded to
+// in-memory and a warning is logged — repo-updates keep working, just
+// without persistence across restarts.
+func (d *Daemon) initRepoUpdater(cfg *config.Config) {
+	gitClient := git.NewClient(cfg.Daemon.Storage.RepoCacheDir).WithRemoteHeadCache(d.build.remoteHeadCache)
+	d.build.repoUpdater = NewRepoUpdater(d.serve.orchestrationBus, gitClient, d.build.remoteHeadCache, d.currentReposForOrchestratedBuild)
 }
 
 func getBuildDebounceDurations(cfg *config.Config) (time.Duration, time.Duration, error) {

@@ -41,12 +41,27 @@ type Generator struct {
 	stateManager state.RepositoryMetadataWriter
 	// keepStaging preserves staging directory on failure for debugging (set via WithKeepStaging)
 	keepStaging bool
+	// remoteHeadCache holds what the local clones have. The clone stage
+	// fetches only the repository whose remote moved: the cache tells
+	// it which ones those are.
+	remoteHeadCache *git.RemoteHeadCache
 	// onDocumentReady (optional) is invoked once per non-generated document
 	// immediately after it has been written to disk. It is the daemon-mode
 	// hook for pushing document content to a downstream consumer (e.g.
 	// ragabast for async ingest). nil disables the hook entirely. The
 	// callback receives the raw markdown bytes and the Hugo content path.
 	onDocumentReady func(content []byte, path string)
+}
+
+// WithRemoteHeadCache injects the cache of the remote heads.
+//
+// Without it the clone stage fetches every repository on every build,
+// even the ones whose remote did not move.
+func (g *Generator) WithRemoteHeadCache(cache *git.RemoteHeadCache) *Generator {
+	if cache != nil {
+		g.remoteHeadCache = cache
+	}
+	return g
 }
 
 // NewGenerator creates a new Hugo site generator.
@@ -421,6 +436,7 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 
 	bs.Git.Repositories = repositories
 	bs.Git.WorkspaceDir = filepath.Clean(workspaceDir)
+	bs.Git.RemoteHeadCache = g.remoteHeadCache
 
 	// Step 2.5: Expand repositories with versioning if enabled
 	if g.config.Versioning != nil && !g.config.Versioning.DefaultBranchOnly {

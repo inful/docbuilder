@@ -18,7 +18,7 @@ func TestDefaultRepoFetcher_FetchPinnedCommit_ChecksOutExactSHAAndSkipsWhenAlrea
 	remotePath, commit1, commit2 := initGitRepoWithTwoCommits(t)
 
 	workspace := t.TempDir()
-	fetcher := NewDefaultRepoFetcher(workspace, nil)
+	fetcher := NewDefaultRepoFetcher(workspace, nil, nil)
 
 	repoCfg := config.Repository{
 		Name:         "repo-1",

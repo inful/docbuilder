@@ -11,6 +11,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
@@ -59,6 +60,13 @@ type buildStack struct {
 	buildQueue     *queue.BuildQueue
 	buildDebouncer *BuildDebouncer
 	repoUpdater    *RepoUpdater
+
+	// remoteHeadCache holds what the local clones have. The updater
+	// reads it to know whether a repository moved, and the build writes
+	// it when it fetches a repository: two caches would overwrite each
+	// other's file, and the updater would not see what the build
+	// learned.
+	remoteHeadCache *git.RemoteHeadCache
 
 	// afterRemoval says that a repository was removed. The next build
 	// has to run even when no repository is left: the pages of the

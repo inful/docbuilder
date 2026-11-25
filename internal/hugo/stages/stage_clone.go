@@ -22,7 +22,7 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 	if bs.Git.WorkspaceDir == "" {
 		return models.NewFatalStageError(models.StageCloneRepos, stdErrors.New("workspace directory not set"))
 	}
-	fetcher := NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.Config().Build)
+	fetcher := NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.Config().Build, bs.Git.RemoteHeadCache)
 	// Ensure workspace directory structure (previously via git client)
 	if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o750); err != nil {
 		return models.NewFatalStageError(models.StageCloneRepos, fmt.Errorf("ensure workspace: %w", err))

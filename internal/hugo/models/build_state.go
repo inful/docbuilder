@@ -6,6 +6,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
@@ -30,6 +31,11 @@ type Generator interface {
 
 // GitState manages git repository operations and state tracking.
 type GitState struct {
+	// RemoteHeadCache holds what the local clones have. The clone stage
+	// fetches only the repository whose remote moved: the cache tells it
+	// which ones those are.
+	RemoteHeadCache *git.RemoteHeadCache
+
 	Repositories      []config.Repository
 	RepoPaths         map[string]string
 	WorkspaceDir      string
