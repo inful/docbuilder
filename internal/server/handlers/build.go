@@ -75,13 +75,25 @@ func (h *BuildHandlers) handleTriggerAction(w http.ResponseWriter, r *http.Reque
 }
 
 // HandleTriggerDiscovery handles the discovery trigger endpoint.
+//
+// The call of the daemon is wrapped in a closure: the method value of a
+// daemon that is not there panics, and the closure runs only when the
+// daemon is there.
 func (h *BuildHandlers) HandleTriggerDiscovery(w http.ResponseWriter, r *http.Request) {
-	h.handleTriggerAction(w, r, "discovery", h.daemon.TriggerDiscovery, "failed to encode discovery trigger response")
+	h.handleTriggerAction(w, r, "discovery", func() string { return h.daemon.TriggerDiscovery() }, "failed to encode discovery trigger response")
 }
 
 // HandleTriggerBuild handles the build trigger endpoint.
 func (h *BuildHandlers) HandleTriggerBuild(w http.ResponseWriter, r *http.Request) {
-	h.handleTriggerAction(w, r, "build", h.daemon.TriggerBuild, "failed to encode build trigger response")
+	h.handleTriggerAction(w, r, "build", func() string { return h.daemon.TriggerBuild() }, "failed to encode build trigger response")
+}
+
+// daemonUnavailable answers that the daemon is not there.
+func (h *BuildHandlers) daemonUnavailable(w http.ResponseWriter, r *http.Request, serviceName string) {
+	err := errors.DaemonError("daemon not available").
+		WithContext("service", serviceName).
+		Build()
+	h.errorAdapter.WriteErrorResponse(w, r, err)
 }
 
 // HandleBuildStatus handles the build status endpoint.
@@ -92,6 +104,11 @@ func (h *BuildHandlers) HandleBuildStatus(w http.ResponseWriter, r *http.Request
 			WithContext("allowed_method", "GET").
 			Build()
 		h.errorAdapter.WriteErrorResponse(w, r, err)
+		return
+	}
+
+	if h.daemon == nil {
+		h.daemonUnavailable(w, r, "build status")
 		return
 	}
 
@@ -120,6 +137,11 @@ func (h *BuildHandlers) HandleRepositories(w http.ResponseWriter, r *http.Reques
 			WithContext("allowed_method", "GET").
 			Build()
 		h.errorAdapter.WriteErrorResponse(w, r, err)
+		return
+	}
+
+	if h.daemon == nil {
+		h.daemonUnavailable(w, r, "repositories")
 		return
 	}
 

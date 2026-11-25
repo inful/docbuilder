@@ -51,13 +51,14 @@ func (h *MonitoringHandlers) HandleHealthCheck(w http.ResponseWriter, r *http.Re
 		Status:    "healthy",
 		Timestamp: time.Now().UTC(),
 		Version:   version.Version,
-		Uptime:    time.Since(h.daemon.GetStartTime()).Seconds(),
 	}
 
-	// Check daemon health
+	// Check daemon health. The start time is only read when the daemon
+	// is there: the call of a daemon that is not there panics.
 	if h.daemon != nil {
 		health.DaemonStatus = h.daemon.GetStatus()
 		health.ActiveJobs = h.daemon.GetActiveJobs()
+		health.Uptime = time.Since(h.daemon.GetStartTime()).Seconds()
 	}
 
 	if err := writeJSONPretty(w, r, http.StatusOK, health); err != nil {
@@ -73,6 +74,14 @@ func (h *MonitoringHandlers) HandleMetrics(w http.ResponseWriter, r *http.Reques
 		err := errors.ValidationError("invalid HTTP method").
 			WithContext("method", r.Method).
 			WithContext("allowed_method", "GET").
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, r, err)
+		return
+	}
+
+	if h.daemon == nil {
+		err := errors.DaemonError("daemon not available").
+			WithContext("service", "metrics").
 			Build()
 		h.errorAdapter.WriteErrorResponse(w, r, err)
 		return
