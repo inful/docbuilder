@@ -18,7 +18,6 @@ import (
 type Client struct {
 	workspaceDir    string
 	buildCfg        *appcfg.BuildConfig // optional build config for strategy flags
-	inRetry         bool                // internal guard to avoid nested retry wrapping
 	remoteHeadCache *RemoteHeadCache    // cache for remote HEAD refs to skip unnecessary fetches
 }
 
@@ -57,9 +56,6 @@ func (c *Client) CloneRepo(ctx context.Context, repo appcfg.Repository) (string,
 // UpdateRepo updates an existing repository in the workspace.
 // If retry is enabled, it wraps the operation with retry logic.
 func (c *Client) UpdateRepo(ctx context.Context, repo appcfg.Repository) (string, error) {
-	if c.inRetry {
-		return c.updateOnce(ctx, repo)
-	}
 	return c.withRetry(ctx, "update", repo.Name, func() (string, error) {
 		return c.updateOnce(ctx, repo)
 	})
@@ -68,9 +64,6 @@ func (c *Client) UpdateRepo(ctx context.Context, repo appcfg.Repository) (string
 // CloneRepoWithMetadata clones a repository and returns metadata including commit date.
 // If retry is enabled, it wraps the operation with retry logic.
 func (c *Client) CloneRepoWithMetadata(ctx context.Context, repo appcfg.Repository) (CloneResult, error) {
-	if c.inRetry {
-		return c.cloneOnceWithMetadata(ctx, repo)
-	}
 	return c.withRetryMetadata(ctx, "clone", repo.Name, func() (CloneResult, error) {
 		return c.cloneOnceWithMetadata(ctx, repo)
 	})
