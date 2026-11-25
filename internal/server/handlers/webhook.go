@@ -200,10 +200,6 @@ func (h *WebhookHandlers) validateWebhookSignature(forgeName, signatureHeader st
 	}
 
 	signature := r.Header.Get(signatureHeader)
-	if signature == "" && signatureHeader == "X-Gitlab-Token" {
-		// GitLab uses token in header directly
-		signature = r.Header.Get("X-Gitlab-Token")
-	}
 
 	client, ok := h.forgeClients[forgeName]
 	if !ok || client == nil {
