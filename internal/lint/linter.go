@@ -86,6 +86,13 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 		result.FilesTotal = 1
 	}
 
+	// The error of the walk is returned here: the scan of the broken
+	// links below overwrites it, and a file that cannot be read was
+	// reported as a clean lint.
+	if err != nil {
+		return nil, err
+	}
+
 	// Broken link detection is a lint-time check (not only a fixer feature).
 	// This ensures `docbuilder lint` fails the same way `docbuilder lint --fix` reports.
 	//
