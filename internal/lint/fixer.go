@@ -293,7 +293,8 @@ func (f *Fixer) applyFixes(path string, result *Result) (*FixResult, error) {
 	// Phase 3: perform renames + link updates.
 	for filePath, issues := range fileIssues {
 		f.processFileWithIssues(filePath, issues, rootPath, fixResult, fingerprintTargets, fingerprintIssueCounts,
-			sequencePrefixTargets, sequencePrefixIssueCounts)
+			sequencePrefixTargets, sequencePrefixIssueCounts,
+			templateUIDBindingTargets, templateUIDBindingIssueCounts)
 	}
 
 	// Phase 3.5: heal broken links caused by Git renames/moves.
@@ -320,7 +321,7 @@ func (f *Fixer) applyFixes(path string, result *Result) (*FixResult, error) {
 }
 
 // processFileWithIssues handles fixing issues for a single file.
-func (f *Fixer) processFileWithIssues(filePath string, issues []Issue, rootPath string, fixResult *FixResult, fingerprintTargets map[string]struct{}, fingerprintIssueCounts map[string]int, sequencePrefixTargets map[string]struct{}, sequencePrefixIssueCounts map[string]int) {
+func (f *Fixer) processFileWithIssues(filePath string, issues []Issue, rootPath string, fixResult *FixResult, fingerprintTargets map[string]struct{}, fingerprintIssueCounts map[string]int, sequencePrefixTargets map[string]struct{}, sequencePrefixIssueCounts map[string]int, templateUIDBindingTargets map[string]struct{}, templateUIDBindingIssueCounts map[string]int) {
 	currentPath := filePath
 
 	// 1) Filename fixes (renames)
@@ -362,6 +363,18 @@ func (f *Fixer) processFileWithIssues(filePath string, issues []Issue, rootPath 
 		if c, okc := sequencePrefixIssueCounts[filePath]; okc {
 			delete(sequencePrefixIssueCounts, filePath)
 			sequencePrefixIssueCounts[currentPath] = c
+		}
+	}
+
+	// The file was renamed: the targets of the rule of the template
+	// hold the old name, and the fix of that rule looked for a file
+	// that does not exist any more.
+	if _, ok := templateUIDBindingTargets[filePath]; ok {
+		delete(templateUIDBindingTargets, filePath)
+		templateUIDBindingTargets[currentPath] = struct{}{}
+		if c, okc := templateUIDBindingIssueCounts[filePath]; okc {
+			delete(templateUIDBindingIssueCounts, filePath)
+			templateUIDBindingIssueCounts[currentPath] = c
 		}
 	}
 
