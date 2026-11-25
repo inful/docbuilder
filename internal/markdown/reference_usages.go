@@ -22,7 +22,8 @@ func extractUndefinedReferences(body []byte, defined map[string]struct{}) []Link
 	// The code of the document holds examples, not links.
 	regions := CodeBlockRegions(body)
 	ApplyOutsideCode(string(body), regions, func(part string) string {
-		for _, match := range referenceUsageRegex.FindAllStringSubmatch(part, -1) {
+		// The examples of the inline code are not links either.
+		for _, match := range referenceUsageRegex.FindAllStringSubmatch(stripInlineCodeSpans(part), -1) {
 			label := match[1]
 			if label == "" {
 				// The collapsed form "[text][]" holds no label of its

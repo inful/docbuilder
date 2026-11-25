@@ -37,3 +37,16 @@ func TestTheUsageOfADefinedReferenceIsNotBroken(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, broken, "the usage of the defined reference points at a file that exists")
 }
+
+// The examples of the inline code are not links: the syntax of a
+// reference-style link is shown in the documentation of the linter.
+func TestTheUsageInAnInlineCodeIsNotReported(t *testing.T) {
+	dir := t.TempDir()
+
+	page := filepath.Join(dir, "a.md")
+	require.NoError(t, os.WriteFile(page, []byte("---\ntitle: A\n---\n\n# A\n\nThe syntax of a link is `[text][ref]`.\n"), 0o600))
+
+	broken, err := detectBrokenLinks(dir, nil)
+	require.NoError(t, err)
+	require.Empty(t, broken, "the example of the inline code is not a link")
+}
