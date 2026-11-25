@@ -81,6 +81,36 @@ commits; pin to a SHA for reproducibility per the README.
 - **A damaged cache file does not take the daemon down.** The content
   "null" is a valid JSON, and it left the map of the cache nil: the
   next write panicked.
+- **The state of the daemon is updated when the build has no report.** A
+  build that failed before it wrote a report did not bring the site up
+  to date: the daemon still said that the old commit was current, and
+  the next webhook skipped the build.
+- **The build of a removed repository is not refused.** The build
+  service refused a build without repositories, and the build that
+  follows the removal of the last repository has none: the pages of
+  the removed repository stayed published for ever.
+- **The webhook waits for room in the queue of the consumer.** The
+  queue holds 32 events and the publish has a budget of two seconds: a
+  burst of webhooks dropped the last ones, and the forge does not send
+  them again.
+- **The scheduler runs its jobs again after a restart.** The engine of
+  the scheduler cannot be started again after it was shut down: the
+  periodic work of the daemon stopped for good after a restart.
+- **The stores stay open when the daemon stops.** The event store and
+  the search index are closed when the daemon stops and opened only in
+  the constructor: a daemon that was started again after a stop wrote
+  no events and no search index.
+- **The bus of the current run is read under a lock.** The bus is
+  written when the daemon starts and read by the goroutines of the
+  debouncer and of the updater: the race detector reported the three
+  pointers.
+- **The builds of the queue are counted.** The queue emitted the events
+  through the emitter of the state, and nobody called the daemon: the
+  counters of the builds read zero for ever.
+- **The pending build of the last run is gone after a restart.** The
+  snapshot of the last run survived the restart: the first build after
+  it pinned the commit of the last run, and the new content appeared one
+  build late.
 
 ### Changed
 - **The configuration of the linter holds what the linter reads.** Four
