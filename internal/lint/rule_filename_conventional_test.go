@@ -20,7 +20,7 @@ func TestTheConventionalNamesAreNotRenamed(t *testing.T) {
 		t.Fatalf("write the readme: %v", err)
 	}
 
-	l := NewLinter(&Config{Format: formatText})
+	l := NewLinter(&Config{})
 	res, err := l.LintPath(filepath.Join(dir, "docs"))
 	if err != nil {
 		t.Fatalf("lint: %v", err)
@@ -40,7 +40,7 @@ func TestANameThatIsNotConventionalIsReported(t *testing.T) {
 		t.Fatalf("write the guide: %v", err)
 	}
 
-	l := NewLinter(&Config{Format: formatText})
+	l := NewLinter(&Config{})
 	res, err := l.LintPath(dir)
 	if err != nil {
 		t.Fatalf("lint: %v", err)

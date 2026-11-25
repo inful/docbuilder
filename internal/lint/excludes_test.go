@@ -110,7 +110,7 @@ func TestMatchGlob_RecursiveWithoutPrefix(t *testing.T) {
 
 // TestLinter_ExcludesDefaultFiles verifies the linter excludes git-forge-conventional files.
 func TestLinter_ExcludesDefaultFiles(t *testing.T) {
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 
 	cases := []string{
 		"/repo/README.md",
@@ -131,7 +131,6 @@ func TestLinter_ExcludesDefaultFiles(t *testing.T) {
 // TestLinter_ExcludesCustomConfig verifies a custom Excludes list is honored.
 func TestLinter_ExcludesCustomConfig(t *testing.T) {
 	linter := NewLinter(&Config{
-		Format:   formatText,
 		Excludes: []string{"CUSTOM.md"}, // explicit empty default override not applied
 	})
 
@@ -147,7 +146,7 @@ func TestLinter_ExcludesCustomConfig(t *testing.T) {
 
 // TestLinter_NoExcludes verifies linter with nil Excludes uses defaults.
 func TestLinter_NoExcludes(t *testing.T) {
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 
 	if !linter.isExcluded("/repo/README.md", "/repo") {
 		t.Errorf("isExcluded(/repo/README.md) = false with nil Excludes; want true (defaults)")

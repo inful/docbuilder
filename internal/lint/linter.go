@@ -18,8 +18,6 @@ type Linter struct {
 	excludePatternsList []string
 }
 
-const formatText = "text"
-
 // globPattern is a compiled glob pattern that supports `**` as a recursive
 // wildcard in addition to the standard path.Match semantics.
 type globPattern struct {
@@ -31,7 +29,7 @@ type globPattern struct {
 // NewLinter creates a new linter with the given configuration.
 func NewLinter(cfg *Config) *Linter {
 	if cfg == nil {
-		cfg = &Config{Format: formatText}
+		cfg = &Config{}
 	}
 
 	excludes := cfg.Excludes

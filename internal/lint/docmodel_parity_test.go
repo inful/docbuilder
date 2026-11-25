@@ -36,7 +36,7 @@ func TestDocmodelParity_BrokenAndLinkDetection_AgreeOnLineNumbers(t *testing.T) 
 	absTarget, err := filepath.Abs(missingTarget)
 	require.NoError(t, err)
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false)
 
 	links, err := fixer.findLinksInFile(sourceFile, absTarget)

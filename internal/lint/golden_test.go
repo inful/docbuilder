@@ -61,7 +61,7 @@ func TestGoldenAutoFix_FileRenameWithLinkUpdates(t *testing.T) {
 	})
 
 	// Run the fixer
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false) // Not dry-run, not force
 
 	result, err := fixer.Fix(workDir)
@@ -128,7 +128,7 @@ func TestGoldenAutoFix_DryRun(t *testing.T) {
 	require.NoError(t, err, "failed to copy test data")
 
 	// Run the fixer in dry-run mode
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, true, false) // Dry-run mode
 
 	result, err := fixer.Fix(workDir)
@@ -196,7 +196,7 @@ func TestGoldenAutoFix_BrokenLinkDetection(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run fix (which includes broken link detection)
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false)
 
 	result, err := fixer.Fix(docsDir)

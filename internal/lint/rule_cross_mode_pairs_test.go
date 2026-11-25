@@ -33,7 +33,7 @@ tags:
 	}
 
 	// Without the pair the document is an error.
-	strict := NewLinter(&Config{Format: formatText})
+	strict := NewLinter(&Config{})
 	res, err := strict.LintPath(dir)
 	if err != nil {
 		t.Fatalf("lint: %v", err)
@@ -50,7 +50,6 @@ tags:
 
 	// With the pair the document is fine.
 	lenient := NewLinter(&Config{
-		Format: formatText,
 		AllowedCategoryPairs: map[string]map[string]bool{
 			"reference": {"tutorials": true},
 		},

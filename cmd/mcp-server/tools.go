@@ -413,7 +413,7 @@ func handleLintDocs(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	}
 	quiet := req.GetBool("quiet", false)
 
-	cfg := &lint.Config{Quiet: quiet, Format: "json", Excludes: state.cfg.LintExcludes(), AllowedCategoryPairs: state.cfg.LintAllowedCategoryPairs()}
+	cfg := &lint.Config{Quiet: quiet, Excludes: state.cfg.LintExcludes(), AllowedCategoryPairs: state.cfg.LintAllowedCategoryPairs()}
 	linter := lint.NewLinter(cfg)
 	result, err := linter.LintPath(path)
 	if err != nil {
@@ -447,7 +447,7 @@ func handleLintFix(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	// lint.Fixer and lint.NewFixer don't accept context.Context. The fix
 	// runs are local file operations that complete quickly, so using
 	// context.Background() internally is acceptable here.
-	fixer := lint.NewFixer(lint.NewLinter(&lint.Config{Yes: true, Excludes: state.cfg.LintExcludes(), AllowedCategoryPairs: state.cfg.LintAllowedCategoryPairs()}), dryRun, false).WithAutoConfirm(true)
+	fixer := lint.NewFixer(lint.NewLinter(&lint.Config{Excludes: state.cfg.LintExcludes(), AllowedCategoryPairs: state.cfg.LintAllowedCategoryPairs()}), dryRun, false).WithAutoConfirm(true)
 	//nolint:contextcheck // same rationale as above
 	fixResult, err := fixer.Fix(path)
 	if err != nil {
@@ -516,7 +516,7 @@ func computeManualRequired(path string, state *serverState) []manualIssueOut {
 		excludes = state.cfg.LintExcludes()
 		pairs = state.cfg.LintAllowedCategoryPairs()
 	}
-	linter := lint.NewLinter(&lint.Config{Format: "text", Excludes: excludes, AllowedCategoryPairs: pairs})
+	linter := lint.NewLinter(&lint.Config{Excludes: excludes, AllowedCategoryPairs: pairs})
 	lintResult, err := linter.LintPath(path)
 	if err != nil {
 		// Lint failures are non-fatal here: the manual_required list
@@ -913,7 +913,7 @@ func buildSequenceResolver(page *templating.TemplatePage, docsDir string) (func(
 // runLintFix helper. Failures are non-fatal — the caller decides whether to
 // surface them.
 func runLintFixOn(path string) map[string]any {
-	cfg := &lint.Config{Format: "text", Fix: true, Yes: true}
+	cfg := &lint.Config{}
 	fixer := lint.NewFixer(lint.NewLinter(cfg), false, false).WithAutoConfirm(true)
 	res, err := fixer.Fix(path)
 	if err != nil {

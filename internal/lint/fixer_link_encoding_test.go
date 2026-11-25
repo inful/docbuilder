@@ -20,7 +20,7 @@ func TestTheLinterDoesNotReportAPercentEncodedLinkAsBroken(t *testing.T) {
 		t.Fatalf("write other: %v", err)
 	}
 
-	l := NewLinter(&Config{Format: formatText})
+	l := NewLinter(&Config{})
 	res, err := l.LintPath(docsDir)
 	if err != nil {
 		t.Fatalf("lint: %v", err)

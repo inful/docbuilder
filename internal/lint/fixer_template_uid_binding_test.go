@@ -23,7 +23,7 @@ Canonical: /_uid/{{ .UID }}/
 `)
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
 	_, err := fixer.Fix(path)
 	require.NoError(t, err)
@@ -65,7 +65,7 @@ Canonical: /_uid/{{ .UID }}/
 `)
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
 	_, err := fixer.Fix(path)
 	require.NoError(t, err)
@@ -101,7 +101,7 @@ uid: "{{ .UID }}"
 	// it specifically does no work. The other fixers will still touch
 	// the outer file, which is fine — they're orthogonal.
 	original := content
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
 	fixResult := &FixResult{}
 	fixer.applyTemplateUIDBindingFixes(
@@ -137,7 +137,7 @@ Body references {{ .UID }} but this is not a template.
 
 	original := content
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
 	targets := map[string]struct{}{path: {}}
 	issueCounts := map[string]int{path: 1}
@@ -158,7 +158,7 @@ func TestFixer_ApplyTemplateUIDBindingFixes_PreservesCRLF(t *testing.T) {
 	content := "---\r\ntitle: \"Test Template\"\r\ncategories:\r\n  - templates\r\nparams:\r\n  docbuilder:\r\n    template:\r\n      type: \"test\"\r\n      name: \"Test\"\r\n      output_path: \"out/{{ .Slug }}.md\"\r\n---\r\n\r\n# Test Template\r\n\r\n```markdown\r\n" + inner + "```\r\n"
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
 	_, err := fixer.Fix(path)
 	require.NoError(t, err)
@@ -195,7 +195,7 @@ Canonical: /_uid/{{ .UID }}/
 `)
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
 	_, err := fixer.Fix(path)
 	require.NoError(t, err)

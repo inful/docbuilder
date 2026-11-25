@@ -32,7 +32,7 @@ func TestFixWithConfirmationLintsTheTreeOnce(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	counter := &countingRule{counts: map[string]int{}}
 	linter.rules = append(linter.rules, counter)
 

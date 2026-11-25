@@ -107,7 +107,7 @@ Code block (should be ignored):
 	require.NoError(t, err)
 
 	// Create fixer
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false)
 
 	// Find links
@@ -181,7 +181,7 @@ Also see [authentication](../API_Guide.md#auth).
 	require.NoError(t, err)
 
 	// Create fixer
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false)
 
 	// Find all links to target file (search from docs root)
@@ -246,7 +246,7 @@ Regular text continues here with [link](api.md).
 	require.NoError(t, err)
 
 	// Create fixer
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false)
 
 	// Find links
@@ -292,7 +292,7 @@ func TestLinkDiscovery_IgnoresLinksInTildeFencedCodeBlocks(t *testing.T) {
 	absTarget, err := filepath.Abs(targetFile)
 	require.NoError(t, err)
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false)
 
 	links, err := fixer.findLinksInFile(absSource, absTarget)

@@ -134,8 +134,7 @@ func (s *TemplateService) ResolveDocsDir() (string, error) {
 }
 
 func runLintFix(path string) error {
-	cfg := &lint.Config{Format: "text", Fix: true, Yes: true}
-	linter := lint.NewLinter(cfg)
+	linter := lint.NewLinter(&lint.Config{})
 	fixer := lint.NewFixer(linter, false, false).WithAutoConfirm(true)
 	_, err := fixer.Fix(path)
 	return err

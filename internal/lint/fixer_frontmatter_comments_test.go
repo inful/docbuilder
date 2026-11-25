@@ -32,7 +32,7 @@ body
 		t.Fatalf("write the document: %v", err)
 	}
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
 	if _, err := fixer.Fix(dir); err != nil {
 		t.Fatalf("fix: %v", err)

@@ -452,7 +452,7 @@ Check [API](../API_Guide.md).
 `), 0o600))
 
 	// Create linter and fixer
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false) // not dry-run, no confirm
 
 	// Apply fixes
@@ -516,7 +516,7 @@ Indented code (should NOT be updated):
 `
 	require.NoError(t, os.WriteFile(indexFile, []byte(indexContent), 0o600))
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false)
 
 	result, err := fixer.Fix(docsDir)

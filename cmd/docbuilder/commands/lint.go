@@ -96,10 +96,6 @@ func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 	// Create linter configuration
 	cfg := &lint.Config{
 		Quiet:    parent.Quiet,
-		Format:   parent.Format,
-		Fix:      parent.Fix,
-		DryRun:   parent.DryRun,
-		Yes:      parent.Yes,
 		Excludes: excludes,
 
 		AllowedCategoryPairs: pairs,
