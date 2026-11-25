@@ -250,8 +250,11 @@ func collectMarkdownFiles(rootPath string, excludes []string) ([]string, error) 
 			return nil
 		}
 
-		// Skip git-forge-conventional files
-		if isExcludedPath(path, rootPath, globs) {
+		// Skip git-forge-conventional files. The excludes are the
+		// paths of the repository: the walk of the rules and the walk
+		// of the broken links must use the same base, or the same file
+		// is linted by one and skipped by the other.
+		if isExcludedPath(path, repositoryRoot(rootPath), globs) {
 			return nil
 		}
 
