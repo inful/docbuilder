@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-29T00:00:00Z
-fingerprint: 12c7496caf9366fa606bbfc68b50255db511422ae70817a0122ac3978bfe6f42
-lastmod: "2026-11-24"
+fingerprint: 7019828e0afd6d49aa465bf9509b7bf12611349cb31e15752bc61b2d1cb7a18a
+lastmod: "2026-11-25"
 tags:
   - linting
   - validation
@@ -156,7 +156,7 @@ ERROR: Invalid filename
   notes-ideas.md
 ```
 
-**Auto-fix**: Replaces special characters with hyphens: `file@name.md` → `file-name.md`
+**Auto-fix**: Removes the special characters: `file@name.md` → `filename.md`
 
 **Error Message**:
 ```
