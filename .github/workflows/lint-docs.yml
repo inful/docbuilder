@@ -118,7 +118,8 @@ jobs:
                 comment += `#### \`${file}\`\n\n`;
 
                 for (const issue of byFile[file].slice(0, 5)) {
-                  const emoji = issue.severity === 'error' ? '❌' : '⚠️';
+                  // The severity is upper case in the JSON report.
+                  const emoji = issue.severity === 'ERROR' ? '❌' : '⚠️';
                   comment += `${emoji} **${issue.rule}** (line ${issue.line}): ${issue.message}\n`;
                   if (issue.fix) {
                     comment += `   💡 Suggestion: ${issue.fix}\n`;
