@@ -127,8 +127,14 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 
 	// Override CloneStrategy if Incremental flag is set to ensure backward compatibility
 	// with callers (like CLI) that use the Incremental flag.
+	//
+	// The configuration of the caller is not changed: the hash of the
+	// configuration holds the clone strategy, and a flag that does not
+	// change the build must not look like a change of the configuration.
 	if req.Incremental && req.Config.Build.CloneStrategy == appcfg.CloneStrategyFresh {
-		req.Config.Build.CloneStrategy = appcfg.CloneStrategyUpdate
+		cfg := *req.Config
+		cfg.Build.CloneStrategy = appcfg.CloneStrategyUpdate
+		req.Config = &cfg
 	}
 
 	generator := newHugoGenerator(req.Config, req.OutputDir, req.StateManager, s.recorder)
