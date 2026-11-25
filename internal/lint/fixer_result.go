@@ -164,6 +164,20 @@ func (fr *FixResult) Summary() string {
 		}
 	}
 
+	if len(fr.FrontmatterFields) > 0 {
+		fmt.Fprintf(&b, "\nFrontmatter fields filled in: %d files\n", len(fr.FrontmatterFields))
+		for _, update := range fr.FrontmatterFields {
+			fmt.Fprintf(&b, "  • %s (%s)\n", update.FilePath, strings.Join(update.Fields, ", "))
+		}
+	}
+
+	if len(fr.CategoryInjects) > 0 {
+		fmt.Fprintf(&b, "\nCategories written: %d files\n", len(fr.CategoryInjects))
+		for _, update := range fr.CategoryInjects {
+			fmt.Fprintf(&b, "  • %s (%s)\n", update.FilePath, update.Category)
+		}
+	}
+
 	if len(fr.LinksUpdated) > 0 {
 		b.WriteString("\nLink Updates:\n")
 		for _, update := range fr.LinksUpdated {
