@@ -29,6 +29,10 @@ type BuildJobMetadata struct {
 	// Keys are repository URLs.
 	RepoSnapshot map[string]string `json:"repo_snapshot,omitempty"`
 
+	// Removal says that a repository was removed and the site must be
+	// rendered without it.
+	Removal bool `json:"removal,omitempty"`
+
 	// Live reload
 	LiveReloadHub LiveReloadHub `json:"-"`
 

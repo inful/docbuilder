@@ -346,7 +346,7 @@ func (d *Daemon) matchWebhookRepo(evt events.WebhookReceived, evtBranch string, 
 }
 
 func (d *Daemon) retryWebhookAfterDiscovery(ctx context.Context, evt events.WebhookReceived) {
-	if d == nil || d.serve.orchestrationBus == nil {
+	if d == nil || d.orchestrationBus() == nil {
 		return
 	}
 	// Wait for discovery to populate the repo list, then re-publish the webhook event.

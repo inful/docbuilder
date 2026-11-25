@@ -28,19 +28,9 @@ func StageDiscoverDocs(ctx context.Context, bs *models.BuildState) error {
 	if err != nil {
 		return models.NewFatalStageError(models.StageDiscoverDocs, fmt.Errorf("%w: %w", models.ErrDiscovery, err))
 	}
-	prevCount := len(bs.Docs.Files)
-	prevFiles := bs.Docs.Files
-
 	bs.Docs.Files = docFiles
 	bs.Docs.IsSingleRepo = discovery.IsSingleRepo() // Set single-repo flag from discovery
 	bs.Docs.BuildIndexes()                          // Update indexes after changing files
-
-	// Detect if documentation files have changed
-	if DetectDocumentChanges(prevFiles, docFiles, bs.Docs.IsSingleRepo) || !bs.Git.AllReposUnchanged {
-		// Files or repos changed - continue with build
-	} else if prevCount > 0 {
-		slog.Info("Documentation files unchanged", slog.Int("files", prevCount))
-	}
 
 	repoSet := map[string]struct{}{}
 	for i := range docFiles {

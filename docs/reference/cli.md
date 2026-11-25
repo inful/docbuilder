@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 75d20ca5a90d13b45a215d358aef8a1dafd238c771d37c70d2c1e82209ce5c3a
-lastmod: "2026-11-24"
+fingerprint: 85f35de0b8f998b76eb26915ca120a2b3046289317ca3045a1bf36f8087dd155
+lastmod: "2026-11-25"
 tags:
   - cli
   - commands
@@ -337,8 +337,11 @@ Generated in output directory after `build` command:
 | Exit Code | Meaning |
 |-----------|---------|
 | 0 | Success |
-| 2 | Configuration or validation error |
-| 10 | Authentication error |
-| 11 | Git operation error |
-| 20 | Network error (retryable) |
-| 1 | Other error |
+| 1 | Other error (the command failed) |
+| 2 | Invalid usage (a flag or an argument is wrong) |
+| 5 | Authentication or permission error |
+| 7 | Configuration error |
+| 8 | Network, git or forge error |
+| 10 | Internal error |
+| 11 | Build error (the site was not built) |
+| 12 | Runtime or daemon error |

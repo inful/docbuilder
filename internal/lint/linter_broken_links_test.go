@@ -33,7 +33,7 @@ func TestLinter_LintPath_DetectsBrokenLinks(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "guide.md"), []byte("# Guide\n"), 0o600))
 
-	l := NewLinter(&Config{Format: formatText})
+	l := NewLinter(&Config{})
 	res, err := l.LintPath(docsDir)
 	require.NoError(t, err)
 

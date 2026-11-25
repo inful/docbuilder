@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-29T00:00:00Z
-fingerprint: 12c7496caf9366fa606bbfc68b50255db511422ae70817a0122ac3978bfe6f42
-lastmod: "2026-11-24"
+fingerprint: 4c782f6fa623dcc2170327ebdaa5757b78863a3e351b4a2ba55396b872691060
+lastmod: "2026-11-25"
 tags:
   - linting
   - validation
@@ -156,7 +156,7 @@ ERROR: Invalid filename
   notes-ideas.md
 ```
 
-**Auto-fix**: Replaces special characters with hyphens: `file@name.md` → `file-name.md`
+**Auto-fix**: Removes the special characters: `file@name.md` → `filename.md`
 
 **Error Message**:
 ```
@@ -281,9 +281,11 @@ ERROR: Invalid double extension
 
 Content rules validate the internal structure of markdown files.
 
-### Rule: Malformed Frontmatter YAML
+### Rule: Frontmatter Required Fields (malformed YAML)
 
 **Pattern**: Invalid YAML syntax in frontmatter block
+
+**Rule**: `frontmatter-required-fields`
 
 **Rationale**:
 - Hugo silently skips pages with invalid frontmatter
@@ -329,10 +331,10 @@ tags:
 
 **Error Message**:
 ```
-ERROR: Invalid frontmatter
+ERROR: Frontmatter YAML could not be parsed
   File: docs/api-guide.md
   Line: 4
-  Issue: YAML parsing failed: mapping values are not allowed here
+  Issue: The YAML frontmatter could not be parsed: mapping values are not allowed here
   
   ---
   title: API Guide
@@ -346,9 +348,11 @@ ERROR: Invalid frontmatter
 
 ---
 
-### Rule: Missing Frontmatter Closing
+### Rule: Frontmatter Fingerprint (missing closing delimiter)
 
 **Pattern**: Frontmatter starts with `---` but missing closing `---`
+
+**Rule**: `frontmatter-fingerprint`
 
 **Rationale**:
 - Hugo treats entire file as frontmatter
@@ -384,11 +388,10 @@ This is the content...
 
 **Error Message**:
 ```
-ERROR: Incomplete frontmatter
+ERROR: yaml frontmatter start delimiter found but closing delimiter is missing
   File: docs/api-guide.md
-  Issue: Missing closing --- marker
+  Issue: Frontmatter started at line 1 but never closed.
   
-  Frontmatter started at line 1 but never closed.
   Hugo will treat the entire file as frontmatter,
   resulting in a blank page.
   
@@ -617,7 +620,6 @@ Linting rules evolve with DocBuilder versions. See [Lint Rules Changelog](./lint
 | `0` | Success | No issues found (clean) |
 | `1` | Warnings | Warnings present, no errors |
 | `2` | Errors | Errors found (blocks build) |
-| `3` | Failure | Linter execution error |
 
 ---
 

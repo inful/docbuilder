@@ -2,36 +2,57 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"testing"
-	"time"
 
+	"github.com/stretchr/testify/require"
+
+	"git.home.luguber.info/inful/docbuilder/internal/build"
+	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
-// The state is updated after every build, also after a failed one.
-//
-// The state was only updated after a successful build: after a failed
-// build every repository still reported the result of the last
-// successful build, and the time of the last build stayed the time of
-// the last successful one.
-func TestAFailedBuildUpdatesTheState(t *testing.T) {
-	d := &Daemon{
-		config: &config.Config{},
-		lifecycle: lifecycleStack{
-			startTime: time.Now(),
-		},
-		state:    &stateStack{stateManager: &fakeDaemonStateManager{}},
-		optional: &optionalStack{},
-		serve:    &serveStack{},
-	}
+// errWorkspace is the error of a build that fails before it writes a
+// report: the workspace of the build cannot be made.
+var errWorkspace = errors.New("failed to create workspace")
 
-	report := &models.BuildReport{Outcome: models.OutcomeFailed}
-	if err := d.onBuildReportEmitted(context.Background(), "build-1", report); err != nil {
-		t.Fatalf("the failed build reported an error: %v", err)
-	}
+// reportlessBuildService is a build that fails before it writes a
+// report: the workspace of the build cannot be made.
+type reportlessBuildService struct{}
 
-	if d.lifecycle.lastBuild == nil {
-		t.Fatal("the time of the last build was not raised by the failed build")
-	}
+func (reportlessBuildService) Run(context.Context, build.BuildRequest) (*build.BuildResult, error) {
+	return &build.BuildResult{Status: build.BuildStatusFailed}, errWorkspace
+}
+
+func (reportlessBuildService) RunDirect(context.Context, build.DirectBuildRequest) (*build.BuildResult, error) {
+	return &build.BuildResult{Status: build.BuildStatusFailed}, errWorkspace
+}
+
+// A build that failed before it wrote a report did not bring the site
+// up to date: the daemon still said that the old commit was current,
+// and the next webhook skipped the build. The state of the daemon is
+// updated even when there is no report.
+func TestTheFailedBuildUpdatesTheStateOfTheDaemon(t *testing.T) {
+	cache, err := git.NewRemoteHeadCache("")
+	require.NoError(t, err)
+	cache.Set("https://example.invalid/repo.git", "main", "abc123")
+
+	updater := NewRepoUpdater(nil, nil, cache, nil)
+
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:       &config.Config{Daemon: &config.DaemonConfig{}},
+		BuildService: reportlessBuildService{},
+		RepoUpdater:  updater,
+		StateManager: newFakeDaemonStateManager(),
+	})
+
+	job := &queue.BuildJob{ID: "job-1"}
+	queue.EnsureTypedMeta(job).V2Config = &config.Config{Daemon: &config.DaemonConfig{}}
+
+	_, err = d.Build(t.Context(), job)
+	require.Error(t, err, "the build failed")
+
+	require.Nil(t, cache.Get("https://example.invalid/repo.git", "main"),
+		"the state of the daemon still says that the old commit is current")
 }

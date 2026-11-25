@@ -40,7 +40,6 @@ func withDefaults(apiURL, baseURL, defAPI, defBase string) (string, string) {
 	return apiURL, baseURL
 }
 
-// tokenFromConfig extracts token from forge config or returns an error.
 // ignoreFiles returns the files that keep a repository out of the
 // site: the ones of the configuration, or .docignore when there are
 // none.
@@ -51,6 +50,7 @@ func ignoreFiles(config *Config) []string {
 	return []string{".docignore"}
 }
 
+// tokenFromConfig extracts token from forge config or returns an error.
 func tokenFromConfig(fg *Config, forgeName string) (string, error) {
 	if fg != nil && fg.Auth != nil && fg.Auth.Type == cfg.AuthTypeToken {
 		if fg.Auth.Token == "" {

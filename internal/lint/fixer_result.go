@@ -19,6 +19,9 @@ type FixResult struct {
 	ErrorsFixed       int
 	WarningsFixed     int
 	Errors            []error
+	// DryRun says that nothing was written: the report says what
+	// would happen.
+	DryRun bool
 }
 
 // BrokenLinkHealSkip records when the broken-link healer intentionally
@@ -120,10 +123,18 @@ func (fr *FixResult) CountAffectedFiles() int {
 func (fr *FixResult) Summary() string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "Files renamed: %d\n", len(fr.FilesRenamed))
-	fmt.Fprintf(&b, "Errors fixed: %d\n", fr.ErrorsFixed)
-	fmt.Fprintf(&b, "Fingerprints updated: %d\n", len(fr.Fingerprints))
-	fmt.Fprintf(&b, "Links updated: %d\n", len(fr.LinksUpdated))
+	if fr.DryRun {
+		// Nothing was written: the report says what would happen.
+		fmt.Fprintf(&b, "Files to be renamed: %d\n", len(fr.FilesRenamed))
+		fmt.Fprintf(&b, "Errors to fix: %d\n", fr.ErrorsFixed)
+		fmt.Fprintf(&b, "Fingerprints to update: %d\n", len(fr.Fingerprints))
+		fmt.Fprintf(&b, "Links to update: %d\n", len(fr.LinksUpdated))
+	} else {
+		fmt.Fprintf(&b, "Files renamed: %d\n", len(fr.FilesRenamed))
+		fmt.Fprintf(&b, "Errors fixed: %d\n", fr.ErrorsFixed)
+		fmt.Fprintf(&b, "Fingerprints updated: %d\n", len(fr.Fingerprints))
+		fmt.Fprintf(&b, "Links updated: %d\n", len(fr.LinksUpdated))
+	}
 
 	if len(fr.BrokenLinks) > 0 {
 		fmt.Fprintf(&b, "\nBroken links detected: %d\n", len(fr.BrokenLinks))

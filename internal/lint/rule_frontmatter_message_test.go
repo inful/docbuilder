@@ -17,7 +17,7 @@ func TestTheMessageOfADocumentWithoutFrontmatter(t *testing.T) {
 		t.Fatalf("write the document: %v", err)
 	}
 
-	l := NewLinter(&Config{Format: formatText})
+	l := NewLinter(&Config{})
 	res, err := l.LintPath(dir)
 	if err != nil {
 		t.Fatalf("lint: %v", err)

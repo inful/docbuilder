@@ -102,7 +102,7 @@ title: "{{ .Title }}"
 Canonical: /_uid/{{ .UID }}/
 `+"```\n")
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
 	result, err := fixer.Fix(filepath.Join(tmpDir, "docs"))
 	if err != nil {

@@ -219,6 +219,10 @@ func (f *JSONFormatter) Format(w io.Writer, result *Result, detectedPath string,
 		ErrorCount:      result.ErrorCount(),
 		WarningCount:    result.WarningCount(),
 		InfoCount:       0,
+		// The list of the issues is never empty in the report: the
+		// schema says it is a list, and a script that reads it fails
+		// on a null.
+		Issues: make([]JSONIssue, 0),
 	}
 
 	for _, issue := range result.Issues {

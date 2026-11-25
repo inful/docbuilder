@@ -178,18 +178,6 @@ type Config struct {
 	// Quiet suppresses warnings, only showing errors.
 	Quiet bool
 
-	// Format specifies output format (text, json).
-	Format string
-
-	// Fix enables automatic fixing of issues where possible.
-	Fix bool
-
-	// DryRun shows what would be fixed without applying changes.
-	DryRun bool
-
-	// Yes automatically confirms fixes without prompting.
-	Yes bool
-
 	// Excludes is the list of glob patterns identifying files that
 	// should be skipped from lint and schema enforcement. Patterns are
 	// matched against the file's path relative to the repo root using

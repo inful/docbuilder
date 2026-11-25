@@ -44,9 +44,7 @@ func (c *Client) withRetry(ctx context.Context, op, repoName string, fn func() (
 		if err := ctx.Err(); err != nil {
 			return "", err
 		}
-		c.inRetry = true
 		path, err := fn()
-		c.inRetry = false
 		if err == nil {
 			return path, nil
 		}
@@ -109,9 +107,7 @@ func (c *Client) withRetryMetadata(ctx context.Context, op, repoName string, fn 
 		if err := ctx.Err(); err != nil {
 			return CloneResult{}, err
 		}
-		c.inRetry = true
 		result, err := fn()
-		c.inRetry = false
 		if err == nil {
 			return result, nil
 		}

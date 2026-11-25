@@ -58,7 +58,7 @@ func TestLinter_NoMissingIndexPageIssues(t *testing.T) {
 	writeLinterTestDoc(t, dir, "d.md")
 	writeLinterTestDoc(t, dir, "e.md")
 
-	l := NewLinter(&Config{Format: "text"})
+	l := NewLinter(&Config{})
 	result, err := l.LintPath(root)
 	if err != nil {
 		t.Fatalf("LintPath: %v", err)
@@ -75,7 +75,7 @@ func TestLinter_NoMissingIndexPageIssues(t *testing.T) {
 // ran (e.g. moved CheckDirectory out of the lint path), the rule
 // registration itself should not exist anymore.
 func TestLinter_NoMissingIndexPageRuleRegistered(t *testing.T) {
-	l := NewLinter(&Config{Format: "text"})
+	l := NewLinter(&Config{})
 	for _, r := range l.rules {
 		if r.Name() == "missing-index-page" {
 			t.Errorf("rule %q should not be registered; it was deprecated", r.Name())
@@ -100,7 +100,7 @@ func TestFixResult_NoMissingIndexPagesField(t *testing.T) {
 // declare. Uses an inline anonymous interface so the test compiles
 // whether or not DirectoryRule exists as a named type.
 func TestNoRuleImplementsDirectoryRule(t *testing.T) {
-	l := NewLinter(&Config{Format: "text"})
+	l := NewLinter(&Config{})
 	for _, r := range l.rules {
 		if _, ok := r.(interface {
 			CheckDirectory(string) ([]Issue, error)

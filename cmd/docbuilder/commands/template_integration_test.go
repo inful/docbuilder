@@ -415,7 +415,7 @@ func TestTemplateNew_SingleTemplate_Integration(t *testing.T) {
 	require.Contains(t, content, "architecture-decisions")
 
 	// Verify lint was run (file should have proper frontmatter)
-	linter := lint.NewLinter(&lint.Config{Format: "text"})
+	linter := lint.NewLinter(&lint.Config{})
 	result, err := linter.LintPath(expectedPath)
 	require.NoError(t, err)
 	// Filter out the known-issue `tags` field absence — the template body

@@ -9,6 +9,132 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.28] - 2026-11-25
+
+### Fixed
+- **The pre-commit hook is installed where git reads it.** The path of
+  the git directory kept the newline of the output of the command, and
+  the hook was written to a directory that does not exist: the lint
+  check never ran, and the command said it was installed.
+- **A typo in the render mode is an error.** An unknown render mode
+  became "auto", and in "auto" the build does not run hugo: the site
+  was published with the scaffold only, and the build said it was fine.
+- **The incremental build uses a workspace that stays.** The workspace
+  of the command line was a directory of its own, and the clone of the
+  repository was never found in it: every repository was cloned again,
+  and the flag did nothing.
+- **The build does not change the configuration of the caller.** The
+  hash of the configuration holds the clone strategy, and the build
+  changed it behind the back of the caller: the same configuration file
+  had two hashes.
+- **The name of a repository does not depend on the order of the
+  discovery.** The forges are asked at the same time, and the order of
+  the answer is the order of the race between them: two repositories
+  that share a name swapped their names from one run to the next, and
+  the name of a repository is the address of its pages.
+- **The cache of the documentation check belongs to one forge.** Two
+  forges hold repositories with the same full name, and the answer of
+  one of them was used for the other one: the marker that keeps a
+  repository out of the site took the repository of another forge out
+  of it.
+- **The discovery without a filtering configuration does not panic.**
+  The warning about the filtered repositories read the configuration
+  without a check, and the panic took the whole process down.
+- **The admin server refuses a monitoring path with a wildcard.** The
+  router panics on a path with a broken wildcard, and the panic took
+  the whole daemon down.
+- **The two links with the same target on one line are rewritten.** The
+  line of the second link was looked for after the line of the first
+  one: the fixer rewrote one link and left the other one pointing at a
+  file that does not exist.
+- **The lint of a single file honours the excludes.** The pre-commit
+  hook lints every staged file on its own, and the readme of the
+  repository was linted: the commit of every readme was blocked.
+- **The lint of a single file resolves the links of the site.** The
+  file was the root of the tree, and the link "/bar" was reported as
+  broken: the commit of every page with a site-absolute link was
+  blocked.
+- **The excludes are the paths of the repository.** The same file was
+  linted or not depending on the directory the linter was started in.
+- **The query of a link is not part of the file.** The link
+  "./exists.md?ref=foo" was reported as broken, and the build was
+  blocked.
+- **The link with an encoded name is rewritten.** The name of the file
+  in a link is written the way a URL writes it ("%20"), and the fixer
+  left such a link pointing at a file that was renamed.
+- **The title of a page is not taken from a code block.** The comment of
+  a shell command was the title of the page.
+- **The fixer asks before it changes the files.** The command line
+  changed the files of the operator without asking.
+- **The dry run says what would happen.** The report of a dry run said
+  that the fingerprints were updated and that the files were renamed:
+  nothing was written.
+- **The JSON report holds a list of issues and not a null.** The recipe
+  of the documentation fails on a clean tree.
+- **The usage of an undefined reference is reported.** The parser
+  leaves the usage of a reference-style link whose label is not defined
+  as plain text: the navigation was dead, and nothing reported it.
+- **The broken link of a reference is reported once.** The definition
+  of a reference and the usage of it point at the same file.
+- **The handler behind the middleware can stream its answer.** The
+  wrapper of the response held the answer in a buffer.
+- **A damaged cache file does not take the daemon down.** The content
+  "null" is a valid JSON, and it left the map of the cache nil: the
+  next write panicked.
+- **The state of the daemon is updated when the build has no report.** A
+  build that failed before it wrote a report did not bring the site up
+  to date: the daemon still said that the old commit was current, and
+  the next webhook skipped the build.
+- **The build of a removed repository is not refused.** The build
+  service refused a build without repositories, and the build that
+  follows the removal of the last repository has none: the pages of
+  the removed repository stayed published for ever.
+- **The webhook waits for room in the queue of the consumer.** The
+  queue holds 32 events and the publish has a budget of two seconds: a
+  burst of webhooks dropped the last ones, and the forge does not send
+  them again.
+- **The scheduler runs its jobs again after a restart.** The engine of
+  the scheduler cannot be started again after it was shut down: the
+  periodic work of the daemon stopped for good after a restart.
+- **The stores stay open when the daemon stops.** The event store and
+  the search index are closed when the daemon stops and opened only in
+  the constructor: a daemon that was started again after a stop wrote
+  no events and no search index.
+- **The bus of the current run is read under a lock.** The bus is
+  written when the daemon starts and read by the goroutines of the
+  debouncer and of the updater: the race detector reported the three
+  pointers.
+- **The builds of the queue are counted.** The queue emitted the events
+  through the emitter of the state, and nobody called the daemon: the
+  counters of the builds read zero for ever.
+- **The pending build of the last run is gone after a restart.** The
+  snapshot of the last run survived the restart: the first build after
+  it pinned the commit of the last run, and the new content appeared one
+  build late.
+
+### Changed
+- **The configuration of the linter holds what the linter reads.** Four
+  fields were written by the callers and read by nobody.
+- **The code that nothing calls is gone.** The edit link resolver, the
+  second link rewriter and the change detector of the documents had
+  two implementations each, and only one of them was used.
+- **The guard of the retry of the git client is gone.** The flag was
+  written and read without a lock, and it guarded nothing.
+- **The error variables of the forge package are gone.** The eight
+  exported variables were read by nobody.
+
+### Documentation
+- **The documentation holds the command that exists.** The reference of
+  the pipeline documented the command "visualize", which was removed.
+- **The auto-fix of the file name is the one of the code.** The fixer
+  removes the special characters instead of replacing them with
+  hyphens.
+- **The contribution guide points at a file that exists.**
+- **The exit codes and the rules of the linter are the ones of the
+  code.** The table of the exit codes named a code that never happens,
+  and two rules of the frontmatter that never occur were documented.
+
+
 ## [0.35.27] - 2026-11-25
 
 ### Fixed

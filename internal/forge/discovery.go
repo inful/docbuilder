@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -290,8 +291,14 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 		"repos_with_docignore", docsIgnored)
 
 	if originalCount > 0 && len(validRepos) == 0 {
-		if len(ds.filtering.IncludePatterns) > 0 {
-			for _, p := range ds.filtering.IncludePatterns {
+		// The filtering may be nil: the rest of the package copes
+		// with that, and the warning below took the process down.
+		filtering := ds.filtering
+		if filtering == nil {
+			filtering = &config.FilteringConfig{}
+		}
+		if len(filtering.IncludePatterns) > 0 {
+			for _, p := range filtering.IncludePatterns {
 				if strings.Contains(p, "/") {
 					slog.Warn("All repositories filtered: include_patterns contains path-like pattern which won't match repository names", "pattern", p)
 					break
@@ -301,9 +308,9 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 		slog.Warn("All repositories filtered out by configuration",
 			"forge", client.GetName(),
 			"total_before", originalCount,
-			"required_paths", ds.filtering.RequiredPaths,
-			"include_patterns", ds.filtering.IncludePatterns,
-			"exclude_patterns", ds.filtering.ExcludePatterns)
+			"required_paths", filtering.RequiredPaths,
+			"include_patterns", filtering.IncludePatterns,
+			"exclude_patterns", filtering.ExcludePatterns)
 	}
 
 	return validRepos, organizations, filteredRepos, nil
@@ -420,7 +427,11 @@ func docsCacheKey(repo *Repository) string {
 	if repo == nil || repo.FullName == "" || repo.LastUpdated.IsZero() {
 		return ""
 	}
-	return fmt.Sprintf("%s|%s", repo.FullName, repo.DefaultBranch)
+	// The forge is part of the key: two forges hold repositories with
+	// the same full name, and the answer of one of them says nothing
+	// about the other. The "keep this repository out of the site" of
+	// one forge must not take the repository of the other one out.
+	return fmt.Sprintf("%s|%s|%s", repo.Metadata["forge_name"], repo.FullName, repo.DefaultBranch)
 }
 
 // cachedDocsCheck returns the cached answer for a repository that has not
@@ -518,11 +529,22 @@ func toLowerCase(b byte) byte {
 // same name on two forges - and then one of them eats the other and
 // vanishes from the site without a word. So every name in the list must
 // be its own; the second one with a name gets a name from its full path.
+//
+// The list is sorted before the names are given: the forges are asked at
+// the same time, and the order of the answer is the order of the race.
+// The name of a repository is its address on the site, and it must not
+// change from one run to the next.
 func (ds *DiscoveryService) ConvertToConfigRepositories(repos []*Repository, forgeManager *Manager) []config.Repository {
 	configRepos := make([]config.Repository, 0, len(repos))
 	usedNames := make(map[string]struct{}, len(repos))
 
-	for _, repo := range repos {
+	sorted := make([]*Repository, len(repos))
+	copy(sorted, repos)
+	slices.SortStableFunc(sorted, func(a, b *Repository) int {
+		return strings.Compare(repoSortKey(a), repoSortKey(b))
+	})
+
+	for _, repo := range sorted {
 		// Find the forge config for this repository
 		var auth *config.AuthConfig
 		forgeNameMeta := repo.Metadata["forge_name"]
@@ -562,6 +584,16 @@ func (ds *DiscoveryService) ConvertToConfigRepositories(repos []*Repository, for
 	}
 
 	return configRepos
+}
+
+// repoSortKey is the key the repositories are sorted by: the forge they
+// live on, their full name and their clone URL. Every one of them is
+// the same from one run to the next.
+func repoSortKey(repo *Repository) string {
+	if repo == nil {
+		return ""
+	}
+	return repo.Metadata["forge_name"] + "\x00" + repo.FullName + "\x00" + repo.CloneURL
 }
 
 // uniqueRepoName builds a name that no other repository in the list

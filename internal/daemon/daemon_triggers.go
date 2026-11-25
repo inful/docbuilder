@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -30,7 +31,7 @@ func (d *Daemon) TriggerBuild() string {
 	if d.GetStatus() != StatusRunning {
 		return ""
 	}
-	if d.serve.orchestrationBus == nil {
+	if d.orchestrationBus() == nil {
 		return ""
 	}
 
@@ -63,6 +64,29 @@ func (d *Daemon) TriggerBuild() string {
 	return jobID
 }
 
+// webhookRetryTimeout bounds the wait of a webhook whose consumer is
+// busy. The event waits for room instead of being dropped: the forge
+// does not send it again.
+const webhookRetryTimeout = 30 * time.Second
+
+// retryWebhookInBackground publishes a webhook that did not fit in the
+// queue of the consumer. The daemon waits for room in the background,
+// and the forge is told that the webhook was received.
+func (d *Daemon) retryWebhookInBackground(evt events.WebhookReceived) {
+	d.goWorker("webhook_retry", func() {
+		ctx, cancel := context.WithTimeout(context.Background(), webhookRetryTimeout)
+		defer cancel()
+
+		if err := d.publishOrchestrationEventWithTimeout(ctx, evt, webhookRetryTimeout); err != nil {
+			slog.Error("Failed to publish the webhook event",
+				logfields.JobID(evt.JobID),
+				logfields.Error(err),
+				slog.String("forge", evt.ForgeName),
+				slog.String("repo", evt.RepoFullName))
+		}
+	})
+}
+
 // TriggerWebhookBuild processes a webhook event and requests an orchestrated build.
 //
 // The webhook payload is used to decide whether a build should be requested and which
@@ -76,7 +100,7 @@ func (d *Daemon) TriggerWebhookBuild(forgeName, repoFullName, branch string, cha
 	if d.GetStatus() != StatusRunning {
 		return ""
 	}
-	if d.serve.orchestrationBus == nil {
+	if d.orchestrationBus() == nil {
 		return ""
 	}
 	jobID := ""
@@ -94,14 +118,26 @@ func (d *Daemon) TriggerWebhookBuild(forgeName, repoFullName, branch string, cha
 	ctx, cancel := context.WithTimeout(context.Background(), publishTimeout)
 	defer cancel()
 
-	if err := d.publishOrchestrationEvent(ctx, events.WebhookReceived{
+	evt := events.WebhookReceived{
 		JobID:        jobID,
 		ForgeName:    forgeName,
 		RepoFullName: repoFullName,
 		Branch:       branch,
 		ChangedFiles: filesCopy,
 		ReceivedAt:   time.Now(),
-	}); err != nil {
+	}
+	if err := d.publishOrchestrationEvent(ctx, evt); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			// The queue of the consumer is full: the webhook waits in
+			// the background for room. The forge does not send it
+			// again, and the commit it announced was never published.
+			d.retryWebhookInBackground(evt)
+			slog.Info("Webhook waits for room in the queue of the consumer",
+				logfields.JobID(jobID),
+				slog.String("forge", forgeName),
+				slog.String("repo", repoFullName))
+			return jobID
+		}
 		slog.Warn("Failed to publish webhook received event",
 			logfields.JobID(jobID),
 			logfields.Error(err),
@@ -128,7 +164,7 @@ func (d *Daemon) triggerScheduledBuildForExplicitRepos(ctx context.Context) {
 	if ctx == nil {
 		return
 	}
-	if d.serve.orchestrationBus == nil {
+	if d.orchestrationBus() == nil {
 		return
 	}
 

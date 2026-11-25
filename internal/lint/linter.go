@@ -18,8 +18,6 @@ type Linter struct {
 	excludePatternsList []string
 }
 
-const formatText = "text"
-
 // globPattern is a compiled glob pattern that supports `**` as a recursive
 // wildcard in addition to the standard path.Match semantics.
 type globPattern struct {
@@ -31,7 +29,7 @@ type globPattern struct {
 // NewLinter creates a new linter with the given configuration.
 func NewLinter(cfg *Config) *Linter {
 	if cfg == nil {
-		cfg = &Config{Format: formatText}
+		cfg = &Config{}
 	}
 
 	excludes := cfg.Excludes
@@ -78,15 +76,32 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 	if info.IsDir() {
 		err = l.lintDirectory(path, result)
 	} else {
+		// The excludes hold for a single file too: the pre-commit
+		// hook lints every staged file on its own, and the readme of
+		// the repository is never reported.
+		if l.isExcluded(path, repositoryRoot(path)) {
+			return result, nil
+		}
 		err = l.lintFile(path, result)
 		result.FilesTotal = 1
 	}
 
 	// Broken link detection is a lint-time check (not only a fixer feature).
 	// This ensures `docbuilder lint` fails the same way `docbuilder lint --fix` reports.
-	brokenLinks, blErr := detectBrokenLinks(path, l.excludePatterns())
-	if blErr != nil {
-		return nil, blErr
+	//
+	// The root of the tree is the root of the repository: the link
+	// "/bar" points at a file of the site, and a file is never inside a
+	// directory, so the walk that resolves the link stopped at once and
+	// the link was reported as broken.
+	var brokenLinks []BrokenLink
+	if info.IsDir() {
+		brokenLinks, err = detectBrokenLinks(path, l.excludePatterns())
+	} else if IsDocFile(path) {
+		// A file that cannot be read does not stop the lint.
+		brokenLinks, _ = detectBrokenLinksInFile(path, repositoryRoot(path))
+	}
+	if err != nil {
+		return nil, err
 	}
 	result.brokenLinks = brokenLinks
 	for _, bl := range brokenLinks {
@@ -94,6 +109,38 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 	}
 
 	return result, err
+}
+
+// repositoryRoot returns the root of the repository that holds the path:
+// the directory that holds the .git of the repository.
+//
+// The excludes of the linter are paths of the repository ("README.md"),
+// and they are matched against the path relative to that root: the same
+// file is linted or not depending on the directory the linter was
+// started in.
+//
+// Without a repository the directory of the path is the root.
+func repositoryRoot(path string) string {
+	dir := path
+	if info, err := os.Stat(path); err == nil && !info.IsDir() {
+		dir = filepath.Dir(path)
+	}
+
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return dir
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(abs, ".git")); err == nil {
+			return abs
+		}
+		parent := filepath.Dir(abs)
+		if parent == abs {
+			return dir
+		}
+		abs = parent
+	}
 }
 
 // brokenLinkIssue is the issue of a link that points at a file that does
@@ -136,7 +183,10 @@ func (l *Linter) lintDirectory(dirPath string, result *Result) error {
 		}
 
 		// Skip files matched by the exclude list (git-forge-conventional files)
-		if l.isExcluded(path, dirPath) {
+		// The excludes are paths of the repository: the same file was
+		// linted or not depending on the directory the linter was
+		// started in.
+		if l.isExcluded(path, repositoryRoot(dirPath)) {
 			return nil
 		}
 

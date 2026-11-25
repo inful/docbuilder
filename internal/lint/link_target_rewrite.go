@@ -24,7 +24,8 @@ func computeUpdatedLinkTarget(sourceFile string, originalTarget string, oldAbs s
 	}
 
 	pathPart, fragment := splitFragment(originalTarget)
-	if pathPart == "" {
+	query := ""
+	if pathPart, query = splitQuery(pathPart); pathPart == "" {
 		return originalTarget, false, nil
 	}
 	if hasURLScheme(pathPart) {
@@ -44,7 +45,7 @@ func computeUpdatedLinkTarget(sourceFile string, originalTarget string, oldAbs s
 		updatedPath = stripKnownMarkdownExtension(updatedPath)
 	}
 
-	newTarget = updatedPath + fragment
+	newTarget = updatedPath + query + fragment
 	return newTarget, newTarget != originalTarget, nil
 }
 
@@ -75,6 +76,19 @@ func computeUpdatedLinkPath(sourceFile string, newAbs string, isSiteAbsolute boo
 
 func splitFragment(target string) (pathPart string, fragment string) {
 	idx := strings.Index(target, "#")
+	if idx == -1 {
+		return target, ""
+	}
+	return target[:idx], target[idx:]
+}
+
+// splitQuery splits the target into the path and the query.
+//
+// The query is not part of the file: the link points at the file, and
+// the query is what the reader sends to it. The query has to survive a
+// rewrite of the name of the file.
+func splitQuery(target string) (pathPart string, query string) {
+	idx := strings.Index(target, "?")
 	if idx == -1 {
 		return target, ""
 	}

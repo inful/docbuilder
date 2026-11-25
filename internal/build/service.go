@@ -43,6 +43,12 @@ type BuildRequest struct {
 	// KeepWorkspace=true on the request.
 	KeepWorkspace bool
 
+	// Removal says that a repository was removed and the site must be
+	// rendered without it. A build without repositories is otherwise a
+	// mistake, and the service refuses it: the pages of the removed
+	// repository would stay published for ever.
+	Removal bool
+
 	// StateManager optionally persists the per-repository metadata the build
 	// discovers (document counts, document hashes, and the commit each
 	// repository was built at). Without it the next build cannot tell

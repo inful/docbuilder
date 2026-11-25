@@ -75,9 +75,13 @@ func (d *ParsedDoc) FindNextLineContaining(target string, startLine int) int {
 // mentions a file in its prose and links to it would otherwise point at
 // the prose, and the fixer would rewrite the words of the page.
 //
+// The skip says how many links with that destination are already known
+// on the line startLine: two links with the same target can be on the
+// same line, and the second one is on the line of the first one.
+//
 // It skips fenced code blocks (``` and ~~~), indented code blocks, and
 // matches inside inline code spans.
-func (d *ParsedDoc) FindLinkLine(destination string, startLine int) int {
+func (d *ParsedDoc) FindLinkLine(destination string, startLine, skip int) int {
 	body := string(d.body)
 	if body == "" || destination == "" {
 		return 1
@@ -97,20 +101,44 @@ func (d *ParsedDoc) FindLinkLine(destination string, startLine int) int {
 		"](" + destination,
 		"](" + "<" + destination + ">",
 		"]: " + destination,
+		// The usage of a reference-style link: "[text][label]".
+		"][" + destination,
 	}
 
 	for i := startLine - 1; i < len(lines); i++ {
 		if i >= 0 && i < len(skippable) && skippable[i] {
 			continue
 		}
-		for _, needle := range needles {
-			if idx := strings.Index(lines[i], needle); idx != -1 && !isInsideInlineCode(lines[i], idx) {
-				return i + 1
-			}
+		skipHere := 0
+		if i == startLine-1 {
+			skipHere = skip
+		}
+		if countLinkMatches(lines[i], needles) > skipHere {
+			return i + 1
 		}
 	}
 
 	return 1
+}
+
+// countLinkMatches counts the links that point at the destination on one
+// line.
+func countLinkMatches(line string, needles []string) int {
+	count := 0
+	for _, needle := range needles {
+		for offset := 0; ; {
+			idx := strings.Index(line[offset:], needle)
+			if idx == -1 {
+				break
+			}
+			idx += offset
+			if !isInsideInlineCode(line, idx) {
+				count++
+			}
+			offset = idx + len(needle)
+		}
+	}
+	return count
 }
 
 func computeSkippableLines(lines []string) []bool {

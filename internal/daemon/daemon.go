@@ -134,7 +134,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	// emitter, but the emitter is constructed by initStateStack which
 	// runs after initBuildStack. The recipe is the right place to
 	// express that ordering dependency.
-	d.build.buildQueue.SetEventEmitter(d.state.eventEmitter)
+	d.wireBuildEvents()
 
 	d.initDiscoveryRunner(cfg)
 	if err := d.initBuildDebouncer(cfg); err != nil {
@@ -581,6 +581,22 @@ func (d *Daemon) Start(ctx context.Context) error {
 
 	d.startWorkers(runCtx)
 
+	// The engine of the scheduler of the last run was shut down, and it
+	// cannot be started again: the periodic work of the daemon would
+	// stop for good after a restart.
+	if d.serve.scheduler != nil {
+		if err := d.serve.scheduler.Reset(); err != nil {
+			d.lifecycle.status.Store(StatusError)
+			if d.lifecycle.runCancel != nil {
+				d.lifecycle.runCancel()
+				d.lifecycle.runCancel = nil
+			}
+			d.lifecycle.mu.Unlock()
+			d.stopAfterFailedStart(ctx)
+			return fmt.Errorf("failed to reset the scheduler: %w", err)
+		}
+	}
+
 	// Schedule periodic daemon work (cron/duration jobs) before starting the scheduler.
 	if err := d.schedulePeriodicJobs(runCtx); err != nil {
 		d.lifecycle.status.Store(StatusError)
@@ -893,10 +909,9 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		}
 	}
 
-	// Close the event store and the search index. The file handle on the
-	// state directory belongs to the daemon, and the write-ahead log is
-	// only folded back into the index when the last connection goes.
-	d.closeStores(eventStore, searchIndex)
+	// The event store and the search index stay open: the daemon is
+	// started again after a stop, and the server and the queue hold the
+	// handles of the last run. The process closes them when it ends.
 
 	d.lifecycle.mu.Lock()
 	d.lifecycle.status.Store(StatusStopped)
@@ -925,6 +940,19 @@ func (d *Daemon) closeStores(eventStore eventstore.Store, searchIndex *search.In
 			slog.Error("Failed to close the search index", logfields.Error(err))
 		}
 	}
+}
+
+// wireBuildEvents hands the queue the emitter of the daemon.
+//
+// The daemon counts its builds in the metrics, and the queue emitted
+// the events through the emitter of the state alone: the counters of
+// the builds read zero for ever, and the dashboard showed a healthy
+// daemon that never built anything.
+func (d *Daemon) wireBuildEvents() {
+	if d == nil || d.build.buildQueue == nil {
+		return
+	}
+	d.build.buildQueue.SetEventEmitter(d)
 }
 
 // GetStatus returns the current daemon status.
@@ -988,6 +1016,11 @@ func (d *Daemon) Build(ctx context.Context, job *queue.BuildJob) (*models.BuildR
 		if result != nil && result.Report != nil {
 			return result.Report, err
 		}
+		// A build that failed before it wrote a report did not bring
+		// the site up to date: the state of the daemon still says that
+		// the old commit is current, and the next webhook skips the
+		// build.
+		d.updateStateAfterBuild(&models.BuildReport{Outcome: models.OutcomeFailed})
 		return nil, err
 	}
 	return result.Report, nil
@@ -1042,6 +1075,8 @@ func (d *Daemon) jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, err
 	// constructor and the daemonForTest helper, so no nil-check is needed
 	// here.
 	skipState := d.state.stateManager
+	// A repository was removed: the site is rendered without it.
+	removal := job.TypedMeta != nil && job.TypedMeta.Removal
 	var onDocReady func([]byte, string)
 	if d.optional.outboundDispatcher != nil {
 		onDocReady = d.optional.outboundDispatcher.Enqueue
@@ -1053,6 +1088,7 @@ func (d *Daemon) jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, err
 		Incremental:     true, // Daemon mode uses incremental updates to leverage remote HEAD cache
 		StateManager:    skipState,
 		OnDocumentReady: onDocReady,
+		Removal:         removal,
 	}, nil
 }
 

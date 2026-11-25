@@ -2,14 +2,15 @@
 categories:
   - documentation
 date: 2025-12-15T00:00:00Z
-fingerprint: 7c4ffb847464b65211991fb17df5135938ee6d42459b265fcb6201421d2c3847
-lastmod: "2026-09-27"
+fingerprint: 76622fa56c0252879f86630aca94394e995213cc118df5a3bd4e9c880fd2790a
+lastmod: "2026-11-25"
 tags:
   - overview
 title: DocBuilder Documentation
+aliases:
+  - /_uid/165e380e-a848-4e3a-ba99-88941844e39e/
+uid: 165e380e-a848-4e3a-ba99-88941844e39e
 ---
-
-# DocBuilder Documentation
 
 Technical documentation organized by the [Diátaxis](https://diataxis.fr/) framework.
 

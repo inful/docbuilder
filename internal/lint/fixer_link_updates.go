@@ -3,6 +3,7 @@ package lint
 import (
 	"bytes"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
@@ -221,6 +222,10 @@ func (f *Fixer) updateLinkTarget(link LinkReference, oldPath, newPath string) st
 // The segment is the file name of the link: the directories above it and
 // the query of the link are not the name of the file, and they must not
 // be changed.
+//
+// The name of the file in a link is written the way a URL writes it: the
+// space of the name is "%20". The name is looked for in both forms, and
+// the new name is written the way the old one was.
 func replaceLastSegment(path, oldName, newName string) string {
 	slash := strings.LastIndex(path, "/")
 	prefix := ""
@@ -230,11 +235,23 @@ func replaceLastSegment(path, oldName, newName string) string {
 		segment = path[slash+1:]
 	}
 
-	idx := indexFold(segment, oldName)
-	if idx == -1 {
-		return path
+	names := []string{oldName}
+	if escaped := url.PathEscape(oldName); escaped != oldName {
+		names = append(names, escaped)
 	}
-	return prefix + segment[:idx] + newName + segment[idx+len(oldName):]
+
+	for _, name := range names {
+		idx := indexFold(segment, name)
+		if idx == -1 {
+			continue
+		}
+		replacement := newName
+		if name != oldName {
+			replacement = url.PathEscape(newName)
+		}
+		return prefix + segment[:idx] + replacement + segment[idx+len(name):]
+	}
+	return path
 }
 
 // indexFold returns the index of the first occurrence of a substring in

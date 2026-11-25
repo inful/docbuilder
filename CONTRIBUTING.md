@@ -322,7 +322,7 @@ if classified, ok := errors.AsClassified(err); ok {
 return fmt.Errorf("failed to process: %w", err)  // Missing category
 ```
 
-See [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md#error-handling) and [docs/adr/ADR-000-uniform-error-handling.md](docs/adr/ADR-000-uniform-error-handling.md) for complete guidelines.
+See [docs/adr/adr-000-uniform-error-handling.md](docs/adr/adr-000-uniform-error-handling.md#error-handling) and [docs/adr/adr-000-uniform-error-handling.md](docs/adr/adr-000-uniform-error-handling.md) for complete guidelines.
 
 ### Logging
 ```go

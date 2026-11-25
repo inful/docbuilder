@@ -82,8 +82,6 @@ func (f *Fixer) Fix(path string) (*FixResult, error) {
 // FixWithConfirmation fixes issues with interactive confirmation prompts.
 // Shows a preview of changes and prompts the user before applying.
 // Creates a backup of modified files before making changes.
-//
-//nolint:forbidigo // fmt is used for user-facing messages
 func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	// If in dry-run mode, no need for confirmation or backup
 	if f.dryRun {
@@ -97,9 +95,37 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to lint path: %w", err)
 	}
+
+	return f.confirmAndApply(result, path)
+}
+
+// FixPathsWithConfirmation fixes the given files and directories and
+// asks before it changes anything.
+//
+// The fixer of the command line asks: the files of the operator are
+// changed, and the operator has to approve what is changed.
+func (f *Fixer) FixPathsWithConfirmation(paths []string) (*FixResult, error) {
+	if f.dryRun {
+		return f.FixPaths(paths)
+	}
+
+	result, err := f.linter.LintPaths(paths)
+	if err != nil {
+		return nil, fmt.Errorf("failed to lint paths: %w", err)
+	}
+
+	return f.confirmAndApply(result, commonRoot(paths))
+}
+
+// confirmAndApply shows what would change, asks for the confirmation
+// and applies the changes.
+//
+//nolint:forbidigo // fmt is used for user-facing messages
+func (f *Fixer) confirmAndApply(result *Result, root string) (*FixResult, error) {
+	// Phase 1: Preview changes (dry-run mode internally).
 	originalDryRun := f.dryRun
 	f.dryRun = true
-	previewResult, err := f.applyFixes(path, result)
+	previewResult, err := f.applyFixes(root, result)
 	f.dryRun = originalDryRun
 
 	if err != nil {
@@ -122,7 +148,7 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	}
 
 	// Phase 3: Create backup (always, even with auto-confirm)
-	rootPath, err := filepath.Abs(path)
+	rootPath, err := filepath.Abs(root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get absolute path: %w", err)
 	}
@@ -137,7 +163,7 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	}
 
 	// Phase 4: Apply fixes
-	return f.applyFixes(path, result)
+	return f.applyFixes(root, result)
 }
 
 // FixPaths applies the fixes to the given files and directories.
@@ -172,6 +198,7 @@ func (f *Fixer) applyFixes(path string, result *Result) (*FixResult, error) {
 		BrokenLinks:       make([]BrokenLink, 0),
 		HealSkipped:       make([]BrokenLinkHealSkip, 0),
 		Errors:            make([]error, 0),
+		DryRun:            f.dryRun,
 	}
 
 	// Get absolute path for the root directory (for searching links)

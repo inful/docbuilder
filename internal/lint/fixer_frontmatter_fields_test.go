@@ -27,7 +27,7 @@ body
 		t.Fatal(err)
 	}
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
 	result, err := fixer.Fix(path)
 	if err != nil {
@@ -62,7 +62,7 @@ body
 		t.Fatal(err)
 	}
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, true /* dryRun */, false).WithAutoConfirm(true)
 	result, err := fixer.Fix(path)
 	if err != nil {
@@ -106,7 +106,7 @@ body
 		t.Fatal(err)
 	}
 
-	linter := NewLinter(&Config{Format: formatText})
+	linter := NewLinter(&Config{})
 	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
 	result, err := fixer.Fix(path)
 	if err != nil {

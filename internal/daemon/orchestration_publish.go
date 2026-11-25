@@ -11,6 +11,12 @@ import (
 const orchestrationPublishTimeout = 2 * time.Second
 
 func publishOrchestrationEventOnBus(ctx context.Context, bus *events.Bus, evt any) error {
+	return publishOrchestrationEventOnBusWithTimeout(ctx, bus, evt, orchestrationPublishTimeout)
+}
+
+// publishOrchestrationEventOnBusWithTimeout publishes an event with a
+// budget of its own.
+func publishOrchestrationEventOnBusWithTimeout(ctx context.Context, bus *events.Bus, evt any, timeout time.Duration) error {
 	if ctx == nil {
 		return ferrors.ValidationError("context cannot be nil").Build()
 	}
@@ -18,19 +24,30 @@ func publishOrchestrationEventOnBus(ctx context.Context, bus *events.Bus, evt an
 		return ferrors.ValidationError("bus cannot be nil").Build()
 	}
 
-	publishCtx, cancel := context.WithTimeout(ctx, orchestrationPublishTimeout)
+	publishCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	return bus.Publish(publishCtx, evt)
 }
 
 func (d *Daemon) publishOrchestrationEvent(ctx context.Context, evt any) error {
+	return d.publishOrchestrationEventWithTimeout(ctx, evt, orchestrationPublishTimeout)
+}
+
+// publishOrchestrationEventWithTimeout publishes an event with a
+// budget of its own.
+func (d *Daemon) publishOrchestrationEventWithTimeout(ctx context.Context, evt any, timeout time.Duration) error {
 	if ctx == nil {
 		return ferrors.ValidationError("context cannot be nil").Build()
 	}
-	if d == nil || d.serve.orchestrationBus == nil {
+	if d == nil {
 		return ferrors.DaemonError("orchestration bus not initialized").Build()
 	}
 
-	return publishOrchestrationEventOnBus(ctx, d.serve.orchestrationBus, evt)
+	bus := d.orchestrationBus()
+	if bus == nil {
+		return ferrors.DaemonError("orchestration bus not initialized").Build()
+	}
+
+	return publishOrchestrationEventOnBusWithTimeout(ctx, bus, evt, timeout)
 }

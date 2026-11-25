@@ -83,6 +83,17 @@ func (d *BuildDebouncer) PlannedJobID() (string, bool) {
 	return d.lastJobID, true
 }
 
+// busOf returns the bus of the current run.
+//
+// The bus is written when the daemon starts and read by the goroutine
+// of the debouncer: the pointer is read under the lock, so the
+// debouncer never publishes onto the bus of the last run.
+func (d *BuildDebouncer) busOf() *events.Bus {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.bus
+}
+
 // SetBus gives the debouncer the bus of the current run. The bus of
 // the last run was closed when the daemon stopped, and a subscription
 // to a closed bus returns at once.
@@ -97,6 +108,22 @@ func (d *BuildDebouncer) SetBus(bus *events.Bus) {
 	// and says nothing about the subscription of this run.
 	d.ready = make(chan struct{})
 	d.readyClosed = false
+	// The pending build of the last run is gone: the bus of the last run
+	// was closed, and nobody receives its build. The snapshot of the
+	// last run is gone with it: the first build after the restart would
+	// publish the commit of the last run, and the new content would
+	// appear one build late.
+	d.pending = false
+	d.pendingAfterRun = false
+	d.pollingAfterRun = false
+	d.lastJobID = ""
+	d.lastEmittedJobID = ""
+	d.lastRequestAt = time.Time{}
+	d.lastReason = ""
+	d.lastRepoURL = ""
+	d.lastBranch = ""
+	d.requestCount = 0
+	d.snapshot = nil
 }
 
 func NewBuildDebouncer(bus *events.Bus, cfg BuildDebouncerConfig) (*BuildDebouncer, error) {
@@ -372,7 +399,7 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 		DebounceCause: cause,
 	}
 
-	if err := publishOrchestrationEventOnBus(ctx, d.bus, evt); err != nil {
+	if err := publishOrchestrationEventOnBus(ctx, d.busOf(), evt); err != nil {
 		slog.Warn("Failed to publish BuildNow; will retry",
 			slog.String("job_id", jobID),
 			slog.String("cause", cause),

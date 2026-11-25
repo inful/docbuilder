@@ -38,7 +38,7 @@ tags:
 		t.Fatalf("write the other document: %v", err)
 	}
 
-	l := NewLinter(&Config{Format: formatText})
+	l := NewLinter(&Config{})
 	res, err := l.LintPath(dir)
 	if err != nil {
 		t.Fatalf("lint: %v", err)

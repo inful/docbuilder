@@ -124,7 +124,26 @@ func detectBrokenLinksInFile(sourceFile, rootPath string) ([]BrokenLink, error) 
 		}
 	}
 
-	return brokenLinks, nil
+	// A definition of a reference and the usage of it point at the same
+	// file: the usage is reported, and the definition is not reported a
+	// second time.
+	reported := make(map[string]struct{}, len(brokenLinks))
+	for _, bl := range brokenLinks {
+		if bl.LinkType != LinkTypeReference {
+			reported[bl.Target] = struct{}{}
+		}
+	}
+	unique := brokenLinks[:0]
+	for _, bl := range brokenLinks {
+		if bl.LinkType == LinkTypeReference {
+			if _, ok := reported[bl.Target]; ok {
+				continue
+			}
+		}
+		unique = append(unique, bl)
+	}
+
+	return unique, nil
 }
 
 func isBareEmailAddress(s string) bool {
