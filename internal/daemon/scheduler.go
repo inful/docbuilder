@@ -93,6 +93,12 @@ func (s *Scheduler) ScheduleEvery(name string, interval time.Duration, task func
 		return "", errors.New("interval must be greater than zero")
 	}
 
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.scheduler == nil {
+		return "", errors.New("the scheduler has no engine")
+	}
+
 	job, err := s.scheduler.NewJob(
 		gocron.DurationJob(interval),
 		gocron.NewTask(task),
@@ -110,6 +116,12 @@ func (s *Scheduler) ScheduleEvery(name string, interval time.Duration, task func
 //
 // The job runs in singleton mode to avoid overlapping executions.
 func (s *Scheduler) ScheduleCron(name, expression string, task func()) (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.scheduler == nil {
+		return "", errors.New("the scheduler has no engine")
+	}
+
 	job, err := s.scheduler.NewJob(
 		gocron.CronJob(expression, false),
 		gocron.NewTask(task),

@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 85f35de0b8f998b76eb26915ca120a2b3046289317ca3045a1bf36f8087dd155
+fingerprint: 5459750d98760809346cc768ab2c67abfdf39a9bd841b14ed8feda859defb9c9
 lastmod: "2026-11-25"
 tags:
   - cli
@@ -177,6 +177,14 @@ docbuilder lint -f json
 
 Note: `docbuilder lint --fix` may update markdown file content beyond renames/link rewrites, including regenerating frontmatter `fingerprint` values and setting `lastmod` (UTC `YYYY-MM-DD`) when a fingerprint changes.
 
+### Exit Codes
+
+| Exit Code | Meaning |
+|-----------|---------|
+| 0 | No issues found |
+| 1 | Warnings found, no errors |
+| 2 | Errors found (the build is blocked) |
+
 ## Template Command
 
 Create new documentation pages from templates hosted in your documentation site.
@@ -338,10 +346,11 @@ Generated in output directory after `build` command:
 |-----------|---------|
 | 0 | Success |
 | 1 | Other error (the command failed) |
-| 2 | Invalid usage (a flag or an argument is wrong) |
+| 2 | The lint found errors (the `lint` command only) |
 | 5 | Authentication or permission error |
 | 7 | Configuration error |
 | 8 | Network, git or forge error |
 | 10 | Internal error |
 | 11 | Build error (the site was not built) |
 | 12 | Runtime or daemon error |
+| 80 | Invalid usage (a flag or an argument is wrong) |

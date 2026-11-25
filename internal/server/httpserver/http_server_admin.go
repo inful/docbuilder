@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -107,17 +108,32 @@ var adminReservedPaths = []string{
 // and the metrics endpoint.
 func (s *Server) checkMonitoringPaths() error {
 	if s.cfg.Monitoring == nil {
-		return nil
+		// The admin server serves the monitoring endpoints, and the
+		// paths of them come from the configuration: without it the
+		// server takes the process down when it reads the path.
+		return errors.New("the monitoring configuration is missing")
 	}
 	health := s.cfg.Monitoring.Health.Path
 	metrics := s.cfg.Monitoring.Metrics.Path
+	// The metrics are optional: the path of them is only registered
+	// when they are enabled.
+	metricsRequired := s.cfg.Monitoring.Metrics.Enabled
 
 	for _, p := range []struct {
-		name string
-		path string
-	}{{"monitoring.health.path", health}, {"monitoring.metrics.path", metrics}} {
+		name     string
+		path     string
+		required bool
+	}{
+		{"monitoring.health.path", health, true},
+		{"monitoring.metrics.path", metrics, metricsRequired},
+	} {
 		if p.path == "" {
-			continue
+			if !p.required {
+				continue
+			}
+			// The path is registered with the router, and the router
+			// refuses an empty pattern.
+			return fmt.Errorf("the %s is empty", p.name)
 		}
 		if !strings.HasPrefix(p.path, "/") {
 			return fmt.Errorf("the %s (%q) must start with /", p.name, p.path)

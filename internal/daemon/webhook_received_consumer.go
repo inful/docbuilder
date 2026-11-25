@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -14,12 +15,23 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
+// runWebhookReceivedConsumer subscribes to the webhook events and
+// consumes them.
+//
+// The daemon subscribes before it starts the goroutine that consumes
+// them (see startWorkers): the bus has no queue, and an event that is
+// published before the consumer is subscribed is lost.
 func (d *Daemon) runWebhookReceivedConsumer(ctx context.Context) {
 	if ctx == nil || d == nil || d.serve.orchestrationBus == nil {
 		return
 	}
 
 	ch, unsubscribe := events.Subscribe[events.WebhookReceived](d.serve.orchestrationBus, 32)
+	d.consumeWebhookReceived(ctx, ch, unsubscribe)
+}
+
+// consumeWebhookReceived consumes the webhook events of the bus.
+func (d *Daemon) consumeWebhookReceived(ctx context.Context, ch <-chan events.WebhookReceived, unsubscribe func()) {
 	defer unsubscribe()
 
 	for {
@@ -99,18 +111,49 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 		immediate = *d.config.Daemon.BuildDebounce.WebhookImmediate
 	}
 
-	if err := d.publishOrchestrationEvent(ctx, events.RepoUpdateRequested{
+	request := events.RepoUpdateRequested{
 		JobID:       evt.JobID,
 		Immediate:   immediate,
 		RepoURL:     matchedRepoURL,
 		Branch:      strings.TrimSpace(firstNonEmpty(matchedBranch, evtBranch)),
 		RequestedAt: time.Now(),
-	}); err != nil {
+	}
+	if err := d.publishOrchestrationEvent(ctx, request); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			// The queue of the updater is full: the request waits in
+			// the background for room. The forge does not send the
+			// webhook again, and the commit it announced was not
+			// published until the next sync of the daemon.
+			d.retryRepoUpdateInBackground(ctx, request)
+			slog.Info("The check of the repository waits for room in the queue of the updater",
+				logfields.JobID(evt.JobID),
+				slog.String("repo_url", logfields.RedactURL(matchedRepoURL)))
+			return
+		}
 		slog.Warn("Failed to publish repo update request",
 			logfields.JobID(evt.JobID),
 			slog.String("repo_url", logfields.RedactURL(matchedRepoURL)),
 			logfields.Error(err))
 	}
+}
+
+// retryRepoUpdateInBackground publishes a request that did not fit in
+// the queue of the updater. The daemon waits for room in the
+// background, and the commit of the webhook is published.
+func (d *Daemon) retryRepoUpdateInBackground(ctx context.Context, request events.RepoUpdateRequested) {
+	d.goWorker("repo_update_retry", func() {
+		// The wait is bounded: the daemon does not hold the worker
+		// for ever.
+		waitCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), webhookRetryTimeout)
+		defer cancel()
+
+		if err := d.publishOrchestrationEventWithTimeout(waitCtx, request, webhookRetryTimeout); err != nil {
+			slog.Error("Failed to publish the request to check the repository",
+				logfields.JobID(request.JobID),
+				slog.String("repo_url", logfields.RedactURL(request.RepoURL)),
+				logfields.Error(err))
+		}
+	})
 }
 
 func (d *Daemon) resolveWebhookRepoFromForge(ctx context.Context, evt events.WebhookReceived) (string, string, []string) {

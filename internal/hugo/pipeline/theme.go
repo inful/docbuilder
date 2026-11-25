@@ -37,6 +37,9 @@ const DocsyModulePath = "github.com/docsy/docsy/theme"
 //go:embed assets/docsy/docsy.css
 var docsyStylesheet []byte
 
+//go:embed assets/docsy/chroma.css
+var docsyChromaCSS []byte
+
 //go:embed assets/docsy/bootstrap.bundle.js
 var docsyBootstrapJS []byte
 
@@ -63,6 +66,8 @@ var docsyPageMetaLinks []byte
 // asking Hugo to compile the theme's SCSS.
 const docsyHeadCSS = `{{- $css := resources.Get "css/docsy.css" | minify | fingerprint -}}
 <link href="{{ $css.RelPermalink }}" rel="stylesheet" integrity="{{ $css.Data.Integrity }}" crossorigin="anonymous">
+{{- $chroma := resources.Get "css/chroma.css" | minify | fingerprint -}}
+<link href="{{ $chroma.RelPermalink }}" rel="stylesheet" integrity="{{ $chroma.Data.Integrity }}" crossorigin="anonymous">
 `
 
 // docsyPageMetaLinksPath is where the page metadata override lands in
@@ -108,6 +113,7 @@ const docsyChildrenShortcode = `{{- $page := .Page -}}
 func docsyVendoredAssets() []*StaticAsset {
 	return []*StaticAsset{
 		{Path: "assets/css/docsy.css", Content: docsyStylesheet},
+		{Path: "assets/css/chroma.css", Content: docsyChromaCSS},
 		{Path: "assets/vendor/bootstrap/dist/js/bootstrap.bundle.js", Content: docsyBootstrapJS},
 		{Path: filepath.Join("assets", "vendor", "lunr", "lunr.min.js"), Content: docsyLunrJS},
 		{Path: filepath.Join("static", "webfonts", DocsyVersion, "fa-brands-400.woff2"), Content: docsyFontBrands},

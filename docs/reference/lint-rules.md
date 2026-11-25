@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-29T00:00:00Z
-fingerprint: 4c782f6fa623dcc2170327ebdaa5757b78863a3e351b4a2ba55396b872691060
+fingerprint: 51c46aad35f82b9e0709c94d72939a02ba7b7472840a005f13a92c13179eea51
 lastmod: "2026-11-25"
 tags:
   - linting
@@ -18,7 +18,7 @@ Complete reference for all documentation linting rules enforced by DocBuilder.
 
 ## Overview
 
-DocBuilder's linter enforces **opinionated, non-configurable** rules based on Hugo and DocBuilder best practices. Rules are classified by severity:
+DocBuilder's linter enforces **opinionated** rules based on Hugo and DocBuilder best practices. Two of them can be tuned in the configuration: `lint.excludes` (the files that are not linted) and `lint.allowed_category_pairs` (the category pairs a page may hold together). Rules are classified by severity:
 
 | Severity | Impact | Build Behavior |
 |----------|--------|----------------|
@@ -521,7 +521,7 @@ Asset rules apply to images and other non-markdown files.
 **Examples**:
 
 ```
-❌ Warning:
+❌ Invalid:
   Screenshot 2024.png
   Company_Logo.svg
   Diagram(final).png
@@ -534,9 +534,9 @@ Asset rules apply to images and other non-markdown files.
 
 **Auto-fix**: Applies same transformations as markdown files
 
-**Warning Message**:
+**Error Message**:
 ```
-WARNING: Invalid image filename
+ERROR: Filename contains uppercase letters
   File: docs/images/Screenshot 2024.png
   Issue: Contains spaces and uppercase letters
   
@@ -586,10 +586,15 @@ INFO: Whitelisted double extension
 
 These files are **automatically excluded** from linting (never reported as errors):
 
-- `README.md` (at the root of the linted tree)
-- `CONTRIBUTING.md` (at the root of the linted tree)
-- `CHANGELOG.md` (at the root of the linted tree)
-- `LICENSE.md` (at the root of the linted tree)
+- `README.md` (at the root of the repository)
+- `CONTRIBUTING.md` (at the root of the repository)
+- `CHANGELOG.md` (at the root of the repository)
+- `LICENSE.md` (at the root of the repository)
+
+The path is the one relative to the root of the repository. A file with
+the same name in a directory of the documentation is a page of the site,
+and it is linted like every other page. Without a repository the linted
+tree is the root.
 - `CODE_OF_CONDUCT.md` (at the root of the linted tree)
 - Files in `.git/` directory
 

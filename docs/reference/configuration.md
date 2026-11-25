@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 7a8332ecd1967e3248ba59b85e857b94a380e289543cc4ee76647bcc8df165c7
-lastmod: "2026-11-24"
+fingerprint: 646c49efb557878fcbbffa969a9fecfaf1829a7e3771285802b92ba3b6ecdce8
+lastmod: "2026-11-25"
 tags:
   - configuration
   - yaml
@@ -592,10 +592,11 @@ you override that list or extend it.
 ### Default excludes (when `lint` is absent)
 
 The built-in default list covers the cross-forge union of
-git-forge-conventional files. Exact globs (e.g. `README.md`) match only
-at the repository root — nested files with the same name are normal
-doc-pages and are linted normally. Recursive globs (with `**`) match
-anywhere in the tree.
+git-forge-conventional files. The path is the one relative to the root
+of the repository. Exact globs (e.g. `README.md`) match only at that
+root — nested files with the same name are normal doc-pages and are
+linted normally. Recursive globs (with `**`) match anywhere in the
+tree. Without a repository the linted tree is the root.
 
 ```yaml
 # Files matched at the repo root only:

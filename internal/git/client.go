@@ -88,12 +88,22 @@ func (c *Client) cloneOnceWithMetadata(ctx context.Context, repo appcfg.Reposito
 
 	repoPath := filepath.Join(c.workspaceDir, repo.Name)
 	slog.Debug("Cloning repository", logfields.URL(repo.URL), logfields.Name(repo.Name), slog.String("branch", repo.Branch), logfields.Path(repoPath))
-	if err := os.RemoveAll(repoPath); err != nil {
-		return CloneResult{}, GitError("failed to remove existing directory").
+	// The clone goes into a directory of its own: the old copy of the
+	// repository is removed only when the clone is there. A clone that
+	// fails - the forge is unreachable, the token expired, the disk is
+	// full - took the working copy with it, and the pages of the
+	// repository were gone until a later clone succeeded.
+	tempPath := repoPath + ".clone-in-progress"
+	if err := os.RemoveAll(tempPath); err != nil {
+		return CloneResult{}, GitError("failed to remove the directory of the clone").
 			WithCause(err).
-			WithContext("path", repoPath).
+			WithContext("path", tempPath).
 			Build()
 	}
+	defer func() {
+		// The directory of the clone is gone when the clone failed.
+		_ = os.RemoveAll(tempPath)
+	}()
 
 	cloneOptions := &git.CloneOptions{URL: repo.URL, Tags: git.NoTags}
 	// Default to cloning only the remote HEAD branch.
@@ -122,7 +132,7 @@ func (c *Client) cloneOnceWithMetadata(ctx context.Context, repo appcfg.Reposito
 		}
 		cloneOptions.Auth = auth
 	}
-	repository, err := git.PlainCloneContext(ctx, repoPath, false, cloneOptions)
+	repository, err := git.PlainCloneContext(ctx, tempPath, false, cloneOptions)
 	if err != nil {
 		return CloneResult{}, ClassifyGitError(err, "clone", repo.URL)
 	}
@@ -150,6 +160,21 @@ func (c *Client) cloneOnceWithMetadata(ctx context.Context, repo appcfg.Reposito
 		}
 	} else {
 		slog.Info("Repository cloned successfully", logfields.Name(repo.Name), logfields.URL(repo.URL), logfields.Path(repoPath))
+	}
+
+	// The clone is there: the old copy can go, and the new one takes
+	// its place.
+	if err := os.RemoveAll(repoPath); err != nil {
+		return CloneResult{}, GitError("failed to remove existing directory").
+			WithCause(err).
+			WithContext("path", repoPath).
+			Build()
+	}
+	if err := os.Rename(tempPath, repoPath); err != nil {
+		return CloneResult{}, GitError("failed to move the clone into place").
+			WithCause(err).
+			WithContext("path", repoPath).
+			Build()
 	}
 
 	if c.buildCfg != nil && c.buildCfg.PruneNonDocPaths {

@@ -292,7 +292,8 @@ func (f *Fixer) applyFixes(path string, result *Result) (*FixResult, error) {
 
 	// Phase 3: perform renames + link updates.
 	for filePath, issues := range fileIssues {
-		f.processFileWithIssues(filePath, issues, rootPath, fixResult, fingerprintTargets, fingerprintIssueCounts)
+		f.processFileWithIssues(filePath, issues, rootPath, fixResult, fingerprintTargets, fingerprintIssueCounts,
+			sequencePrefixTargets, sequencePrefixIssueCounts)
 	}
 
 	// Phase 3.5: heal broken links caused by Git renames/moves.
@@ -319,7 +320,7 @@ func (f *Fixer) applyFixes(path string, result *Result) (*FixResult, error) {
 }
 
 // processFileWithIssues handles fixing issues for a single file.
-func (f *Fixer) processFileWithIssues(filePath string, issues []Issue, rootPath string, fixResult *FixResult, fingerprintTargets map[string]struct{}, fingerprintIssueCounts map[string]int) {
+func (f *Fixer) processFileWithIssues(filePath string, issues []Issue, rootPath string, fixResult *FixResult, fingerprintTargets map[string]struct{}, fingerprintIssueCounts map[string]int, sequencePrefixTargets map[string]struct{}, sequencePrefixIssueCounts map[string]int) {
 	currentPath := filePath
 
 	// 1) Filename fixes (renames)
@@ -349,6 +350,19 @@ func (f *Fixer) processFileWithIssues(filePath string, issues []Issue, rootPath 
 		// scan of it failed, and the links inside it were never
 		// rewritten.
 		f.replaceScannedFile(filePath, op.NewPath)
+	}
+
+	// The file was renamed: the targets of the rule of the sequence
+	// hold the old name, and the rename of that rule looked for a file
+	// that does not exist any more. A file that breaks two rules of the
+	// name was renamed twice, and the fixer failed.
+	if _, ok := sequencePrefixTargets[filePath]; ok {
+		delete(sequencePrefixTargets, filePath)
+		sequencePrefixTargets[currentPath] = struct{}{}
+		if c, okc := sequencePrefixIssueCounts[filePath]; okc {
+			delete(sequencePrefixIssueCounts, filePath)
+			sequencePrefixIssueCounts[currentPath] = c
+		}
 	}
 
 	// If this file needs a fingerprint fix, make sure we track the final path

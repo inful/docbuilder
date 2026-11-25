@@ -114,6 +114,12 @@ func (rc *RootConfig) EnsureHighlightDefaults() {
 	if _, ok := hl["lineNos"]; !ok {
 		hl["lineNos"] = true
 	}
+	if _, ok := hl["lineNumbersInTable"]; !ok {
+		// The line numbers belong to the code and not in a column of
+		// their own: the theme adds the copy button to the code of the
+		// block, and a table around the code hides it.
+		hl["lineNumbersInTable"] = false
+	}
 	if _, ok := hl["tabWidth"]; !ok {
 		hl["tabWidth"] = 4
 	}

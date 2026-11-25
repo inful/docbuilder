@@ -164,6 +164,17 @@ func (fr *FixResult) Summary() string {
 		}
 	}
 
+	// The files are not named here: the report of the command line
+	// names them, and the path of a file that was renamed is the old
+	// one.
+	if len(fr.FrontmatterFields) > 0 {
+		fmt.Fprintf(&b, "\nFrontmatter fields filled in: %d files\n", len(fr.FrontmatterFields))
+	}
+
+	if len(fr.CategoryInjects) > 0 {
+		fmt.Fprintf(&b, "\nCategories written: %d files\n", len(fr.CategoryInjects))
+	}
+
 	if len(fr.LinksUpdated) > 0 {
 		b.WriteString("\nLink Updates:\n")
 		for _, update := range fr.LinksUpdated {

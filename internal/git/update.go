@@ -314,7 +314,23 @@ func resolveRemoteDefaultBranch(repo *git.Repository) (string, error) {
 	return target.Short(), nil
 }
 
+// maxAncestorWalk bounds the walk that looks for the ancestor.
+//
+// The walk reads the commits of the history one by one, and a branch
+// that does not lead to the commit reads the whole history: a
+// repository with a hundred thousand commits took seconds for every
+// update. The answer is "not an ancestor" after the bound, and the
+// branch is moved to the remote: the commits of the local branch are
+// in the remote.
+const maxAncestorWalk = 10000
+
 func isAncestor(repo *git.Repository, a, b plumbing.Hash) (bool, error) {
+	return isAncestorWithin(repo, a, b, maxAncestorWalk)
+}
+
+// isAncestorWithin reports whether a is an ancestor of b, and reads at
+// most maxWalk commits.
+func isAncestorWithin(repo *git.Repository, a, b plumbing.Hash, maxWalk int) (bool, error) {
 	if a == b {
 		return true, nil
 	}
@@ -330,6 +346,11 @@ func isAncestor(repo *git.Repository, a, b plumbing.Hash) (bool, error) {
 			continue
 		}
 		seen[h] = struct{}{}
+		if len(seen) > maxWalk {
+			slog.Warn("The walk for the ancestor was stopped: the branch is moved to the remote",
+				"commits", len(seen))
+			return false, nil
+		}
 		commit, err := repo.CommitObject(h)
 		if err != nil {
 			return false, err

@@ -338,9 +338,16 @@ func (d *Daemon) initHTTPServer(cfg *config.Config) {
 		EnhancedHealthHandle:  d.EnhancedHealthHandler,
 		DetailedMetricsHandle: detailedMetrics,
 		PrometheusHandler:     prometheusOptionalHandler(d),
-		SearchHandle:          d.optional.search.HandleSearch,
-		PagesHandle:           d.optional.search.HandlePages,
-		StatusHandle:          statusHandlers.HandleStatusPage,
+		// The search index is opened again when the daemon starts
+		// again after a stop: the handle reads the service of the run
+		// and not the one of the last run.
+		SearchHandle: func(w http.ResponseWriter, r *http.Request) {
+			d.optional.search.HandleSearch(w, r)
+		},
+		PagesHandle: func(w http.ResponseWriter, r *http.Request) {
+			d.optional.search.HandlePages(w, r)
+		},
+		StatusHandle: statusHandlers.HandleStatusPage,
 	})
 }
 
@@ -536,6 +543,19 @@ func (d *Daemon) Start(ctx context.Context) error {
 	d.resetStopChannel()
 	bus := events.NewBus()
 	d.serve.orchestrationBus = bus
+
+	// The event store and the search index are closed when the daemon
+	// stops, and they are opened only in the constructor: a daemon that
+	// is started again after a stop wrote no events and no search
+	// index.
+	if d.lifecycle.storesClosed.Load() {
+		if err := d.reopenStores(ctx); err != nil {
+			d.lifecycle.status.Store(StatusError)
+			d.lifecycle.mu.Unlock()
+			d.stopAfterFailedStart(ctx)
+			return fmt.Errorf("failed to open the stores of the daemon: %w", err)
+		}
+	}
 	if d.build.buildDebouncer != nil {
 		d.build.buildDebouncer.SetBus(bus)
 	}
@@ -926,6 +946,28 @@ func (d *Daemon) Stop(ctx context.Context) error {
 // closeStores closes the event store and the search index. Both are
 // opened when the daemon is built, and a daemon that is stopped twice
 // must not close them twice.
+// reopenStores opens the event store and the search index again.
+//
+// They are closed when the daemon stops, and they are opened only in
+// the constructor: a daemon that is started again after a stop wrote no
+// events and no search index.
+func (d *Daemon) reopenStores(_ context.Context) error {
+	if d.state.eventStore != nil {
+		//nolint:contextcheck // the stores open their own files
+		if err := d.initStateStack(d.config); err != nil {
+			return err
+		}
+	}
+	if d.optional.search != nil {
+		//nolint:contextcheck // the index opens its own file
+		if err := d.initSearch(d.config); err != nil {
+			return err
+		}
+	}
+	d.lifecycle.storesClosed.Store(false)
+	return nil
+}
+
 func (d *Daemon) closeStores(eventStore eventstore.Store, searchIndex *search.Index) {
 	if !d.lifecycle.storesClosed.CompareAndSwap(false, true) {
 		return

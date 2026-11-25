@@ -122,7 +122,7 @@ func (r *DirectoryCategoryConsistencyRule) mismatchIssue(filePath, expected stri
 			"expected category `" + expected + "` for its directory. Hugo's sidebar " +
 			"renders one section per category; mixing categories across mode-specific " +
 			"directories puts a doc in the wrong sidebar section.",
-		Fix:  "Add `" + expected + "` to the `categories:` list (or change directory if the doc belongs elsewhere).",
+		Fix:  "Replace the `categories:` list with `" + expected + "` (or change directory if the doc belongs elsewhere).",
 		Line: 0,
 	}}
 }

@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2025-12-29T00:00:00Z
-fingerprint: 2e4050a47f6e40faf8f745ba38d1f1d341288cdbf8e5557b922a2bbe64089168
-lastmod: "2026-11-19"
+fingerprint: 9495255a8bfbe058769269804e0e0e37b09005af7416d628d2f1ae74829a229a
+lastmod: "2026-11-25"
 tags:
   - linting
   - validation
@@ -260,8 +260,8 @@ docbuilder lint --quiet
 # JSON output for CI integration
 docbuilder lint --format=json
 
-# Show detailed explanations for rules
-docbuilder lint --explain
+# Show the errors of the lint only
+docbuilder lint --quiet
 ```
 
 ### Exit Codes

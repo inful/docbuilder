@@ -39,6 +39,9 @@ func (u *RepoUpdater) SetBus(bus *events.Bus) {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	u.bus = bus
+	// The new run needs a new readiness signal: the old one is closed
+	// and says nothing about the subscription of this run.
+	u.ready = make(chan struct{})
 }
 
 // busOf returns the bus of the current run.
@@ -63,6 +66,8 @@ func (u *RepoUpdater) Ready() <-chan struct{} {
 	if u == nil {
 		return nil
 	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
 	return u.ready
 }
 
@@ -74,6 +79,11 @@ func (u *RepoUpdater) Run(ctx context.Context) {
 
 	reqCh, unsubscribe := events.Subscribe[events.RepoUpdateRequested](bus, 32)
 	defer unsubscribe()
+
+	// The readiness signal is closed under the lock: the daemon starts
+	// the updater again with a new one, and two goroutines must not
+	// close the same channel.
+	u.mu.Lock()
 	if u.ready != nil {
 		select {
 		case <-u.ready:
@@ -82,6 +92,7 @@ func (u *RepoUpdater) Run(ctx context.Context) {
 			close(u.ready)
 		}
 	}
+	u.mu.Unlock()
 
 	for {
 		select {

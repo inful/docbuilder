@@ -69,7 +69,14 @@ func (c *Client) withRetry(ctx context.Context, op, repoName string, fn func() (
 			}
 		}
 
-		time.Sleep(delay)
+		// The wait watches the cancellation: a build that was
+		// canceled slept out the whole delay, and the daemon held a
+		// worker slot meanwhile.
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		case <-time.After(delay):
+		}
 	}
 	return "", GitError("git operation failed after retries").
 		WithCause(lastErr).
@@ -131,7 +138,14 @@ func (c *Client) withRetryMetadata(ctx context.Context, op, repoName string, fn 
 				// Other strategies use base delay
 			}
 		}
-		time.Sleep(delay)
+		// The wait watches the cancellation: a build that was
+		// canceled slept out the whole delay, and the daemon held a
+		// worker slot meanwhile.
+		select {
+		case <-ctx.Done():
+			return CloneResult{}, ctx.Err()
+		case <-time.After(delay):
+		}
 	}
 	return CloneResult{}, GitError("git operation failed after retries").
 		WithCause(lastErr).
