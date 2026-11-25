@@ -909,10 +909,9 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		}
 	}
 
-	// Close the event store and the search index. The file handle on the
-	// state directory belongs to the daemon, and the write-ahead log is
-	// only folded back into the index when the last connection goes.
-	d.closeStores(eventStore, searchIndex)
+	// The event store and the search index stay open: the daemon is
+	// started again after a stop, and the server and the queue hold the
+	// handles of the last run. The process closes them when it ends.
 
 	d.lifecycle.mu.Lock()
 	d.lifecycle.status.Store(StatusStopped)
