@@ -37,8 +37,6 @@ type Generator struct {
 	recorder       metrics.Recorder
 	observer       models.BuildObserver // high-level observer (decouples metrics recorder)
 	renderer       models.Renderer      // pluggable renderer abstraction (defaults to BinaryRenderer)
-	// editLinkResolver centralizes per-page edit link resolution
-	editLinkResolver *EditLinkResolver
 	// stateManager (optional) allows stages to persist per-repo metadata (doc counts, hashes, commits) without daemon-specific code.
 	stateManager state.RepositoryMetadataWriter
 	// keepStaging preserves staging directory on failure for debugging (set via WithKeepStaging)
@@ -58,19 +56,11 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	// Use WithRenderer to inject custom/test renderers.
 	// Default observer bridges to recorder until dedicated observers added.
 	g.observer = models.RecorderObserver{Recorder: g.recorder}
-	// Initialize resolver eagerly (cheap) to simplify call sites.
-	g.editLinkResolver = NewEditLinkResolver(cfg)
-
 	// Log Hugo configuration
 	slog.Debug("Hugo generator created",
 		"output_dir", outputDir)
 
 	return g
-}
-
-// EditLinkResolver exposes the internal resolver for transforms (read-only behavior).
-func (g *Generator) EditLinkResolver() interface{ Resolve(docs.DocFile) string } {
-	return g.editLinkResolver
 }
 
 // WithStateManager injects an optional state manager for persistence of discovery/build metadata.
