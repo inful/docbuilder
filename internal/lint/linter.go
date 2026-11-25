@@ -78,6 +78,12 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 	if info.IsDir() {
 		err = l.lintDirectory(path, result)
 	} else {
+		// The excludes hold for a single file too: the pre-commit
+		// hook lints every staged file on its own, and the readme of
+		// the repository is never reported.
+		if l.isExcluded(path, repositoryRoot(path)) {
+			return result, nil
+		}
 		err = l.lintFile(path, result)
 		result.FilesTotal = 1
 	}
@@ -94,6 +100,38 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 	}
 
 	return result, err
+}
+
+// repositoryRoot returns the root of the repository that holds the path:
+// the directory that holds the .git of the repository.
+//
+// The excludes of the linter are paths of the repository ("README.md"),
+// and they are matched against the path relative to that root: the same
+// file is linted or not depending on the directory the linter was
+// started in.
+//
+// Without a repository the directory of the path is the root.
+func repositoryRoot(path string) string {
+	dir := path
+	if info, err := os.Stat(path); err == nil && !info.IsDir() {
+		dir = filepath.Dir(path)
+	}
+
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return dir
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(abs, ".git")); err == nil {
+			return abs
+		}
+		parent := filepath.Dir(abs)
+		if parent == abs {
+			return dir
+		}
+		abs = parent
+	}
 }
 
 // brokenLinkIssue is the issue of a link that points at a file that does
