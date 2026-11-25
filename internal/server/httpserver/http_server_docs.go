@@ -102,7 +102,10 @@ func (s *Server) handleStatusPage(w http.ResponseWriter, r *http.Request, root s
 	// documentation path. Asset-looking paths keep the file server so
 	// they 404 instead of returning an HTML page.
 	if filepath.Ext(r.URL.Path) != "" {
-		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
+		// The site is not rendered yet: the file server looks in the
+		// public directory, which does not exist. The build tree holds
+		// the sources of the site, and they are not public.
+		http.FileServer(http.Dir(filepath.Join(root, "public"))).ServeHTTP(w, r)
 		return
 	}
 
