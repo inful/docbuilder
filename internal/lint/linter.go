@@ -185,7 +185,10 @@ func (l *Linter) lintDirectory(dirPath string, result *Result) error {
 		}
 
 		// Skip files matched by the exclude list (git-forge-conventional files)
-		if l.isExcluded(path, dirPath) {
+		// The excludes are paths of the repository: the same file was
+		// linted or not depending on the directory the linter was
+		// started in.
+		if l.isExcluded(path, repositoryRoot(dirPath)) {
 			return nil
 		}
 
