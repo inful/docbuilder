@@ -122,6 +122,12 @@ func (s *Server) checkMonitoringPaths() error {
 		if !strings.HasPrefix(p.path, "/") {
 			return fmt.Errorf("the %s (%q) must start with /", p.name, p.path)
 		}
+		if strings.ContainsAny(p.path, "{}") {
+			// A path with braces is a wildcard of the router, and a
+			// malformed one takes the process down when the router is
+			// built.
+			return fmt.Errorf("the %s (%q) may not hold a wildcard", p.name, p.path)
+		}
 		if slices.Contains(adminReservedPaths, p.path) {
 			return fmt.Errorf("the %s (%q) is already served by the admin server", p.name, p.path)
 		}
