@@ -775,6 +775,11 @@ const failedStartTeardownTimeout = 15 * time.Second
 func (d *Daemon) Stop(ctx context.Context) error {
 	d.lifecycle.mu.Lock()
 	currentStatus := d.GetStatus()
+	eventStore := d.state.eventStore
+	var searchIndex *search.Index
+	if d.optional.search != nil {
+		searchIndex = d.optional.search.index
+	}
 	// The status is "stopping" when the main loop has ended, and the
 	// teardown has not run yet: the loop ends when the context is
 	// canceled, and the caller stops the daemon right after. Returning
@@ -782,6 +787,10 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	// and the ports stayed bound.
 	if currentStatus == StatusStopped {
 		d.lifecycle.mu.Unlock()
+		// The daemon was never started, or it was stopped before: it
+		// still holds the event store and the search index. They are
+		// opened when the daemon is built.
+		d.closeStores(eventStore, searchIndex)
 		return nil
 	}
 
@@ -799,12 +808,7 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	liveReload := d.optional.liveReload
 	linkVerifier := d.optional.linkVerifier
 	stateManager := d.state.stateManager
-	eventStore := d.state.eventStore
 	outboundDispatcher := d.optional.outboundDispatcher
-	var searchIndex *search.Index
-	if d.optional.search != nil {
-		searchIndex = d.optional.search.index
-	}
 	d.lifecycle.mu.Unlock()
 
 	// Cancel the run context to stop all background workers.
@@ -884,21 +888,10 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		}
 	}
 
-	// Close event store (Phase B)
-	if eventStore != nil {
-		if err := eventStore.Close(); err != nil {
-			slog.Error("Failed to close event store", logfields.Error(err))
-		}
-	}
-
-	// Close the search index. The file handle on the state directory
-	// belongs to the daemon, and the write-ahead log is only folded
-	// back into the index when the last connection goes.
-	if searchIndex != nil {
-		if err := searchIndex.Close(); err != nil {
-			slog.Error("Failed to close the search index", logfields.Error(err))
-		}
-	}
+	// Close the event store and the search index. The file handle on the
+	// state directory belongs to the daemon, and the write-ahead log is
+	// only folded back into the index when the last connection goes.
+	d.closeStores(eventStore, searchIndex)
 
 	d.lifecycle.mu.Lock()
 	d.lifecycle.status.Store(StatusStopped)
@@ -908,6 +901,25 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	slog.Info("DocBuilder daemon stopped", slog.Duration("uptime", uptime))
 
 	return nil
+}
+
+// closeStores closes the event store and the search index. Both are
+// opened when the daemon is built, and a daemon that is stopped twice
+// must not close them twice.
+func (d *Daemon) closeStores(eventStore eventstore.Store, searchIndex *search.Index) {
+	if !d.lifecycle.storesClosed.CompareAndSwap(false, true) {
+		return
+	}
+	if eventStore != nil {
+		if err := eventStore.Close(); err != nil {
+			slog.Error("Failed to close event store", logfields.Error(err))
+		}
+	}
+	if searchIndex != nil {
+		if err := searchIndex.Close(); err != nil {
+			slog.Error("Failed to close the search index", logfields.Error(err))
+		}
+	}
 }
 
 // GetStatus returns the current daemon status.
