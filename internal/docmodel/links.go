@@ -37,14 +37,30 @@ func (d *ParsedDoc) LinkRefs() ([]LinkRef, error) {
 	}
 
 	refs := make([]LinkRef, 0, len(links))
-	searchStartLineByNeedle := make(map[string]int)
+	// The state of every needle: the line of the last link with that
+	// needle and how many of them are on that line. Two links with the
+	// same target can be on the same line, and the second one is on the
+	// line of the first one.
+	type needleState struct {
+		line int
+		skip int
+	}
+	stateByNeedle := make(map[string]needleState)
 
 	for _, link := range links {
 		dest := link.Destination
 		needleKey := string(link.Kind) + "\x00" + dest
 
-		bodyLine := d.FindLinkLine(dest, searchStartLineByNeedle[needleKey])
-		searchStartLineByNeedle[needleKey] = bodyLine + 1
+		state := stateByNeedle[needleKey]
+		startLine := max(state.line, 1)
+		bodyLine := d.FindLinkLine(dest, startLine, state.skip)
+		if bodyLine == state.line {
+			state.skip++
+		} else {
+			state.line = bodyLine
+			state.skip = 1
+		}
+		stateByNeedle[needleKey] = state
 
 		refs = append(refs, LinkRef{
 			Link:     link,
