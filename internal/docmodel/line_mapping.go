@@ -101,6 +101,8 @@ func (d *ParsedDoc) FindLinkLine(destination string, startLine, skip int) int {
 		"](" + destination,
 		"](" + "<" + destination + ">",
 		"]: " + destination,
+		// The usage of a reference-style link: "[text][label]".
+		"][" + destination,
 	}
 
 	for i := startLine - 1; i < len(lines); i++ {

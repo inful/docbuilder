@@ -7,6 +7,7 @@ import (
 	gmast "github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
 )
 
 // ExtractLinks parses a Markdown body and extracts link-like constructs.
@@ -50,6 +51,15 @@ func ExtractLinks(body []byte, opts Options) ([]Link, error) {
 	for _, ref := range refs {
 		links = append(links, Link{Kind: LinkKindReferenceDefinition, Destination: string(ref.Destination())})
 	}
+
+	// A reference-style link whose label is not defined is left as
+	// plain text by the parser: the link is never seen, and the page
+	// holds a dead navigation. The usages are collected here.
+	defined := make(map[string]struct{}, len(refs))
+	for _, ref := range refs {
+		defined[util.ToLinkReference(ref.Label())] = struct{}{}
+	}
+	links = append(links, extractUndefinedReferences(body, defined)...)
 
 	// Goldmark follows CommonMark strictly. DocBuilder historically relied on
 	// permissive destination parsing in some fixer workflows (e.g., destinations
