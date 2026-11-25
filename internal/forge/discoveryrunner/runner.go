@@ -96,6 +96,10 @@ type Runner struct {
 	lastDiscovery atomic.Pointer[time.Time]
 }
 
+// jobIDCounter makes the job ids of the runs unique: two runs in the
+// same nanosecond are the same job otherwise.
+var jobIDCounter atomic.Uint64
+
 // New creates a new Runner.
 func New(cfg Config) *Runner {
 	now := cfg.Now
@@ -107,8 +111,8 @@ func New(cfg Config) *Runner {
 		newJobID = func() string {
 			// The job id has to be unique: the debouncer drops a
 			// request whose job id it has already emitted, and two
-			// runs in the same second are the same job then.
-			return fmt.Sprintf("auto-build-%d", now().UnixNano())
+			// runs in the same nanosecond are the same job then.
+			return fmt.Sprintf("auto-build-%d-%d", now().UnixNano(), jobIDCounter.Add(1))
 		}
 	}
 

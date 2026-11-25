@@ -29,6 +29,7 @@ markup:
             unsafe: true
     highlight:
         lineNos: true
+        lineNumbersInTable: false
         noClasses: false
         style: github
         tabWidth: 4
