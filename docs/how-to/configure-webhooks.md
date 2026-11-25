@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-17T00:00:00Z
-fingerprint: 840e5f031d978a5e73a70dd820d61ece1a33602398fcee95ae9e6880907351b1
-lastmod: "2026-11-19"
+fingerprint: f74a105a45d9e2dd78f4af03c9387fb1cc9d846dc6b5229a33beae35a1708f95
+lastmod: "2026-11-25"
 tags:
   - webhooks
   - automation
@@ -299,7 +299,7 @@ WARN No matching repositories found for webhook repo_full_name=unknown/repo bran
 Check the build queue via the admin API:
 
 ```bash
-curl http://localhost:8082/api/queue/status
+curl http://localhost:8082/api/build/status
 ```
 
 Look for jobs with `type: "webhook"` and verify the `repositories` field contains only the triggered repository.

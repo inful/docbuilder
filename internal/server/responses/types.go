@@ -4,13 +4,16 @@ package responses
 import "time"
 
 // ServerStatusResponse represents the daemon status API response.
+//
+// The answer is served on the public docs port: it holds no path of the
+// filesystem.
+
 type ServerStatusResponse struct {
 	Status      string    `json:"status"`
 	Title       string    `json:"title"`
 	Description string    `json:"description,omitempty"`
 	Theme       string    `json:"theme"`
 	BaseURL     string    `json:"base_url,omitempty"`
-	OutputDir   string    `json:"output_dir"`
 	Timestamp   time.Time `json:"timestamp"`
 }
 

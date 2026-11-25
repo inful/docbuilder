@@ -596,7 +596,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 	}
 
 	// Start scheduler
-	d.serve.scheduler.Start(ctx)
+	// The scheduler belongs to this run: the jobs carry the context of
+	// the run, and they stop with it.
+	d.serve.scheduler.Start(runCtx)
 
 	d.lifecycle.status.Store(StatusRunning)
 	d.serve.metrics.SetGauge("daemon_status", int64(2)) // 2 = running
@@ -775,6 +777,11 @@ const failedStartTeardownTimeout = 15 * time.Second
 func (d *Daemon) Stop(ctx context.Context) error {
 	d.lifecycle.mu.Lock()
 	currentStatus := d.GetStatus()
+	eventStore := d.state.eventStore
+	var searchIndex *search.Index
+	if d.optional.search != nil {
+		searchIndex = d.optional.search.index
+	}
 	// The status is "stopping" when the main loop has ended, and the
 	// teardown has not run yet: the loop ends when the context is
 	// canceled, and the caller stops the daemon right after. Returning
@@ -782,6 +789,10 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	// and the ports stayed bound.
 	if currentStatus == StatusStopped {
 		d.lifecycle.mu.Unlock()
+		// The daemon was never started, or it was stopped before: it
+		// still holds the event store and the search index. They are
+		// opened when the daemon is built.
+		d.closeStores(eventStore, searchIndex)
 		return nil
 	}
 
@@ -799,12 +810,7 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	liveReload := d.optional.liveReload
 	linkVerifier := d.optional.linkVerifier
 	stateManager := d.state.stateManager
-	eventStore := d.state.eventStore
 	outboundDispatcher := d.optional.outboundDispatcher
-	var searchIndex *search.Index
-	if d.optional.search != nil {
-		searchIndex = d.optional.search.index
-	}
 	d.lifecycle.mu.Unlock()
 
 	// Cancel the run context to stop all background workers.
@@ -823,10 +829,6 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	})
 
 	// Stop components in reverse order
-	if bus != nil {
-		bus.Close()
-	}
-
 	if scheduler != nil {
 		if err := scheduler.Stop(ctx); err != nil {
 			slog.Error("Failed to stop scheduler", logfields.Error(err))
@@ -861,6 +863,13 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(err))
 	}
 
+	// The bus is closed after the workers: a worker that publishes
+	// while it stops must not find a closed bus, and the event it
+	// publishes would be lost.
+	if bus != nil {
+		bus.Close()
+	}
+
 	// Close the link verification service after the workers: the
 	// verification is one of them, and it opens a connection to NATS
 	// that nobody closes when the service is closed under it.
@@ -884,21 +893,10 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		}
 	}
 
-	// Close event store (Phase B)
-	if eventStore != nil {
-		if err := eventStore.Close(); err != nil {
-			slog.Error("Failed to close event store", logfields.Error(err))
-		}
-	}
-
-	// Close the search index. The file handle on the state directory
-	// belongs to the daemon, and the write-ahead log is only folded
-	// back into the index when the last connection goes.
-	if searchIndex != nil {
-		if err := searchIndex.Close(); err != nil {
-			slog.Error("Failed to close the search index", logfields.Error(err))
-		}
-	}
+	// Close the event store and the search index. The file handle on the
+	// state directory belongs to the daemon, and the write-ahead log is
+	// only folded back into the index when the last connection goes.
+	d.closeStores(eventStore, searchIndex)
 
 	d.lifecycle.mu.Lock()
 	d.lifecycle.status.Store(StatusStopped)
@@ -908,6 +906,25 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	slog.Info("DocBuilder daemon stopped", slog.Duration("uptime", uptime))
 
 	return nil
+}
+
+// closeStores closes the event store and the search index. Both are
+// opened when the daemon is built, and a daemon that is stopped twice
+// must not close them twice.
+func (d *Daemon) closeStores(eventStore eventstore.Store, searchIndex *search.Index) {
+	if !d.lifecycle.storesClosed.CompareAndSwap(false, true) {
+		return
+	}
+	if eventStore != nil {
+		if err := eventStore.Close(); err != nil {
+			slog.Error("Failed to close event store", logfields.Error(err))
+		}
+	}
+	if searchIndex != nil {
+		if err := searchIndex.Close(); err != nil {
+			slog.Error("Failed to close the search index", logfields.Error(err))
+		}
+	}
 }
 
 // GetStatus returns the current daemon status.

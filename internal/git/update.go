@@ -94,6 +94,33 @@ func (c *Client) fetchOrigin(ctx context.Context, repository *git.Repository, re
 	return c.fetchOriginWithDepth(ctx, repository, repo, branch, depth)
 }
 
+// FetchCommit fetches a commit into the repository.
+//
+// The commit is not the tip of a branch: a shallow clone does not have
+// it, and the checkout of it fails with "object not found". The daemon
+// pins the commit of the webhook, and a push that landed while the
+// build ran is such a commit.
+func (c *Client) FetchCommit(ctx context.Context, repoPath string, repo appcfg.Repository, commit string) error {
+	repository, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return ClassifyGitError(err, "open", repo.URL)
+	}
+
+	// The history is deepened until the commit is there. A server that
+	// allows a fetch of an exact commit would be quicker, but the plain
+	// git server does not: "server does not support exact SHA1
+	// refspec".
+	for _, depth := range []int{50, 500, 5000, 0} {
+		if err := c.fetchOriginWithDepth(ctx, repository, repo, repo.Branch, depth); err != nil {
+			return err
+		}
+		if _, err := repository.CommitObject(plumbing.NewHash(commit)); err == nil {
+			return nil
+		}
+	}
+	return fmt.Errorf("the commit %s is not in the history of the branch %s", commit, repo.Branch)
+}
+
 // fetchOriginWithDepth fetches the origin remote with an explicit history depth.
 // A depth of 0 asks for the full history.
 func (c *Client) fetchOriginWithDepth(ctx context.Context, repository *git.Repository, repo appcfg.Repository, branch string, depth int) error {

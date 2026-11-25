@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,5 +34,22 @@ func TestHandleDocsStatus_OK(t *testing.T) {
 	ct := rec.Header().Get("Content-Type")
 	if ct == "" || ct[:16] != "application/json" {
 		t.Fatalf("expected application/json content type, got %q", ct)
+	}
+}
+
+// The docs port is public: the answer does not tell where the daemon
+// writes the site.
+func TestHandleDocsStatus_DoesNotExposeTheOutputDirectory(t *testing.T) {
+	cfg := &config.Config{Output: config.OutputConfig{Directory: "/srv/site"}}
+	h := NewAPIHandlers(cfg, &stubDaemon{})
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/status", nil)
+	rec := httptest.NewRecorder()
+
+	h.HandleDocsStatus(rec, req)
+
+	body := rec.Body.String()
+	if strings.Contains(body, "output_dir") || strings.Contains(body, "/srv/site") {
+		t.Fatalf("the answer holds the output directory: %s", body)
 	}
 }

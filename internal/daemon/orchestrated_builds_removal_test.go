@@ -23,7 +23,7 @@ func TestTheBuildAfterARemovalRunsWithoutARepository(t *testing.T) {
 	// A repository was removed.
 	d.build.afterRemoval.Store(true)
 
-	d.enqueueOrchestratedBuild(events.BuildNow{JobID: "job-1", LastReason: "discovery"})
+	d.enqueueOrchestratedBuild(t.Context(), events.BuildNow{JobID: "job-1", LastReason: "discovery"})
 
 	require.Equal(t, 1, d.build.buildQueue.Length(), "the build that takes the pages away was not asked for")
 }
@@ -36,7 +36,7 @@ func TestTheBuildWithoutARepositoryIsSkipped(t *testing.T) {
 	d.lifecycle.status.Store(StatusRunning)
 	d.build.buildQueue = queue.NewBuildQueue(4, 1, &stubBuilder{})
 
-	d.enqueueOrchestratedBuild(events.BuildNow{JobID: "job-1", LastReason: "discovery"})
+	d.enqueueOrchestratedBuild(t.Context(), events.BuildNow{JobID: "job-1", LastReason: "discovery"})
 
 	require.Equal(t, 0, d.build.buildQueue.Length(), "a build without a repository was asked for")
 }

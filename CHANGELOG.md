@@ -9,6 +9,67 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.35.27] - 2026-11-25
+
+### Fixed
+- **A pinned commit that is not in the shallow history is fetched.** The
+  daemon pins the commit of the webhook, and a push that landed while
+  the build ran is not the tip of the branch: the shallow clone did not
+  have it, and the build failed over it.
+- **The admin server refuses a monitoring path that the router panics
+  on.** The paths of the monitoring endpoints come from the
+  configuration: the router panics on a path without a leading slash
+  and on a path that is already served, and the panic took the whole
+  daemon down.
+- **A server that fails to start releases the ports.** The listeners
+  were bound before the servers were started: a server that failed left
+  the ports of the others bound, and the daemon held a port that
+  nobody answered on.
+- **The first build is not lost.** The daemon asks for the first build
+  when it starts, and the request goes through the bus: the bus has no
+  queue, and a request that was published before the debouncer was
+  subscribed was lost. The site was never built.
+- **The handlers answer when the daemon is not there.** The method
+  value of a daemon that is not there panics, and the guard that was
+  meant to protect the handler never ran.
+- **The build tree is not served before the first build.** The docs
+  server answers on a public port: the sources of the site and the
+  configuration of Hugo were served while the site was not rendered.
+- **A daemon that is stopped without being started closes its stores.**
+  The event store and the search index are opened when the daemon is
+  built, and the file handles stayed open.
+- **The public status does not tell where the site is written.** The
+  answer held the output directory of the daemon, a path on the
+  filesystem of the server.
+- **The webhook answer says that a payload was not read.** A payload
+  that could not be parsed answered "ignored", the same as an event
+  that was understood and triggered no build.
+- **Two discovery runs do not get the same job id.** The job id was the
+  second of the run: two runs in the same second were the same job, and
+  the debouncer drops a request whose job id it has already emitted.
+- **Every route of the docs server answers through the middleware.** The
+  routes beside the site got neither the log nor the answer to a
+  panic, and a panic closed the connection without an answer.
+- **The scheduler stops with the deadline of the stop.** The stop of
+  the scheduler waited for the running job, whatever the deadline of
+  the caller was.
+- **A build that does not fit in the queue is not lost.** The queue was
+  full, the build was dropped, and the site stayed as it was.
+- **The failure of one subscriber does not keep the event from the
+  others.** The publish stopped at the first subscriber that failed: the
+  others never saw the event.
+- **The bus is closed after the workers.** A worker that published
+  while the daemon stopped found a closed bus, and the event was lost.
+- **A link that wraps an image is rewritten.** The image inside the link
+  was rewritten with the rules of a link, and the link itself was left
+  alone: the image was in the wrong place and the link pointed at a
+  file that does not exist.
+
+### Documentation
+- **The build queue is at /api/build/status.** The how-to told the
+  operator to ask a route that does not exist.
+
+
 ## [0.35.26] - 2026-11-24
 
 ### Fixed

@@ -2,15 +2,26 @@ package httpserver
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"time"
 )
 
 func (s *Server) startAdminServerWithListener(_ context.Context, ln net.Listener) error {
+	// The paths of the monitoring endpoints come from the
+	// configuration. The router panics on a path without a leading
+	// slash and on a path that is already served, and the panic takes
+	// the whole daemon down: the paths are checked here.
+	if err := s.checkMonitoringPaths(); err != nil {
+		return err
+	}
+
 	mux := http.NewServeMux()
 
 	// Health check endpoint
@@ -67,6 +78,58 @@ func (s *Server) startAdminServerWithListener(_ context.Context, ln net.Listener
 
 	s.adminServer = &http.Server{Handler: s.mchain(adminMux), ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
 	return s.startServerWithListener("admin", s.adminServer, ln)
+}
+
+// adminReservedPaths are the routes of the admin server that the
+// operator cannot change. A configured monitoring path that is one of
+// them makes the router refuse the second registration, and the router
+// panics on it.
+var adminReservedPaths = []string{
+	"/healthz",
+	"/ready",
+	"/readyz",
+	"/site-ready",
+	"/health/detailed",
+	"/metrics/detailed",
+	"/metrics/prometheus",
+	"/api/daemon/status",
+	"/api/daemon/config",
+	"/api/discovery/trigger",
+	"/api/build/trigger",
+	"/api/build/status",
+	"/api/repositories",
+	"/status",
+}
+
+// checkMonitoringPaths refuses the monitoring paths that the router
+// would panic on: a path without a leading slash, a path that is
+// already served by the admin server, and the same path for the health
+// and the metrics endpoint.
+func (s *Server) checkMonitoringPaths() error {
+	if s.cfg.Monitoring == nil {
+		return nil
+	}
+	health := s.cfg.Monitoring.Health.Path
+	metrics := s.cfg.Monitoring.Metrics.Path
+
+	for _, p := range []struct {
+		name string
+		path string
+	}{{"monitoring.health.path", health}, {"monitoring.metrics.path", metrics}} {
+		if p.path == "" {
+			continue
+		}
+		if !strings.HasPrefix(p.path, "/") {
+			return fmt.Errorf("the %s (%q) must start with /", p.name, p.path)
+		}
+		if slices.Contains(adminReservedPaths, p.path) {
+			return fmt.Errorf("the %s (%q) is already served by the admin server", p.name, p.path)
+		}
+	}
+	if health != "" && health == metrics {
+		return fmt.Errorf("the monitoring.health.path and the monitoring.metrics.path are the same (%q)", health)
+	}
+	return nil
 }
 
 // isLoopbackOrigin reports whether an origin is the machine itself. The

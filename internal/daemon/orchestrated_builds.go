@@ -12,12 +12,23 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
+// runBuildNowConsumer subscribes to the build-now events of the bus and
+// consumes them.
+//
+// The daemon subscribes before it starts the goroutine that consumes
+// them (see startWorkers): the bus has no queue, and an event that is
+// published before the consumer is subscribed is lost.
 func (d *Daemon) runBuildNowConsumer(ctx context.Context) {
 	if ctx == nil || d == nil || d.serve.orchestrationBus == nil {
 		return
 	}
 
 	buildNowCh, unsubscribe := events.Subscribe[events.BuildNow](d.serve.orchestrationBus, 16)
+	d.consumeBuildNow(ctx, buildNowCh, unsubscribe)
+}
+
+// consumeBuildNow turns the build-now events of the bus into builds.
+func (d *Daemon) consumeBuildNow(ctx context.Context, buildNowCh <-chan events.BuildNow, unsubscribe func()) {
 	defer unsubscribe()
 
 	for {
@@ -28,12 +39,17 @@ func (d *Daemon) runBuildNowConsumer(ctx context.Context) {
 			if !ok {
 				return
 			}
-			d.enqueueOrchestratedBuild(evt)
+			d.enqueueOrchestratedBuild(ctx, evt)
 		}
 	}
 }
 
-func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
+// buildQueueWaitTimeout bounds the wait for room in the build queue. A
+// build that does not fit in that time is lost: the queue is full and
+// the daemon is overloaded.
+const buildQueueWaitTimeout = 30 * time.Second
+
+func (d *Daemon) enqueueOrchestratedBuild(ctx context.Context, evt events.BuildNow) {
 	if d == nil || d.GetStatus() != StatusRunning || d.build.buildQueue == nil {
 		return
 	}
@@ -89,7 +105,11 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 		TypedMeta: meta,
 	}
 
-	if err := d.build.buildQueue.Enqueue(job); err != nil {
+	// The queue may be full: the build waits for room instead of being
+	// dropped. A site that is not built stays as it was.
+	waitCtx, cancel := context.WithTimeout(ctx, buildQueueWaitTimeout)
+	defer cancel()
+	if err := d.build.buildQueue.EnqueueWait(waitCtx, job); err != nil {
 		slog.Error("Failed to enqueue orchestrated build",
 			logfields.JobID(jobID),
 			logfields.Error(err))

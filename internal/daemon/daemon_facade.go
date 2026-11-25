@@ -22,18 +22,21 @@ import (
 // here. Fields declared atomic may be read or written without the
 // lock.
 type lifecycleStack struct {
-	mu          sync.RWMutex
-	status      atomic.Value // holds Status
-	startTime   time.Time
-	stopChan    chan struct{}
-	stopOnce    sync.Once
-	runCancel   context.CancelFunc
-	workers     WorkerGroup
-	lastBuild   *time.Time
-	syncJobID   string
-	statusJobID string
-	promJobID   string
-	pruneJobID  string
+	mu        sync.RWMutex
+	status    atomic.Value // holds Status
+	startTime time.Time
+	stopChan  chan struct{}
+	stopOnce  sync.Once
+	runCancel context.CancelFunc
+	workers   WorkerGroup
+	// storesClosed says that the event store and the search index are
+	// closed: a daemon that is stopped twice must not close them twice.
+	storesClosed atomic.Bool
+	lastBuild    *time.Time
+	syncJobID    string
+	statusJobID  string
+	promJobID    string
+	pruneJobID   string
 }
 
 // stateStack owns the daemon's persistence layer: the typed state

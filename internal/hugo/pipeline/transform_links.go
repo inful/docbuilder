@@ -61,8 +61,24 @@ func tryProcessLink(content string, i int, repository, forge string, isIndex boo
 	// Check if it's an image link (preceded by !)
 	isImage := i > 0 && content[i-1] == '!'
 
+	// A link may wrap an image: "[![Logo](logo.png)](guide.md)". The
+	// image is a unit of its own: the text of the link ends after it,
+	// and the image path is rewritten by the image pass.
+	textStart := i + 1
+	if textStart+1 < len(content) && content[textStart] == '!' && content[textStart+1] == '[' {
+		imageBracket := findClosingBracket(content, textStart+2)
+		if imageBracket == -1 || imageBracket+1 >= len(content) || content[imageBracket+1] != '(' {
+			return 0, false
+		}
+		imageParen := findClosingParen(content, imageBracket+2)
+		if imageParen == -1 {
+			return 0, false
+		}
+		textStart = imageParen + 1
+	}
+
 	// Find the closing ]
-	closeBracket := findClosingBracket(content, i+1)
+	closeBracket := findClosingBracket(content, textStart)
 	if closeBracket == -1 {
 		// No closing bracket, not a valid link
 		return 0, false

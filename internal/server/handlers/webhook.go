@@ -126,6 +126,7 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 	// Parse webhook event
 	eventType := r.Header.Get(eventHeader)
 	var event *forge.WebhookEvent
+	parseFailed := false
 	if client, ok := h.forgeClients[forgeName]; ok && client != nil {
 		event, err = client.ParseWebhookEvent(body, eventType)
 		if err != nil {
@@ -136,6 +137,7 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 			slog.Warn("Failed to parse webhook event",
 				"forge", forgeName,
 				"error", err.Error())
+			parseFailed = true
 			// Continue even if parsing fails - acknowledge receipt
 		}
 	}
@@ -144,9 +146,14 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 	jobID := h.triggerBuildFromEvent(event, forgeName)
 
 	// The answer tells the forge what happened: a request that
-	// triggered no build says so, instead of pretending it did.
+	// triggered no build says so, instead of pretending it did. A
+	// payload that could not be read says that too: the sender has to
+	// know that the event was not understood.
 	status := "ignored"
-	if jobID != "" {
+	switch {
+	case parseFailed:
+		status = "error"
+	case jobID != "":
 		status = "received"
 	}
 	resp := map[string]any{

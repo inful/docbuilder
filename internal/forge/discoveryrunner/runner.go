@@ -105,7 +105,10 @@ func New(cfg Config) *Runner {
 	newJobID := cfg.NewJobID
 	if newJobID == nil {
 		newJobID = func() string {
-			return fmt.Sprintf("auto-build-%d", time.Now().Unix())
+			// The job id has to be unique: the debouncer drops a
+			// request whose job id it has already emitted, and two
+			// runs in the same second are the same job then.
+			return fmt.Sprintf("auto-build-%d", now().UnixNano())
 		}
 	}
 
