@@ -18,10 +18,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	goslug "github.com/gosimple/slug"
 
-	"git.home.luguber.info/inful/docbuilder/internal/doctemplate/field"
 	"git.home.luguber.info/inful/docbuilder/internal/doctemplate/service"
-	"git.home.luguber.info/inful/docbuilder/internal/doctemplate/suggest"
-	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
+	templating "git.home.luguber.info/inful/docbuilder/templates"
+	"git.home.luguber.info/inful/docbuilder/templates/field"
+	"git.home.luguber.info/inful/docbuilder/templates/suggest"
 )
 
 type step int

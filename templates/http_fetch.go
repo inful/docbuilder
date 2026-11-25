@@ -9,8 +9,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // maxTemplateResponseBytes is the maximum size of template page responses (5MB).
@@ -130,14 +128,14 @@ func fetchHTML(ctx context.Context, pageURL string, client *http.Client) ([]byte
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fetch %s: %w", logfields.RedactURL(pageURL), err)
+		return nil, fmt.Errorf("fetch %s: %w", redactURL(pageURL), err)
 	}
 	defer func() {
 		_ = resp.Body.Close()
 	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("fetch %s: HTTP %d", logfields.RedactURL(pageURL), resp.StatusCode)
+		return nil, fmt.Errorf("fetch %s: HTTP %d", redactURL(pageURL), resp.StatusCode)
 	}
 
 	limited := io.LimitReader(resp.Body, maxTemplateResponseBytes+1)
@@ -149,6 +147,19 @@ func fetchHTML(ctx context.Context, pageURL string, client *http.Client) ([]byte
 		return nil, errors.New("response too large")
 	}
 	return data, nil
+}
+
+// redactURL takes the credentials out of an address.
+//
+// It is a copy of the helper of the internal logfields package: the
+// library must not depend on the packages of the application.
+func redactURL(u string) string {
+	parsed, err := url.Parse(u)
+	if err != nil || parsed.User == nil {
+		return u
+	}
+	parsed.User = nil
+	return parsed.String()
 }
 
 // validateTemplateURL validates that a URL is safe for template fetching.

@@ -22,7 +22,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
-	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
+	templating "git.home.luguber.info/inful/docbuilder/templates"
 )
 
 // registerTools wires every tool the v1 catalog exposes into the MCP server.

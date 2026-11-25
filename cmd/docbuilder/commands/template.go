@@ -13,7 +13,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
-	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
+	templating "git.home.luguber.info/inful/docbuilder/templates"
 )
 
 // TemplateCmd groups template-related commands.

@@ -9,9 +9,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"git.home.luguber.info/inful/docbuilder/internal/doctemplate/field"
-	"git.home.luguber.info/inful/docbuilder/internal/doctemplate/suggest"
-	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
+	templating "git.home.luguber.info/inful/docbuilder/templates"
+	"git.home.luguber.info/inful/docbuilder/templates/field"
+	"git.home.luguber.info/inful/docbuilder/templates/suggest"
 )
 
 func TestCollectData_RequiredBool(t *testing.T) {

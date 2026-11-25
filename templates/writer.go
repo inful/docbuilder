@@ -12,8 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 )
 
 // WriteGeneratedFile writes the generated content to a file under the docs directory.
@@ -94,7 +92,7 @@ func WriteGeneratedFile(docsDir, relativePath, content string) (string, error) {
 	// The file is written without a window in which it is half written:
 	// a full disk or a killed process left a truncated file behind, and
 	// every later write to that path failed with "file already exists".
-	if err := foundation.WriteFileAtomic(fullPath, []byte(content), 0o600); err != nil {
+	if err := writeFileAtomic(fullPath, []byte(content), 0o600); err != nil {
 		return "", fmt.Errorf("write output file: %w", err)
 	}
 

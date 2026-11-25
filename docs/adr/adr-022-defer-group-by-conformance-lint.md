@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-01T00:00:00Z
-fingerprint: fad101ecf7716becd1a9c5d0fdfca57b90262a34b6bbf08dbf05b82e09a146e6
-lastmod: "2026-11-19"
+fingerprint: 36eef3b6e5e169767900355fd4d3b070bb7f6ab31ac9b1d61915a409061f0a3e
+lastmod: "2026-11-25"
 tags: []
 title: 'Plan: `group_by` Conformance Lint (deferred)'
 uid: 2edb570d-9262-49e5-9ea4-f49275429420
@@ -71,7 +71,7 @@ Extend `internal/hugo/categories_menu.go` (or its stage wrapper `categories_menu
 
 ### Part B — Fetch the contract on the lint runner
 
-New function in `internal/templates/` (next to `http_fetch.go`) that:
+New function in `templates/` (next to `http_fetch.go`) that:
 - Resolves the BASE_URL with the same precedence as `template list`: `--base-url` flag → `DOCBUILDER_TEMPLATE_BASE_URL` env → `hugo.base_url` from config. Reuses `cmd/docbuilder/commands/template_common.go:10-23`.
 - GETs `<base-url>/sidebar/group_by.yaml`.
 - Parses YAML → `map[string][]string`; lowercases keys and fields (mirrors `internal/config/hugo.go:150-164`).
@@ -101,7 +101,7 @@ New `Rule`s in `internal/lint/`:
 - [ ] Local and remote `group_by` disagreeing emits a single `sidebar-group-by-drift` `Warning` describing the diff.
 - [ ] Build server writes the resolved contract to the Hugo output at `sidebar/group_by.yaml` as part of the normal build.
 - [ ] Golden tests pass; unit tests pass; integration test (local HTTP server) passes.
-- [ ] No new config keys introduced; no new HTTP code; reuses `internal/templates/http_fetch.go`'s URL validation.
+- [ ] No new config keys introduced; no new HTTP code; reuses `templates/http_fetch.go`'s URL validation.
 
 ## What this plan does *not* do
 
