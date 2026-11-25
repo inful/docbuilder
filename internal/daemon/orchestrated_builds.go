@@ -55,6 +55,7 @@ func (d *Daemon) enqueueOrchestratedBuild(ctx context.Context, evt events.BuildN
 	}
 
 	reposForBuild := d.currentReposForOrchestratedBuild()
+	removal := false
 	if len(reposForBuild) == 0 {
 		if !d.build.afterRemoval.Swap(false) {
 			slog.Warn("Skipping orchestrated build: no repositories available")
@@ -64,6 +65,7 @@ func (d *Daemon) enqueueOrchestratedBuild(ctx context.Context, evt events.BuildN
 		// build runs with an empty set: the pages of the removed
 		// repository are still published, and only a build takes them
 		// away.
+		removal = true
 		slog.Info("Building the site without a repository: a repository was removed")
 	}
 
@@ -86,6 +88,7 @@ func (d *Daemon) enqueueOrchestratedBuild(ctx context.Context, evt events.BuildN
 		Repositories:  reposForBuild,
 		RepoSnapshot:  evt.Snapshot,
 		LiveReloadHub: d.optional.liveReload,
+		Removal:       removal,
 	}
 	jobType := queue.BuildTypeManual
 	switch evt.LastReason {

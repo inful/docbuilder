@@ -1047,6 +1047,8 @@ func (d *Daemon) jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, err
 	// constructor and the daemonForTest helper, so no nil-check is needed
 	// here.
 	skipState := d.state.stateManager
+	// A repository was removed: the site is rendered without it.
+	removal := job.TypedMeta != nil && job.TypedMeta.Removal
 	var onDocReady func([]byte, string)
 	if d.optional.outboundDispatcher != nil {
 		onDocReady = d.optional.outboundDispatcher.Enqueue
@@ -1058,6 +1060,7 @@ func (d *Daemon) jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, err
 		Incremental:     true, // Daemon mode uses incremental updates to leverage remote HEAD cache
 		StateManager:    skipState,
 		OnDocumentReady: onDocReady,
+		Removal:         removal,
 	}, nil
 }
 

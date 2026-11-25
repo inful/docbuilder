@@ -89,7 +89,7 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		return result, dberrors.ConfigError("config required").Build()
 	}
 
-	if len(req.Config.Repositories) == 0 {
+	if len(req.Config.Repositories) == 0 && !req.Removal {
 		observability.WarnContext(ctx, "No repositories configured for build")
 		result.Status = BuildStatusSuccess
 		result.EndTime = time.Now()
