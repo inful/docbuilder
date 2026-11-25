@@ -124,7 +124,7 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 		"incremental", incrementalMode,
 		"keep_workspace", keepWorkspace)
 
-	svc := newCLIService(cfg, keepWorkspace)
+	svc := newCLIService(cfg, keepWorkspace, incrementalMode)
 	result, err := svc.Run(context.Background(), build.BuildRequest{
 		Config:        cfg,
 		OutputDir:     outputDir,
@@ -158,11 +158,15 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 // newCLIService builds a BuildService configured for the CLI's workspace
 // behavior. When keepWorkspace is true the workspace manager is persistent
 // (its Cleanup is a no-op) so the cloned repos survive process exit.
-func newCLIService(cfg *config.Config, keepWorkspace bool) *build.DefaultBuildService {
+//
+// An incremental build needs a workspace that stays as well: the clone of
+// the repository has to be there, or the build clones every repository
+// again and the flag does nothing.
+func newCLIService(cfg *config.Config, keepWorkspace, incremental bool) *build.DefaultBuildService {
 	wsDir := cfg.Build.WorkspaceDir
 	return build.NewBuildService().
 		WithWorkspaceFactory(func() *workspace.Manager {
-			if keepWorkspace {
+			if keepWorkspace || incremental {
 				return workspace.NewPersistentManager(wsDir, "working")
 			}
 			return workspace.NewManager(wsDir)
