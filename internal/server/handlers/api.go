@@ -46,7 +46,9 @@ func (h *APIHandlers) HandleDocsStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// The status is the status of the daemon: a monitor that polls this
-	// endpoint has to see that the daemon is stopped or failing.
+	// endpoint has to see that the daemon is stopped or failing. The
+	// answer is served on the public docs port: it holds no path of the
+	// filesystem.
 	daemonStatus := "ready"
 	if h.daemon != nil {
 		daemonStatus = h.daemon.GetStatus()
@@ -58,7 +60,6 @@ func (h *APIHandlers) HandleDocsStatus(w http.ResponseWriter, r *http.Request) {
 		Description: h.config.Hugo.Description,
 		Theme:       config.ThemeDocsy,
 		BaseURL:     h.config.Hugo.BaseURL,
-		OutputDir:   h.config.Output.Directory,
 		Timestamp:   time.Now().UTC(),
 	}
 
