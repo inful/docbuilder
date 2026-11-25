@@ -257,7 +257,9 @@ func (l *Linter) LintPaths(paths []string) (*Result, error) {
 			}
 			continue
 		}
-		if l.isExcluded(path, "") {
+		// The excludes are paths of the repository: the same file was
+		// linted or not depending on how the path was spelled.
+		if l.isExcluded(path, repositoryRoot(path)) {
 			continue
 		}
 		if !IsDocFile(path) && !IsAssetFile(path) {
@@ -327,8 +329,10 @@ func (l *Linter) LintFiles(files []string) (*Result, error) {
 	}
 
 	for _, file := range files {
-		// Skip files matched by the exclude list (git-forge-conventional files)
-		if l.isExcluded(file, "") {
+		// Skip files matched by the exclude list (git-forge-conventional
+		// files). The excludes are paths of the repository: the same
+		// file was linted or not depending on how the path was spelled.
+		if l.isExcluded(file, repositoryRoot(file)) {
 			continue
 		}
 
