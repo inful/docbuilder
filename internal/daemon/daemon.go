@@ -829,10 +829,6 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	})
 
 	// Stop components in reverse order
-	if bus != nil {
-		bus.Close()
-	}
-
 	if scheduler != nil {
 		if err := scheduler.Stop(ctx); err != nil {
 			slog.Error("Failed to stop scheduler", logfields.Error(err))
@@ -865,6 +861,13 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	// after the close is lost from the build history.
 	if err := d.lifecycle.workers.StopAndWait(ctx); err != nil {
 		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(err))
+	}
+
+	// The bus is closed after the workers: a worker that publishes
+	// while it stops must not find a closed bus, and the event it
+	// publishes would be lost.
+	if bus != nil {
+		bus.Close()
 	}
 
 	// Close the link verification service after the workers: the
