@@ -110,7 +110,7 @@ func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 
 	// If fix mode is enabled, run fixer instead
 	if parent.Fix {
-		return runFixer(linter, paths, parent.DryRun)
+		return runFixer(linter, paths, parent.DryRun, parent.Yes)
 	}
 
 	// Run linting
@@ -160,9 +160,20 @@ func isColorSupported() bool {
 }
 
 // runFixer executes the fixer and displays results.
-func runFixer(linter *lint.Linter, paths []string, dryRun bool) error {
-	fixer := lint.NewFixer(linter, dryRun, false) // force=false for safety
-	fixResult, err := fixer.FixPaths(paths)
+//
+// The fixer asks before it changes the files: the files of the operator
+// are changed, and the operator has to approve what is changed. The
+// confirmation is skipped when the answer is already known (--yes).
+func runFixer(linter *lint.Linter, paths []string, dryRun, yes bool) error {
+	fixer := lint.NewFixer(linter, dryRun, false).WithAutoConfirm(yes) // force=false for safety
+
+	var fixResult *lint.FixResult
+	var err error
+	if yes || dryRun {
+		fixResult, err = fixer.FixPaths(paths)
+	} else {
+		fixResult, err = fixer.FixPathsWithConfirmation(paths)
+	}
 	if err != nil {
 		return fmt.Errorf("fixing failed: %w", err)
 	}
