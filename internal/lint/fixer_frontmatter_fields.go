@@ -13,6 +13,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
+	"git.home.luguber.info/inful/docbuilder/internal/markdown"
 )
 
 // applyFrontmatterFieldsFixes fills missing required fields in frontmatter.
@@ -195,13 +196,22 @@ func (f *Fixer) fillFrontmatterFields(filePath string) FrontmatterFieldsUpdate {
 // extractTitleFromBody returns the first H1's text from body, or the
 // file's basename (with separators replaced) as a fallback.
 func extractTitleFromBody(body []byte, filePath string) string {
-	if m := bodyH1Regex.FindSubmatch(body); m != nil {
-		title := strings.TrimSpace(string(m[1]))
-		// Strip surrounding quotes the user may have written in the H1.
-		title = strings.Trim(title, `"'`)
+	// The code of the document holds examples, not headings: the
+	// comment of a shell command is not the title of the page.
+	title := ""
+	regions := markdown.CodeBlockRegions(body)
+	markdown.ApplyOutsideCode(string(body), regions, func(part string) string {
 		if title != "" {
-			return title
+			return part
 		}
+		if m := bodyH1Regex.FindStringSubmatch(part); m != nil {
+			// Strip surrounding quotes the user may have written in the H1.
+			title = strings.Trim(strings.TrimSpace(m[1]), `"'`)
+		}
+		return part
+	})
+	if title != "" {
+		return title
 	}
 	base := filepath.Base(filePath)
 	base = strings.TrimSuffix(base, filepath.Ext(base))
