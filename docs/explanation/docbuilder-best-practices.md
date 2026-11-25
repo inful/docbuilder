@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-01T00:00:00Z
-fingerprint: fec76df6d61a65f9fc5fa9ef029c29d2091b0276fa98efa434a56b8fcdcf2b55
-lastmod: "2026-11-24"
+fingerprint: 17d443ffa52d977ccbf04855bddbaa8772065e82df324b48ffea57042c32f538
+lastmod: "2026-11-25"
 tags:
   - best-practices
   - documentation
@@ -92,7 +92,7 @@ contains both a recipe and a spec, which reads as confused intent.
 **MUST.** Source-of-truth template files (the `.template.md` files
 that `docbuilder template new` consumes) belong in `docs/examples/`.
 
-**Why:** The template-discovery code (`internal/templates/discovery.go`)
+**Why:** The template-discovery code (`templates/discovery.go`)
 matches HTML anchors whose `href` contains `.template/`. The URL
 shape is determined by the file's directory + filename, so templates
 must be at a predictable path. Putting them in `reference/` makes
@@ -185,7 +185,7 @@ sequence directories.
 should discover ends in `.template.md` and lives under
 `docs/examples/`.
 
-**Why:** The discovery code (`internal/templates/discovery.go`) parses
+**Why:** The discovery code (`templates/discovery.go`) parses
 the `/categories/templates/` taxonomy page and matches anchors with
 `href` containing `.template/`. Without the `.template.md` suffix the
 generated URL won't contain `.template/`, and the template is invisible
@@ -395,7 +395,7 @@ mixes reference and how-to pages — confusing.
 
 **MUST.** A source-of-truth template that should be discoverable via
 `docbuilder template list` must satisfy both. The discovery code
-(`internal/templates/discovery.go`) parses the
+(`templates/discovery.go`) parses the
 `/categories/templates/` taxonomy page and looks for anchors whose
 `href` contains `.template/`.
 
@@ -405,7 +405,7 @@ mixes reference and how-to pages — confusing.
 
 ### 7.2 Template body is exactly one fenced markdown block
 
-**MUST.** The parser (`internal/templates/template_page.go`) errors
+**MUST.** The parser (`templates/template_page.go`) errors
 on zero or multiple code blocks.
 
 **Enforced:** Discovery fails at parse time.
@@ -415,7 +415,7 @@ on zero or multiple code blocks.
 **MUST.** `output_path: guides/{{ .Slug }}.md` not
 `output_path: /Users/me/project/docs/guides/{{ .Slug }}.md`.
 
-**Why:** `WriteGeneratedFile` (`internal/templates/writer.go`)
+**Why:** `WriteGeneratedFile` (`templates/writer.go`)
 rejects absolute paths and `..` traversal.
 
 **Enforced:** Build (WriteGeneratedFile rejects).

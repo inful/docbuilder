@@ -9,6 +9,17 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Added
+- **The template engine is a library.** The engine, the tri-state
+  boolean field and the index that suggests file names live in
+  `templates/`, `templates/field` and `templates/suggest` now, and an
+  application outside this repository can import them. Before, they
+  were under `internal/`, and Go refused such an import from another
+  module: the engine could not be reused at all. The library depends on
+  no package of this application, the exported surface ships as it is,
+  and `templates/README.md` holds the promise. The decision is in
+  ADR-024.
+
 ## [0.35.29] - 2026-11-25
 
 ### Fixed

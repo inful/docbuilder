@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"git.home.luguber.info/inful/docbuilder/internal/templates"
+	"git.home.luguber.info/inful/docbuilder/templates"
 )
 
 // The path of the document and the uid in its body are the same.

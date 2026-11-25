@@ -156,6 +156,27 @@ jobs:
           args: --timeout=5m
           skip-cache: false
 
+  library-import:
+    name: Library Import
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # The template engine is a library: it must be usable from an
+      # application outside the repository.
+      - name: Check that the template engine can be imported
+        run: ./scripts/check-library-import.sh
+
   build:
     name: Build
     runs-on: ubuntu-latest

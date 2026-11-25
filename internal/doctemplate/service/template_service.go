@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
-	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
+	templating "git.home.luguber.info/inful/docbuilder/templates"
 )
 
 // TemplateService wraps template operations needed by the doctemplate TUI.
