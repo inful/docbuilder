@@ -134,7 +134,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	// emitter, but the emitter is constructed by initStateStack which
 	// runs after initBuildStack. The recipe is the right place to
 	// express that ordering dependency.
-	d.build.buildQueue.SetEventEmitter(d.state.eventEmitter)
+	d.wireBuildEvents()
 
 	d.initDiscoveryRunner(cfg)
 	if err := d.initBuildDebouncer(cfg); err != nil {
@@ -940,6 +940,19 @@ func (d *Daemon) closeStores(eventStore eventstore.Store, searchIndex *search.In
 			slog.Error("Failed to close the search index", logfields.Error(err))
 		}
 	}
+}
+
+// wireBuildEvents hands the queue the emitter of the daemon.
+//
+// The daemon counts its builds in the metrics, and the queue emitted
+// the events through the emitter of the state alone: the counters of
+// the builds read zero for ever, and the dashboard showed a healthy
+// daemon that never built anything.
+func (d *Daemon) wireBuildEvents() {
+	if d == nil || d.build.buildQueue == nil {
+		return
+	}
+	d.build.buildQueue.SetEventEmitter(d)
 }
 
 // GetStatus returns the current daemon status.
