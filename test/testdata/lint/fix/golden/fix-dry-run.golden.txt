@@ -1,4 +1,4 @@
-Files renamed: 3
-Errors fixed: 28
-Fingerprints updated: 4
-Links updated: 0
+Files to be renamed: 3
+Errors to fix: 28
+Fingerprints to update: 4
+Links to update: 0
