@@ -148,7 +148,7 @@ func (d *Daemon) requestInitialBuild(ctx context.Context) {
 	if ctx == nil {
 		return
 	}
-	if d.serve.orchestrationBus == nil {
+	if d.orchestrationBus() == nil {
 		slog.Warn("Skipping initial build: orchestration bus not initialized")
 		return
 	}

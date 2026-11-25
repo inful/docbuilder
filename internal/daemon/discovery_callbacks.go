@@ -13,7 +13,7 @@ func (d *Daemon) onDiscoveryBuildRequest(ctx context.Context, jobID, reason stri
 	if d == nil || ctx == nil {
 		return
 	}
-	if d.serve.orchestrationBus == nil {
+	if d.orchestrationBus() == nil {
 		return
 	}
 	if d.build.buildDebouncer != nil {
@@ -39,7 +39,7 @@ func (d *Daemon) onDiscoveryRepoRemoved(ctx context.Context, repoURL, repoName s
 	if d == nil || ctx == nil {
 		return
 	}
-	if d.serve.orchestrationBus == nil {
+	if d.orchestrationBus() == nil {
 		return
 	}
 

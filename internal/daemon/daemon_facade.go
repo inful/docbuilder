@@ -88,6 +88,20 @@ type serveStack struct {
 	metrics          *MetricsCollector
 }
 
+// orchestrationBus returns the bus of the current run.
+//
+// The bus is written when the daemon starts and read by the publishers
+// and the triggers: the pointer is read under the lock, so a publisher
+// never sees the bus of the last run.
+func (d *Daemon) orchestrationBus() *events.Bus {
+	if d == nil {
+		return nil
+	}
+	d.lifecycle.mu.RLock()
+	defer d.lifecycle.mu.RUnlock()
+	return d.serve.orchestrationBus
+}
+
 // optionalStack owns features that are opt-in via configuration and
 // may be nil. Centralizing them in one sub-struct makes the nil-check
 // pattern uniform across the daemon.
