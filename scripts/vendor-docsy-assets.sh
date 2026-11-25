@@ -138,6 +138,33 @@ if grep -q unpkg "$TARGET/head.html"; then
     exit 1
 fi
 
+# The theme loads the styles of the code blocks through its own
+# stylesheet with Hugo's meta.load-css, and the stylesheet we ship is
+# built without them: the code blocks of every site had no colours and
+# their line numbers stood in a column of their own. The theme keeps the
+# styles in two files, one for the light and one for the dark mode.
+CHROMA_LIGHT="$(find _vendor -path '*docsy*/theme@*/assets/scss/td/chroma/_light.scss' | head -1)"
+CHROMA_DARK="$(find _vendor -path '*docsy*/theme@*/assets/scss/td/chroma/_dark.scss' | head -1)"
+if [ -z "$CHROMA_LIGHT" ] || [ -z "$CHROMA_DARK" ]; then
+  echo "cannot find the styles of the code blocks in the theme" >&2
+  exit 1
+fi
+{
+  echo "/* The styles of the code blocks, from the Docsy theme ${VERSION}"
+  echo "   (assets/scss/td/chroma). The theme loads them through its own"
+  echo "   stylesheet with Hugo's meta.load-css, and the stylesheet we ship"
+  echo "   is built without them."
+  echo ""
+  echo "   Regenerate with scripts/vendor-docsy-assets.sh; do not edit by hand. */"
+  echo "[data-bs-theme='light'] {"
+  cat "$CHROMA_LIGHT"
+  echo "}"
+  echo ""
+  echo "[data-bs-theme='dark'] {"
+  cat "$CHROMA_DARK"
+  echo "}"
+} > "$TARGET/chroma.css"
+
 cat > "$TARGET/VERSION" <<EOF
 docsy ${VERSION}
 bootstrap ${BOOTSTRAP_VERSION}
