@@ -579,6 +579,14 @@ func (d *Daemon) Start(ctx context.Context) error {
 	d.lifecycle.runCancel = runCancel
 	d.lifecycle.workers.Reset()
 
+	// Start build queue processing
+	d.build.buildQueue.Start(runCtx)
+
+	// The consumers of the bus are subscribed before the server accepts
+	// the requests: the bus has no queue, and a webhook that arrives
+	// before the consumer is subscribed is lost.
+	d.startWorkers(runCtx)
+
 	// Start HTTP servers
 	if err := d.serve.httpServer.Start(runCtx); err != nil {
 		d.lifecycle.status.Store(StatusError)
@@ -591,15 +599,10 @@ func (d *Daemon) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to start HTTP server: %w", err)
 	}
 
-	// Start build queue processing
-	d.build.buildQueue.Start(runCtx)
-
 	// Start outbound dispatcher (opt-in). When nil, this is a no-op.
 	if d.optional.outboundDispatcher != nil {
 		d.optional.outboundDispatcher.Start(runCtx)
 	}
-
-	d.startWorkers(runCtx)
 
 	// The engine of the scheduler of the last run was shut down, and it
 	// cannot be started again: the periodic work of the daemon would
