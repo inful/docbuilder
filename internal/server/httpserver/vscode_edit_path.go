@@ -70,6 +70,31 @@ func (s *Server) validateAndResolveEditPath(urlPath string) (string, error) {
 		return "", err
 	}
 
+	// The links of the path are followed: a directory of the docs that
+	// is a link to another place would take the file out of the docs
+	// directory. The check above looks at the file alone, and a link in
+	// the directories above it is not seen.
+	resolvedDocs, err := filepath.EvalSymlinks(cleanDocs)
+	if err != nil {
+		resolvedDocs = cleanDocs
+	}
+	resolvedPath, err := filepath.EvalSymlinks(cleanPath)
+	if err != nil {
+		resolvedPath = cleanPath
+	}
+	if !strings.HasPrefix(resolvedPath, resolvedDocs+string(filepath.Separator)) {
+		return "", &editError{
+			message:    "Invalid file path",
+			statusCode: http.StatusBadRequest,
+			logLevel:   logLevelWarn,
+			logFields: []any{
+				slog.String("requested", relPath),
+				slog.String("resolved", resolvedPath),
+				slog.String("docs_dir", resolvedDocs),
+			},
+		}
+	}
+
 	return cleanPath, nil
 }
 
