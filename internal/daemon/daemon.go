@@ -581,6 +581,22 @@ func (d *Daemon) Start(ctx context.Context) error {
 
 	d.startWorkers(runCtx)
 
+	// The engine of the scheduler of the last run was shut down, and it
+	// cannot be started again: the periodic work of the daemon would
+	// stop for good after a restart.
+	if d.serve.scheduler != nil {
+		if err := d.serve.scheduler.Reset(); err != nil {
+			d.lifecycle.status.Store(StatusError)
+			if d.lifecycle.runCancel != nil {
+				d.lifecycle.runCancel()
+				d.lifecycle.runCancel = nil
+			}
+			d.lifecycle.mu.Unlock()
+			d.stopAfterFailedStart(ctx)
+			return fmt.Errorf("failed to reset the scheduler: %w", err)
+		}
+	}
+
 	// Schedule periodic daemon work (cron/duration jobs) before starting the scheduler.
 	if err := d.schedulePeriodicJobs(runCtx); err != nil {
 		d.lifecycle.status.Store(StatusError)
