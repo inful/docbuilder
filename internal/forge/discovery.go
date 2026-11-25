@@ -291,8 +291,14 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 		"repos_with_docignore", docsIgnored)
 
 	if originalCount > 0 && len(validRepos) == 0 {
-		if len(ds.filtering.IncludePatterns) > 0 {
-			for _, p := range ds.filtering.IncludePatterns {
+		// The filtering may be nil: the rest of the package copes
+		// with that, and the warning below took the process down.
+		filtering := ds.filtering
+		if filtering == nil {
+			filtering = &config.FilteringConfig{}
+		}
+		if len(filtering.IncludePatterns) > 0 {
+			for _, p := range filtering.IncludePatterns {
 				if strings.Contains(p, "/") {
 					slog.Warn("All repositories filtered: include_patterns contains path-like pattern which won't match repository names", "pattern", p)
 					break
@@ -302,9 +308,9 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 		slog.Warn("All repositories filtered out by configuration",
 			"forge", client.GetName(),
 			"total_before", originalCount,
-			"required_paths", ds.filtering.RequiredPaths,
-			"include_patterns", ds.filtering.IncludePatterns,
-			"exclude_patterns", ds.filtering.ExcludePatterns)
+			"required_paths", filtering.RequiredPaths,
+			"include_patterns", filtering.IncludePatterns,
+			"exclude_patterns", filtering.ExcludePatterns)
 	}
 
 	return validRepos, organizations, filteredRepos, nil
