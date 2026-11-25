@@ -218,13 +218,17 @@ func (s *Server) startDocsServerWithListener(_ context.Context, ln net.Listener)
 		rootWithMiddleware = s.injectLiveReloadScriptWithPort(rootWithCaching, s.cfg.Daemon.HTTP.LiveReloadPort)
 	}
 
-	mux.Handle("/", s.mchain(rootWithMiddleware))
+	mux.Handle("/", rootWithMiddleware)
 
 	// API endpoint for documentation status
 	mux.HandleFunc("/api/status", s.apiHandlers.HandleDocsStatus)
 
+	// Every route of the docs server answers through the middleware: a
+	// route that is outside of it gets neither the log nor the answer
+	// to a panic, and the connection closes without an answer.
+	//
 	// Docs server now uses standard timeouts since SSE moved to separate port
-	s.docsServer = &http.Server{Handler: mux, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
+	s.docsServer = &http.Server{Handler: s.mchain(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
 	return s.startServerWithListener("docs", s.docsServer, ln)
 }
 
