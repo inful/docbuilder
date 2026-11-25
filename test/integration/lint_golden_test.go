@@ -21,7 +21,7 @@ func TestLintGolden_ValidCorrectFilenames(t *testing.T) {
 	testDir := "../../test/testdata/lint/valid/correct-filenames"
 	goldenPath := "../../test/testdata/lint/golden/correct-filenames.golden.json"
 
-	linter := lint.NewLinter(&lint.Config{Format: "text"})
+	linter := lint.NewLinter(&lint.Config{})
 	result, err := linter.LintPath(testDir)
 	require.NoError(t, err, "lint operation failed")
 
@@ -36,7 +36,7 @@ func TestLintGolden_ValidWhitelistedExtensions(t *testing.T) {
 	testDir := "../../test/testdata/lint/valid/whitelisted-extensions"
 	goldenPath := "../../test/testdata/lint/golden/whitelisted-extensions.golden.json"
 
-	linter := lint.NewLinter(&lint.Config{Format: "text"})
+	linter := lint.NewLinter(&lint.Config{})
 	result, err := linter.LintPath(testDir)
 	require.NoError(t, err, "lint operation failed")
 
@@ -51,7 +51,7 @@ func TestLintGolden_InvalidMixedCase(t *testing.T) {
 	testDir := "../../test/testdata/lint/invalid/mixed-case"
 	goldenPath := "../../test/testdata/lint/golden/mixed-case.golden.json"
 
-	linter := lint.NewLinter(&lint.Config{Format: "text"})
+	linter := lint.NewLinter(&lint.Config{})
 	result, err := linter.LintPath(testDir)
 	require.NoError(t, err, "lint operation failed")
 
@@ -66,7 +66,7 @@ func TestLintGolden_InvalidSpaces(t *testing.T) {
 	testDir := "../../test/testdata/lint/invalid/spaces"
 	goldenPath := "../../test/testdata/lint/golden/spaces.golden.json"
 
-	linter := lint.NewLinter(&lint.Config{Format: "text"})
+	linter := lint.NewLinter(&lint.Config{})
 	result, err := linter.LintPath(testDir)
 	require.NoError(t, err, "lint operation failed")
 
@@ -81,7 +81,7 @@ func TestLintGolden_InvalidSpecialChars(t *testing.T) {
 	testDir := "../../test/testdata/lint/invalid/special-chars"
 	goldenPath := "../../test/testdata/lint/golden/special-chars.golden.json"
 
-	linter := lint.NewLinter(&lint.Config{Format: "text"})
+	linter := lint.NewLinter(&lint.Config{})
 	result, err := linter.LintPath(testDir)
 	require.NoError(t, err, "lint operation failed")
 
@@ -96,7 +96,7 @@ func TestLintGolden_InvalidDoubleExtensions(t *testing.T) {
 	testDir := "../../test/testdata/lint/invalid/invalid-double-ext"
 	goldenPath := "../../test/testdata/lint/golden/invalid-double-ext.golden.json"
 
-	linter := lint.NewLinter(&lint.Config{Format: "text"})
+	linter := lint.NewLinter(&lint.Config{})
 	result, err := linter.LintPath(testDir)
 	require.NoError(t, err, "lint operation failed")
 

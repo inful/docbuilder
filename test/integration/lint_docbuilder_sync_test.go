@@ -44,8 +44,7 @@ func TestLintDocBuilderSync(t *testing.T) {
 
 	// Run linter on generated content
 	linterCfg := &lint.Config{
-		Format: "text",
-		Quiet:  false,
+		Quiet: false,
 	}
 	linter := lint.NewLinter(linterCfg)
 
