@@ -50,10 +50,7 @@ daemon:
 	}
 
 	cmd := &ReingestCmd{}
-	url, err := cmd.resolveAdminURL(&CLI{Config: configPath})
-	if err != nil {
-		t.Fatalf("the address of the daemon: %v", err)
-	}
+	url := cmd.resolveAdminURL(&CLI{Config: configPath})
 	if url != "http://127.0.0.1:9999" {
 		t.Fatalf("the address of the daemon is %s, want http://127.0.0.1:9999", url)
 	}
@@ -78,12 +75,73 @@ daemon:
 	}
 
 	cmd := &ReingestCmd{}
-	url, err := cmd.resolveAdminURL(&CLI{Config: configPath})
-	if err != nil {
-		t.Fatalf("the address of the daemon: %v", err)
-	}
+	url := cmd.resolveAdminURL(&CLI{Config: configPath})
 	if url != "http://127.0.0.1:9999" {
 		t.Fatalf("the address of the daemon is %s, want http://127.0.0.1:9999", url)
+	}
+}
+
+// The command reads the environment variables of the .env file: the
+// configuration holds ${VAR} references, and they name the variables of
+// the .env files.
+func TestTheReingestCommandReadsTheEnvironmentOfTheEnvFile(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+	content := `version: "2.0"
+repositories:
+  - name: repo
+    url: https://example.com/repo.git
+daemon:
+  http:
+    admin_port: ${DOCBUILDER_TEST_ADMIN_PORT}
+`
+	if err := os.WriteFile(configPath, []byte(content), 0o600); err != nil {
+		t.Fatalf("write the config: %v", err)
+	}
+	// The .env file sits next to the command: the command reads it
+	// from the directory it runs in.
+	if err := os.WriteFile(filepath.Join(dir, ".env"), []byte("DOCBUILDER_TEST_ADMIN_PORT=9999\n"), 0o600); err != nil {
+		t.Fatalf("write the .env file: %v", err)
+	}
+	t.Chdir(dir)
+
+	cmd := &ReingestCmd{}
+	url := cmd.resolveAdminURL(&CLI{Config: configPath})
+	if url != "http://127.0.0.1:9999" {
+		t.Fatalf("the address of the daemon is %s, want http://127.0.0.1:9999", url)
+	}
+}
+
+// A configuration that is not there is not an error: the daemon that
+// runs the site may be named by the flag or by the environment, and the
+// default address is where a daemon listens when nothing says
+// otherwise.
+func TestTheReingestCommandFallsBackToTheDefaultAddress(t *testing.T) {
+	cmd := &ReingestCmd{}
+	url := cmd.resolveAdminURL(&CLI{Config: filepath.Join(t.TempDir(), "there-is-no-config.yaml")})
+	if url != defaultAdminURL {
+		t.Fatalf("the address of the daemon is %s, want %s", url, defaultAdminURL)
+	}
+}
+
+// A configuration without a daemon block says nothing about where the
+// daemon listens: the default address is used.
+func TestTheReingestCommandFallsBackWhenTheConfigurationHasNoDaemon(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+	content := `version: "2.0"
+repositories:
+  - name: repo
+    url: https://example.com/repo.git
+`
+	if err := os.WriteFile(configPath, []byte(content), 0o600); err != nil {
+		t.Fatalf("write the config: %v", err)
+	}
+
+	cmd := &ReingestCmd{}
+	url := cmd.resolveAdminURL(&CLI{Config: configPath})
+	if url != defaultAdminURL {
+		t.Fatalf("the address of the daemon is %s, want %s", url, defaultAdminURL)
 	}
 }
 

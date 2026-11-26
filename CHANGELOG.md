@@ -9,6 +9,18 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Fixed
+- **The reingestion command reads the environment variables.** Every
+  command that reads the configuration loads the `.env` files first,
+  and the reingestion command did not: the `${VAR}` references of the
+  configuration were filled from the environment of the process alone.
+  The command also insists on a configuration that the daemon itself
+  would accept, and it does not need one: a configuration that cannot
+  be read falls back to the default address of the admin API, and
+  `DOCBUILDER_ADMIN_URL` (or `--admin-url`) names a daemon anywhere.
+
+## [0.35.35] - 2026-11-26
+
 ### Added
 - **A command for the reingestion into ragabast.** `docbuilder
   reingest` asks the daemon that runs the site to send the whole corpus

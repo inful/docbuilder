@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 6ba5a81dc54b606f1caae8788f7fe1039112becac3f1235ba9a3c518f642515c
+fingerprint: 9315e0bf715a573cf7b7dffb925ba99782bdf7d8bff0d1f3f38f3efd0199c08c
 lastmod: "2026-11-26"
 tags:
   - cli
@@ -204,10 +204,14 @@ docbuilder reingest [flags]
 |------|-------------|
 | `--admin-url URL` | Address of the admin API of the daemon (default: from the configuration) |
 
-The address of the daemon comes from the configuration: the port and the
-bind address of `daemon.http`. A daemon that listens on every interface
-is reached through the loopback. The environment variable
-`DOCBUILDER_ADMIN_URL` names the daemon as well.
+The address of the daemon comes from, in this order:
+
+1. `--admin-url`, or the environment variable `DOCBUILDER_ADMIN_URL`:
+   the whole address.
+2. The configuration: the port and the bind address of `daemon.http`.
+   The values may hold `${VAR}` references, and the environment and the
+   `.env` files fill them.
+3. The default: the loopback interface and the port `8082`.
 
 The command asks the daemon, not ragabast: the daemon that runs the
 site is the one that holds the corpus. See

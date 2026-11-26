@@ -11,7 +11,7 @@ lastmod: "2026-11-26"
 aliases:
   - /_uid/08f012ea-eca0-4c24-a4b6-1755aa4d23fb/
 uid: 08f012ea-eca0-4c24-a4b6-1755aa4d23fb
-fingerprint: 7dacc4b8e8719dd53ca4ab0e5a2521c3812eefca0be8256d394f61829979e46a
+fingerprint: 730a62ce893e9995990eef331a297b772e3fb2b356642539035fd7388417818f
 ---
 
 Ragabast skips a document whose fingerprint did not change, and the
@@ -40,9 +40,28 @@ It answers with the build that carries the corpus:
 Reingestion requested: the build manual-1764130000000000000 carries the corpus to ragabast.
 ```
 
-The address of the daemon comes from the configuration: the port and
-the bind address of `daemon.http`. A daemon on another host is named
-with `--admin-url`:
+The address of the daemon comes from, in this order:
+
+1. `--admin-url`, or the environment variable `DOCBUILDER_ADMIN_URL`:
+   the whole address.
+2. The configuration: the port and the bind address of `daemon.http`.
+   The values may hold `${VAR}` references, and the environment and the
+   `.env` files fill them:
+
+   ```yaml
+   daemon:
+     http:
+       admin_port: ${ADMIN_PORT}
+   ```
+
+   ```bash
+   # .env
+   ADMIN_PORT=8082
+   ```
+
+3. The default: the loopback interface and the port `8082`.
+
+A daemon on another host is named with `--admin-url`:
 
 ```bash
 docbuilder reingest --admin-url http://ragabast-daemon:8082
