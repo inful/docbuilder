@@ -2,13 +2,14 @@ package pipeline
 
 import (
 	"fmt"
+	"html"
 	"slices"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 )
 
-// injectPermalink appends a copyable permalink badge to documents with a UID.
+// injectPermalink appends a copyable permalink to documents with a UID.
 // It requires a non-empty "uid" field and a matching "/_uid/<uid>/" value in "aliases".
 func injectPermalink(baseURL string) FileTransform {
 	return func(doc *Document) ([]*Document, error) {
@@ -30,18 +31,21 @@ func injectPermalink(baseURL string) FileTransform {
 		// Construct full URL using baseURL.
 		fullURL := strings.TrimRight(baseURL, "/") + aliasWant
 
-		// Link name defaults to slugified title.
-		linkName := "permalink"
-		if title, ok := doc.FrontMatter["title"].(string); ok {
-			if slugified := slugify(title); slugified != "" {
-				linkName = slugified
+		// The name of the link is the title of the page.
+		title := "permalink"
+		if t, ok := doc.FrontMatter["title"].(string); ok {
+			if trimmed := strings.TrimSpace(t); trimmed != "" {
+				title = trimmed
 			}
 		}
 
 		// Construct the permalink block.
-		permalink := permalinkBlock(linkName, fullURL)
+		permalink := permalinkBlock(title, fullURL)
 
 		// Idempotence: don't add again if already present.
+		if strings.Contains(doc.Content, permalinkMarker) {
+			return nil, nil
+		}
 		if strings.Contains(doc.Content, `{{% badge style="note" title="permalink" %}}`) {
 			return nil, nil
 		}
@@ -69,14 +73,41 @@ func injectPermalink(baseURL string) FileTransform {
 	}
 }
 
+// permalinkMarker marks the permalink block of a document. A document
+// that already carries one is not given a second.
+const permalinkMarker = "docbuilder-permalink"
+
 // permalinkLabel prefixes the permalink of a document in the themes
 // that have no badge shortcode.
 const permalinkLabel = "**Permalink:**"
 
-// permalinkBlock returns the permalink of a document: the link to
-// the page's stable uid alias.
-func permalinkBlock(linkName, fullURL string) string {
-	return fmt.Sprintf("%s [%s](%s)", permalinkLabel, linkName, fullURL)
+// permalinkBlock returns the permalink of a document: the link to the
+// page's stable uid alias, and the two buttons that copy it - the
+// markdown link and the HTML link.
+func permalinkBlock(title, fullURL string) string {
+	markdown := "[" + markdownTitle(title) + "](" + fullURL + ")"
+	htmlLink := "<a href=\"" + html.EscapeString(fullURL) + "\">" + html.EscapeString(title) + "</a>"
+
+	return `<p class="docbuilder-permalink d-flex align-items-center gap-2">` +
+		`<strong>Permalink:</strong> ` +
+		`<a href="` + html.EscapeString(fullURL) + `">` + html.EscapeString(title) + `</a>` +
+		permalinkButton(markdown, "fas fa-copy", "Copy the markdown permalink") +
+		permalinkButton(htmlLink, "fas fa-code", "Copy the HTML link") +
+		`</p>`
+}
+
+// permalinkButton returns the button that copies the given text.
+func permalinkButton(text, icon, label string) string {
+	return `<button type="button" class="docbuilder-permalink__copy btn btn-outline-secondary btn-sm"` +
+		` data-docbuilder-copy="` + html.EscapeString(text) + `"` +
+		` title="` + label + `" aria-label="` + label + `">` +
+		`<i class="` + icon + `"></i></button>`
+}
+
+// markdownTitle escapes the characters of a title that would break the
+// markdown link around it.
+func markdownTitle(title string) string {
+	return strings.NewReplacer("\\", `\\`, "[", `\[`, "]", `\]`).Replace(title)
 }
 
 // hasAlias reports whether the front matter "aliases" field contains the given value.
@@ -101,21 +132,4 @@ func hasAlias(fm map[string]any, want string) bool {
 		}
 	}
 	return false
-}
-
-// slugify converts a string to a URL-friendly slug.
-func slugify(s string) string {
-	s = strings.ToLower(s)
-	var b strings.Builder
-	lastWasHyphen := false
-	for _, r := range s {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
-			b.WriteRune(r)
-			lastWasHyphen = false
-		} else if !lastWasHyphen && b.Len() > 0 {
-			b.WriteRune('-')
-			lastWasHyphen = true
-		}
-	}
-	return strings.TrimRight(b.String(), "-")
 }

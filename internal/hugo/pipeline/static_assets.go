@@ -22,6 +22,19 @@ var templateMetadataHeadPartial []byte
 //go:embed assets/search/offline-search.js
 var serverSideSearchJS []byte
 
+//go:embed assets/permalink-copy.js
+var permalinkCopyJS []byte
+
+// permalinkCopyScriptPartial loads the script of the copy buttons of
+// the permalink. The script is published through the resource pipeline
+// of Hugo, so the browser gets it under a content-addressed URL.
+const permalinkCopyScriptPartial = `{{- $js := resources.Get "js/permalink-copy.js" | fingerprint -}}
+<script defer
+  src="{{ $js.RelPermalink }}"
+  integrity="{{ $js.Data.Integrity }}"
+  crossorigin="anonymous"></script>
+`
+
 // emptySearchIndex is the search index of a site whose search runs on
 // the server. The theme builds the index of every page into this file
 // and the browser downloads it; with the server-side search the file
@@ -40,13 +53,15 @@ type StaticAsset struct {
 type StaticAssetGenerator func(ctx *GenerationContext) ([]*StaticAsset, error)
 
 // generateThemeAssets builds the project's layout overrides for the
-// theme. The overrides carry three pieces, in this order:
+// theme. The overrides carry four pieces, in this order:
 //
 //  1. A <style> block with the resolved hugo.custom_css.
 //  2. When EnablePageTransitions is true, the View Transitions
 //     API <link> and the accompanying view-transitions.css asset.
 //  3. The template-metadata <meta> tags that template discovery
 //     depends on (always present).
+//  4. The script of the copy buttons of the permalink (always
+//     present).
 //
 // The theme takes them in layouts/_partials/hooks/head-end.html, the
 // hook it includes in every page head. It also gets a head-css.html
@@ -85,13 +100,20 @@ func generateThemeAssets(ctx *GenerationContext) ([]*StaticAsset, error) {
 			Content: viewTransitionsCSS,
 		})
 	}
-	blocks = append(blocks, templateMetadataHeadPartial)
+	blocks = append(blocks, templateMetadataHeadPartial,
+		// The copy buttons of the permalink need their script on every
+		// page.
+		[]byte(permalinkCopyScriptPartial))
 	content := bytes.Join(blocks, []byte("\n"))
 
 	assets = append(assets,
 		&StaticAsset{Path: "layouts/_partials/hooks/head-end.html", Content: content},
 		&StaticAsset{Path: "layouts/_partials/head-css.html", Content: []byte(docsyHeadCSS)},
 		&StaticAsset{Path: docsyPageMetaLinksPath, Content: docsyPageMetaLinks},
+		// The script of the copy buttons of the permalink. It lives in
+		// assets/ so the head hook can publish it through the resource
+		// pipeline of Hugo.
+		&StaticAsset{Path: "assets/js/permalink-copy.js", Content: permalinkCopyJS},
 		// The children shortcode of the previous theme. The documentation
 		// of the repositories uses it, and a shortcode without a template
 		// fails the build of the whole site.
