@@ -23,6 +23,10 @@ type Runtime interface {
 
 	TriggerDiscovery() string
 	TriggerBuild() string
+	// TriggerReingest asks for the whole corpus to be sent to ragabast
+	// again. It returns the id of the build job that carries it, or an
+	// empty string when the reingestion could not be started.
+	TriggerReingest() string
 	// TriggerWebhookBuild triggers a build based on a webhook event.
 	//
 	// forgeName is optional; callers may pass an empty string when the request is
