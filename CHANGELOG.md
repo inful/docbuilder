@@ -9,6 +9,18 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Added
+- **The permalink of a page has two copy buttons.** The permalink at
+  the end of a page is a link to the stable alias of the page, and
+  copying it meant selecting the URL and writing the markdown around
+  it by hand. The permalink now carries two buttons: one copies the
+  markdown link (`[Title](https://example.com/_uid/abc123/)`), the
+  other copies the HTML link (`<a href="…">Title</a>`). The buttons
+  look like the copy button of the code blocks of the theme, and they
+  work on a site served over plain HTTP as well.
+
+## [0.35.32] - 2026-11-25
+
 ### Fixed
 - **The build fetches only the repository whose remote moved.** The
   clone stage of the build created its own git client, and the client

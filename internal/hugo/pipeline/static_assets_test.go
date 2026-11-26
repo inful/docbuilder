@@ -146,6 +146,28 @@ func TestGenerateThemeAssets_PartialLoadOrder(t *testing.T) {
 		"template metadata should be present")
 }
 
+func TestGenerateThemeAssets_PermalinkCopyScript(t *testing.T) {
+	ctx := &GenerationContext{
+		Config: &config.Config{
+			Hugo: config.HugoConfig{Title: "Test"},
+		},
+	}
+
+	assets, err := generateThemeAssets(ctx)
+	require.NoError(t, err)
+
+	// The script of the copy buttons of the permalink is published,
+	// and the head hook loads it.
+	assert.Contains(t, assetPaths(assets), "assets/js/permalink-copy.js")
+	script := assetContent(t, assets, "assets/js/permalink-copy.js")
+	assert.Contains(t, script, "data-docbuilder-copy",
+		"the script should bind the copy buttons of the permalink")
+
+	hook := assetContent(t, assets, "layouts/_partials/hooks/head-end.html")
+	assert.Contains(t, hook, "js/permalink-copy.js",
+		"the head hook should load the script of the copy buttons")
+}
+
 func TestGenerateStaticAssets_NoGenerators(t *testing.T) {
 	processor := &Processor{
 		config:                &config.Config{},
