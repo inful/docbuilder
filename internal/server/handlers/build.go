@@ -19,6 +19,10 @@ type BuildHandlers struct {
 type DaemonBuildInterface interface {
 	TriggerDiscovery() string
 	TriggerBuild() string
+	// TriggerReingest asks for the whole corpus to be sent to ragabast
+	// again. It returns the id of the build job that carries it, or an
+	// empty string when the reingestion could not be started.
+	TriggerReingest() string
 	GetQueueLength() int
 	GetActiveJobs() int
 	// BuildStats returns the build statistics and the last build.
@@ -94,6 +98,15 @@ func (h *BuildHandlers) daemonUnavailable(w http.ResponseWriter, r *http.Request
 		WithContext("service", serviceName).
 		Build()
 	h.errorAdapter.WriteErrorResponse(w, r, err)
+}
+
+// HandleTriggerReingest handles the reingestion trigger endpoint.
+//
+// The reingestion moves the epoch of the ingest and asks for a build:
+// the corpus is what is sent to ragabast, and the build is what
+// carries it.
+func (h *BuildHandlers) HandleTriggerReingest(w http.ResponseWriter, r *http.Request) {
+	h.handleTriggerAction(w, r, "reingest", func() string { return h.daemon.TriggerReingest() }, "failed to encode reingestion trigger response")
 }
 
 // HandleBuildStatus handles the build status endpoint.

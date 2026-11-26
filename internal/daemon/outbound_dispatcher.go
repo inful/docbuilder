@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -96,6 +97,12 @@ type OutboundDispatcher struct {
 	uploaded      map[string]string
 	uploadedOrder []string
 
+	// epoch is the epoch of the ingest. Its value is mixed into the
+	// fingerprint of every document that is sent, so a reingestion
+	// makes every document look changed to ragabast - ragabast skips a
+	// document whose fingerprint did not change.
+	epoch *ingestEpochStore
+
 	wg sync.WaitGroup
 
 	// Observability counters. Read via accessor methods; atomic so
@@ -112,6 +119,10 @@ type OutboundDispatcher struct {
 type ingestJob struct {
 	content []byte
 	path    string
+	// epoch is the epoch of the ingest when the document was queued.
+	// The fingerprint of the document is salted with it, so the
+	// documents of one build carry one epoch.
+	epoch int64
 }
 
 // DispatcherConfig is the runtime configuration for OutboundDispatcher.
@@ -149,6 +160,10 @@ type DispatcherConfig struct {
 	// PreflightEnabled toggles preflight. Nil defaults to true whenever a
 	// base URL is resolvable. Explicit false disables preflight.
 	PreflightEnabled *bool
+	// StateDir is where the dispatcher keeps the epoch of the ingest.
+	// The epoch must survive a restart of the daemon: without it every
+	// restart would send the whole corpus to ragabast again.
+	StateDir string
 }
 
 // NewOutboundDispatcher constructs a dispatcher. It resolves the ragabast
@@ -220,6 +235,7 @@ func NewOutboundDispatcher(cfg DispatcherConfig) (*OutboundDispatcher, error) {
 		queueCap:      queueCap,
 		preflightBase: preflightBase,
 		drainTimeout:  drainTimeout,
+		epoch:         newIngestEpochStore(cfg.StateDir),
 	}, nil
 }
 
@@ -338,7 +354,7 @@ func (d *OutboundDispatcher) Enqueue(content []byte, path string) {
 		return
 	}
 	select {
-	case d.queue <- ingestJob{content: content, path: path}:
+	case d.queue <- ingestJob{content: content, path: path, epoch: d.epoch.Epoch()}:
 	default:
 		n := d.dropsTotal.Add(1)
 		slog.Warn("outbound dispatcher queue full, dropping doc",
@@ -346,6 +362,27 @@ func (d *OutboundDispatcher) Enqueue(content []byte, path string) {
 			slog.Int64("queue_drops_total", n),
 			slog.Int("queue_capacity", d.queueCap))
 	}
+}
+
+// Reingest moves the ingest to the next epoch and returns it.
+//
+// Every document that is sent after this carries a fingerprint that
+// ragabast has not seen, so ragabast embeds the whole corpus again.
+// The caller asks for a build afterwards: the corpus is what is sent,
+// and the build is what carries it.
+func (d *OutboundDispatcher) Reingest() (int64, error) {
+	if d == nil {
+		return 0, errors.New("outbound dispatcher: ragabast ingest is not configured")
+	}
+	return d.epoch.Bump()
+}
+
+// IngestEpoch returns the epoch of the ingest.
+func (d *OutboundDispatcher) IngestEpoch() int64 {
+	if d == nil {
+		return 0
+	}
+	return d.epoch.Epoch()
 }
 
 // SendsTotal returns the number of successful POSTs (2xx response).
@@ -422,19 +459,29 @@ func (d *OutboundDispatcher) worker(ctx context.Context, queue chan ingestJob) {
 // the daemon restarts.
 func (d *OutboundDispatcher) send(ctx context.Context, job ingestJob) {
 	uid, fp := parseUIDAndFingerprint(job.content)
-	if uid != "" && fp != "" {
-		if uploaded, ok := d.uploadedFingerprint(uid); ok && uploaded == fp {
+
+	// The fingerprint the ingest path compares carries the epoch of the
+	// ingest. A reingestion changes the epoch, and every document then
+	// looks changed: to the dispatcher and to ragabast.
+	effective := saltedFingerprint(fp, job.epoch)
+	content := job.content
+	if effective != fp {
+		content = withFingerprint(job.content, effective)
+	}
+
+	if uid != "" && effective != "" {
+		if uploaded, ok := d.uploadedFingerprint(uid); ok && uploaded == effective {
 			d.unchangedTotal.Add(1)
 			return
 		}
 	}
 
 	if d.preflightBase != "" {
-		if uid != "" && fp != "" {
-			switch d.preflight(ctx, uid, fp, job.path) {
+		if uid != "" && effective != "" {
+			switch d.preflight(ctx, uid, effective, job.path) {
 			case preflightSkip:
 				// ragabast holds this document already.
-				d.rememberUploaded(uid, fp)
+				d.rememberUploaded(uid, effective)
 				return
 			case preflightAuthFailed:
 				// The document was not uploaded: it must not be
@@ -449,7 +496,7 @@ func (d *OutboundDispatcher) send(ctx context.Context, job ingestJob) {
 		// means we have nothing to ask ragabast about. Fall through to
 		// the upload so we still push the doc.
 	}
-	d.upload(ctx, job, uid, fp)
+	d.upload(ctx, content, job.path, uid, effective)
 }
 
 // rememberUploaded records that ragabast now holds this exact document.
@@ -485,21 +532,21 @@ func (d *OutboundDispatcher) uploadedFingerprint(uid string) (string, bool) {
 // multipart/form-data with a single `file` field. This matches the
 // /api/ingest/file contract in the ragabast example script; the older
 // /api/ingest/async JSON path was retired upstream.
-func (d *OutboundDispatcher) upload(ctx context.Context, job ingestJob, uid, fingerprint string) {
+func (d *OutboundDispatcher) upload(ctx context.Context, content []byte, path, uid, fingerprint string) {
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
-	fw, err := mw.CreateFormFile("file", job.path)
+	fw, err := mw.CreateFormFile("file", path)
 	if err != nil {
 		d.failsTotal.Add(1)
 		slog.Error("outbound dispatcher: create form file failed",
-			slog.String("path", job.path),
+			slog.String("path", path),
 			slog.String("error", err.Error()))
 		return
 	}
-	if _, writeErr := fw.Write(job.content); writeErr != nil {
+	if _, writeErr := fw.Write(content); writeErr != nil {
 		d.failsTotal.Add(1)
 		slog.Error("outbound dispatcher: write form file failed",
-			slog.String("path", job.path),
+			slog.String("path", path),
 			slog.String("error", writeErr.Error()))
 		return
 	}
@@ -508,7 +555,7 @@ func (d *OutboundDispatcher) upload(ctx context.Context, job ingestJob, uid, fin
 	if closeErr := mw.Close(); closeErr != nil {
 		d.failsTotal.Add(1)
 		slog.Error("outbound dispatcher: close multipart writer failed",
-			slog.String("path", job.path),
+			slog.String("path", path),
 			slog.String("error", closeErr.Error()))
 		return
 	}
@@ -517,7 +564,7 @@ func (d *OutboundDispatcher) upload(ctx context.Context, job ingestJob, uid, fin
 	if err != nil {
 		d.failsTotal.Add(1)
 		slog.Error("outbound dispatcher: build request failed",
-			slog.String("path", job.path),
+			slog.String("path", path),
 			slog.String("error", err.Error()))
 		return
 	}
@@ -533,7 +580,7 @@ func (d *OutboundDispatcher) upload(ctx context.Context, job ingestJob, uid, fin
 	if err != nil {
 		d.failsTotal.Add(1)
 		slog.Warn("outbound dispatcher: POST failed",
-			slog.String("path", job.path),
+			slog.String("path", path),
 			slog.String("error", err.Error()))
 		return
 	}
@@ -546,7 +593,7 @@ func (d *OutboundDispatcher) upload(ctx context.Context, job ingestJob, uid, fin
 	default:
 		d.failsTotal.Add(1)
 		slog.Warn("outbound dispatcher: non-2xx response, dropping",
-			slog.String("path", job.path),
+			slog.String("path", path),
 			slog.Int("status", resp.StatusCode))
 	}
 }
@@ -660,6 +707,25 @@ func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string
 			slog.Int("status", resp.StatusCode))
 		return preflightUpload
 	}
+}
+
+// withFingerprint returns the document with the given fingerprint in its
+// frontmatter.
+//
+// The document that is sent to ragabast carries the fingerprint the
+// ingest path compares: the epoch of the ingest is mixed into it, so a
+// reingestion makes every document look changed to ragabast. A document
+// without frontmatter is sent as it is.
+func withFingerprint(content []byte, fingerprint string) []byte {
+	fmBytes, body, had, style, err := frontmatter.Split(content)
+	if err != nil || !had {
+		return content
+	}
+	patched := frontmatterops.PatchFingerprint(fmBytes, fingerprint, "")
+	if bytes.Equal(patched, fmBytes) {
+		return content
+	}
+	return frontmatter.Join(patched, body, had, style)
 }
 
 // parseUIDAndFingerprint pulls uid and fingerprint out of the document's

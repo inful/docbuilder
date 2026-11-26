@@ -29,6 +29,7 @@ func (r *webhookRuntimeStub) RepositoriesTotal() int                         { r
 func (r *webhookRuntimeStub) LastDiscoveryDurationSec() int                  { return 0 }
 func (r *webhookRuntimeStub) LastBuildDurationSec() int                      { return 0 }
 func (r *webhookRuntimeStub) TriggerDiscovery() string                       { return "" }
+func (r *webhookRuntimeStub) TriggerReingest() string                        { return "" }
 func (r *webhookRuntimeStub) TriggerBuild() string                           { return "" }
 func (r *webhookRuntimeStub) GetQueueLength() int                            { return 0 }
 func (r *webhookRuntimeStub) RepositoryStatuses() []responses.RepositoryInfo { return nil }

@@ -111,7 +111,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	}
 	d.initBuildStack(cfg)
 	if ragCfg := ragabastConfigOrNil(cfg); ragCfg != nil {
-		if err := d.initOutboundDispatcher(ragCfg); err != nil {
+		if err := d.initOutboundDispatcher(cfg, ragCfg); err != nil {
 			return nil, err
 		}
 	}
@@ -496,7 +496,7 @@ func ragabastConfigOrNil(cfg *config.Config) *config.RagabastConfig {
 // initOutboundDispatcher constructs and attaches the ragabast outbound
 // dispatcher to the daemon. Extracted from NewDaemon to keep the construction
 // site readable and to avoid a nestif warning.
-func (d *Daemon) initOutboundDispatcher(ragCfg *config.RagabastConfig) error {
+func (d *Daemon) initOutboundDispatcher(cfg *config.Config, ragCfg *config.RagabastConfig) error {
 	token := ""
 	if ragCfg.AuthTokenEnv != "" {
 		token = os.Getenv(ragCfg.AuthTokenEnv)
@@ -518,6 +518,10 @@ func (d *Daemon) initOutboundDispatcher(ragCfg *config.RagabastConfig) error {
 		Timeout:          timeout,
 		PreflightBaseURL: ragCfg.PreflightBaseURL,
 		PreflightEnabled: ragCfg.PreflightEnabled,
+		// The epoch of the ingest lives in the state directory: it
+		// must survive a restart of the daemon, or every restart
+		// would send the whole corpus to ragabast again.
+		StateDir: cfg.Daemon.Storage.StateDir,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to construct outbound dispatcher: %w", err)
@@ -1127,6 +1131,17 @@ func (d *Daemon) jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, err
 				}
 			}
 		}
+		cfg = &cfgCopy
+	}
+
+	// A reingestion asks for the whole corpus: the build must run even
+	// when nothing moved, or the documents would not be sent to ragabast
+	// again.
+	if d.build.forceFullBuild.Swap(false) {
+		cfgCopy := *cfg
+		// The build must not be skipped: the corpus is what is sent,
+		// not the site.
+		cfgCopy.Build.SkipIfUnchanged = false
 		cfg = &cfgCopy
 	}
 

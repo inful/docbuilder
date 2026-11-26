@@ -73,6 +73,11 @@ type buildStack struct {
 	// removed repository are still published, and only a build takes
 	// them away.
 	afterRemoval atomic.Bool
+
+	// forceFullBuild says that the next build must not be skipped when
+	// nothing moved. A reingestion asks for it: the corpus is what is
+	// sent to ragabast, and a skipped build sends nothing.
+	forceFullBuild atomic.Bool
 }
 
 // discoveryStack owns the discovery pipeline: the forge manager, the

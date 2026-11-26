@@ -64,6 +64,52 @@ func (d *Daemon) TriggerBuild() string {
 	return jobID
 }
 
+// TriggerReingest asks for the whole corpus to be sent to ragabast
+// again and returns the id of the build job that carries it.
+//
+// The epoch of the ingest moves: every document then carries a
+// fingerprint that ragabast has not seen, so ragabast embeds the whole
+// corpus again. That is what an operator needs when the embedder of
+// ragabast changed, or when ragabast lost its corpus.
+//
+// The build runs even when nothing moved: the corpus is what is sent,
+// not the site.
+//
+// The answer is empty when the daemon is not running, or when ragabast
+// ingest is not configured.
+func (d *Daemon) TriggerReingest() string {
+	if d.GetStatus() != StatusRunning {
+		return ""
+	}
+	dispatcher := d.optional.outboundDispatcher
+	if dispatcher == nil {
+		slog.Warn("Reingestion asked for, but the ragabast ingest is not configured")
+		return ""
+	}
+
+	epoch, err := dispatcher.Reingest()
+	if err != nil {
+		slog.Error("Failed to move the epoch of the ingest", logfields.Error(err))
+		return ""
+	}
+
+	// The next build must not be skipped: nothing moved, but the corpus
+	// is what is sent. The flag stays until a build takes it, so a
+	// build that could not be queued does not lose the reingestion.
+	d.build.forceFullBuild.Store(true)
+
+	jobID := d.TriggerBuild()
+	if jobID == "" {
+		slog.Warn("The reingestion moved the epoch of the ingest, but no build was queued",
+			slog.Int64("ingest_epoch", epoch))
+		return ""
+	}
+	slog.Info("Reingestion requested",
+		slog.Int64("ingest_epoch", epoch),
+		logfields.JobID(jobID))
+	return jobID
+}
+
 // webhookRetryTimeout bounds the wait of a webhook whose consumer is
 // busy. The event waits for room instead of being dropped: the forge
 // does not send it again.

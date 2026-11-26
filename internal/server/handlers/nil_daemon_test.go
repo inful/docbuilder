@@ -22,6 +22,7 @@ func TestTheHandlersAnswerWhenTheDaemonIsNotThere(t *testing.T) {
 	}{
 		{name: "the discovery trigger", handler: build.HandleTriggerDiscovery, method: http.MethodPost},
 		{name: "the build trigger", handler: build.HandleTriggerBuild, method: http.MethodPost},
+		{name: "the reingestion trigger", handler: build.HandleTriggerReingest, method: http.MethodPost},
 		{name: "the build status", handler: build.HandleBuildStatus, method: http.MethodGet},
 		{name: "the repositories", handler: build.HandleRepositories, method: http.MethodGet},
 		{name: "the health check", handler: monitoring.HandleHealthCheck, method: http.MethodGet, answersWithoutDaemon: true},

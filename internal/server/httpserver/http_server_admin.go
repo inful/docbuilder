@@ -23,6 +23,25 @@ func (s *Server) startAdminServerWithListener(_ context.Context, ln net.Listener
 		return err
 	}
 
+	mux := s.adminMux()
+
+	// A page in the browser of the operator can post a form to the admin
+	// port: the answer is unreadable, but the side effect happens. The
+	// requests that come from another origin are refused.
+	adminMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if origin := r.Header.Get("Origin"); origin != "" && !isLoopbackOrigin(origin) {
+			http.Error(w, "cross-origin request refused", http.StatusForbidden)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	})
+
+	s.adminServer = &http.Server{Handler: s.mchain(adminMux), ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
+	return s.startServerWithListener("admin", s.adminServer, ln)
+}
+
+// adminMux builds the routes of the admin server.
+func (s *Server) adminMux() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// Health check endpoint
@@ -59,6 +78,7 @@ func (s *Server) startAdminServerWithListener(_ context.Context, ln net.Listener
 	mux.HandleFunc("/api/discovery/trigger", s.buildHandlers.HandleTriggerDiscovery)
 	mux.HandleFunc("/api/build/trigger", s.buildHandlers.HandleTriggerBuild)
 	mux.HandleFunc("/api/build/status", s.buildHandlers.HandleBuildStatus)
+	mux.HandleFunc("/api/ragabast/reingest", s.buildHandlers.HandleTriggerReingest)
 	mux.HandleFunc("/api/repositories", s.buildHandlers.HandleRepositories)
 
 	// Status page endpoint (HTML and JSON)
@@ -66,19 +86,7 @@ func (s *Server) startAdminServerWithListener(_ context.Context, ln net.Listener
 		mux.HandleFunc("/status", s.opts.StatusHandle)
 	}
 
-	// A page in the browser of the operator can post a form to the admin
-	// port: the answer is unreadable, but the side effect happens. The
-	// requests that come from another origin are refused.
-	adminMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if origin := r.Header.Get("Origin"); origin != "" && !isLoopbackOrigin(origin) {
-			http.Error(w, "cross-origin request refused", http.StatusForbidden)
-			return
-		}
-		mux.ServeHTTP(w, r)
-	})
-
-	s.adminServer = &http.Server{Handler: s.mchain(adminMux), ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
-	return s.startServerWithListener("admin", s.adminServer, ln)
+	return mux
 }
 
 // adminReservedPaths are the routes of the admin server that the
@@ -98,6 +106,7 @@ var adminReservedPaths = []string{
 	"/api/discovery/trigger",
 	"/api/build/trigger",
 	"/api/build/status",
+	"/api/ragabast/reingest",
 	"/api/repositories",
 	"/status",
 }

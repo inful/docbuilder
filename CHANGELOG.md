@@ -18,6 +18,15 @@ commits; pin to a SHA for reproducibility per the README.
   other copies the HTML link (`<a href="…">Title</a>`). The buttons
   look like the copy button of the code blocks of the theme, and they
   work on a site served over plain HTTP as well.
+- **The corpus can be sent to ragabast again on request.** `POST
+  /api/ragabast/reingest` on the admin port moves the epoch of the
+  ingest and asks for a build: every document then carries a
+  fingerprint that ragabast has not seen, and ragabast embeds the whole
+  corpus again. That is what an operator needs when the embedder of
+  ragabast changed, or when ragabast lost its corpus - ragabast skips
+  a document whose fingerprint did not change, and the daemon skips
+  the document it uploaded before. The epoch lives in the state
+  directory and survives a restart of the daemon.
 
 ## [0.35.32] - 2026-11-25
 

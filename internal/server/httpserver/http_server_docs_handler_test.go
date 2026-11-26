@@ -25,6 +25,7 @@ func (testRuntime) RepositoriesTotal() int                                { retu
 func (testRuntime) LastDiscoveryDurationSec() int                         { return 0 }
 func (testRuntime) LastBuildDurationSec() int                             { return 0 }
 func (testRuntime) TriggerDiscovery() string                              { return "" }
+func (testRuntime) TriggerReingest() string                               { return "" }
 func (testRuntime) TriggerBuild() string                                  { return "" }
 func (testRuntime) TriggerWebhookBuild(_, _, _ string, _ []string) string { return "" }
 func (testRuntime) GetQueueLength() int                                   { return 0 }

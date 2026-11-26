@@ -18,6 +18,7 @@ func (stubRuntime) RepositoriesTotal() int                                      
 func (stubRuntime) LastDiscoveryDurationSec() int                               { return 0 }
 func (stubRuntime) LastBuildDurationSec() int                                   { return 0 }
 func (stubRuntime) TriggerDiscovery() string                                    { return "" }
+func (stubRuntime) TriggerReingest() string                                     { return "" }
 func (stubRuntime) TriggerBuild() string                                        { return "" }
 func (stubRuntime) TriggerWebhookBuild(string, string, string, []string) string { return "" }
 func (stubRuntime) GetQueueLength() int                                         { return 0 }
