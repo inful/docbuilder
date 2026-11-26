@@ -11,7 +11,7 @@ lastmod: "2026-11-26"
 aliases:
   - /_uid/08f012ea-eca0-4c24-a4b6-1755aa4d23fb/
 uid: 08f012ea-eca0-4c24-a4b6-1755aa4d23fb
-fingerprint: 8ea6325b1bb592b0f542714e261e574a2a2e4603f29675436f62d66502c51989
+fingerprint: 7dacc4b8e8719dd53ca4ab0e5a2521c3812eefca0be8256d394f61829979e46a
 ---
 
 Ragabast skips a document whose fingerprint did not change, and the
@@ -28,13 +28,31 @@ ragabast has not seen, and ragabast embeds the whole corpus again.
 
 ## Asking for a reingestion
 
-The reingestion is a request to the admin API of the daemon:
+The command asks the daemon that runs the site:
+
+```bash
+docbuilder reingest --config config.yaml
+```
+
+It answers with the build that carries the corpus:
+
+```
+Reingestion requested: the build manual-1764130000000000000 carries the corpus to ragabast.
+```
+
+The address of the daemon comes from the configuration: the port and
+the bind address of `daemon.http`. A daemon on another host is named
+with `--admin-url`:
+
+```bash
+docbuilder reingest --admin-url http://ragabast-daemon:8082
+```
+
+The admin API of the daemon answers the request itself:
 
 ```bash
 curl -X POST http://<daemon-host>:<admin_port>/api/ragabast/reingest
 ```
-
-The answer names the build that carries the corpus:
 
 ```json
 {

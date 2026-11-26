@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 5459750d98760809346cc768ab2c67abfdf39a9bd841b14ed8feda859defb9c9
-lastmod: "2026-11-25"
+fingerprint: 6ba5a81dc54b606f1caae8788f7fe1039112becac3f1235ba9a3c518f642515c
+lastmod: "2026-11-26"
 tags:
   - cli
   - commands
@@ -27,6 +27,7 @@ DocBuilder provides a unified command-line interface for building documentation 
 | `template` | Create new documentation pages from templates |
 | `daemon` | Run continuous documentation server with webhooks |
 | `preview` | Preview local documentation with live reload |
+| `reingest` | Send the whole corpus to ragabast again |
 
 ## `docbuilder-mcp` — MCP server for LLM integration
 
@@ -184,6 +185,33 @@ Note: `docbuilder lint --fix` may update markdown file content beyond renames/li
 | 0 | No issues found |
 | 1 | Warnings found, no errors |
 | 2 | Errors found (the build is blocked) |
+
+## Reingest Command
+
+Ask the daemon to send the whole corpus to ragabast again. The daemon
+moves the epoch of the ingest and asks for a build: every document then
+carries a fingerprint that ragabast has not seen, and ragabast embeds
+the corpus again. That is what an operator needs when the embedder of
+ragabast changed, or when ragabast lost its corpus.
+
+```bash
+docbuilder reingest [flags]
+```
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--admin-url URL` | Address of the admin API of the daemon (default: from the configuration) |
+
+The address of the daemon comes from the configuration: the port and the
+bind address of `daemon.http`. A daemon that listens on every interface
+is reached through the loopback. The environment variable
+`DOCBUILDER_ADMIN_URL` names the daemon as well.
+
+The command asks the daemon, not ragabast: the daemon that runs the
+site is the one that holds the corpus. See
+[How To: Reingest The Corpus Into Ragabast](../how-to/reingest-into-ragabast.md).
 
 ## Template Command
 
