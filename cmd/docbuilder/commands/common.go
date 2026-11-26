@@ -41,6 +41,7 @@ type CLI struct {
 	Daemon   DaemonCmd   `cmd:"" help:"Start daemon mode for continuous documentation updates"`
 	Preview  PreviewCmd  `cmd:"" help:"Preview local docs with live reload (no git polling)"`
 	Template TemplateCmd `cmd:"" help:"Create documentation from templates"`
+	Reingest ReingestCmd `cmd:"" help:"Send the whole corpus to ragabast again"`
 }
 
 // AfterApply runs after flag parsing; setup logging once.

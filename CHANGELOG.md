@@ -10,14 +10,17 @@ commits; pin to a SHA for reproducibility per the README.
 ## [Unreleased]
 
 ### Added
-- **The permalink of a page has two copy buttons.** The permalink at
-  the end of a page is a link to the stable alias of the page, and
-  copying it meant selecting the URL and writing the markdown around
-  it by hand. The permalink now carries two buttons: one copies the
-  markdown link (`[Title](https://example.com/_uid/abc123/)`), the
-  other copies the HTML link (`<a href="…">Title</a>`). The buttons
-  look like the copy button of the code blocks of the theme, and they
-  work on a site served over plain HTTP as well.
+- **A command for the reingestion into ragabast.** `docbuilder
+  reingest` asks the daemon that runs the site to send the whole corpus
+  to ragabast again. The address of the daemon comes from the
+  configuration (the port and the bind address of `daemon.http`), and
+  `--admin-url` names a daemon on another host. The command asks the
+  daemon and not ragabast: the daemon that runs the site is the one
+  that holds the corpus.
+
+## [0.35.34] - 2026-11-26
+
+### Added
 - **The corpus can be sent to ragabast again on request.** `POST
   /api/ragabast/reingest` on the admin port moves the epoch of the
   ingest and asks for a build: every document then carries a
@@ -27,6 +30,18 @@ commits; pin to a SHA for reproducibility per the README.
   a document whose fingerprint did not change, and the daemon skips
   the document it uploaded before. The epoch lives in the state
   directory and survives a restart of the daemon.
+
+## [0.35.33] - 2026-11-26
+
+### Added
+- **The permalink of a page has two copy buttons.** The permalink at
+  the end of a page is a link to the stable alias of the page, and
+  copying it meant selecting the URL and writing the markdown around
+  it by hand. The permalink now carries two buttons: one copies the
+  markdown link (`[Title](https://example.com/_uid/abc123/)`), the
+  other copies the HTML link (`<a href="…">Title</a>`). The buttons
+  look like the copy button of the code blocks of the theme, and they
+  work on a site served over plain HTTP as well.
 
 ## [0.35.32] - 2026-11-25
 
