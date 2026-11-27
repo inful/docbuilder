@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2026-01-01T00:00:00Z
-fingerprint: ce5f1382772a6897fbcb51edfc5ca7e2643cb231cb72bcdfb1ddafb78fa1ade1
-lastmod: "2026-11-24"
+fingerprint: ad5ebc324d8df5732ad3b2f9cfd19e69e2acbda9770f929228211332554943dc
+lastmod: "2026-11-27"
 tags: []
 title: JSON Output Schema
 uid: 29426dd7-62c7-4e24-8378-5487c13fbee7
@@ -97,6 +97,7 @@ The broken links are issues as well: their rule is `broken-links`.
 | `cross-mode-category` | A document with two doc modes. |
 | `directory-category-consistency` | A document whose category does not match its directory. |
 | `template-uid-binding` | A template that does not bind the uid. |
+| `web-sources` | A `web_sources` field that is not a list of http(s) URLs. |
 | `broken-links` | A link that points at a file that does not exist. |
 
 ## Examples

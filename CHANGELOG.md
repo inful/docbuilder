@@ -10,6 +10,17 @@ commits; pin to a SHA for reproducibility per the README.
 ## [Unreleased]
 
 ### Added
+- **The lint knows the web sources of a document.** The `web_sources`
+  field is the request ragabast reads, and ragabast reads a list of
+  http(s) URLs: the lint reports the field when it is not one, and
+  `docbuilder lint --fix` turns a lone URL into a list of one. An entry
+  that is not an http(s) URL is reported too, and left to the author -
+  the fixer does not guess a scheme and does not drop a page the author
+  asked for.
+
+## [0.35.39] - 2026-11-27
+
+### Added
 - **A document can name the external pages that belong to it.** The
   `web_sources` front matter field asks ragabast to mirror those pages
   into the corpus: the daemon uploads the document as it is, and

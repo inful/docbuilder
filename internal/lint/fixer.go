@@ -226,6 +226,7 @@ func (f *Fixer) applyFixes(path string, result *Result) (*FixResult, error) {
 	categoryNamingTargets := make(map[string]struct{})
 	sequencePrefixTargets := make(map[string]struct{})
 	templateUIDBindingTargets := make(map[string]struct{})
+	webSourcesTargets := make(map[string]struct{})
 	uidIssueCounts := make(map[string]int)
 	uidAliasIssueCounts := make(map[string]int)
 	fingerprintIssueCounts := make(map[string]int)
@@ -234,6 +235,7 @@ func (f *Fixer) applyFixes(path string, result *Result) (*FixResult, error) {
 	categoryNamingIssueCounts := make(map[string]int)
 	sequencePrefixIssueCounts := make(map[string]int)
 	templateUIDBindingIssueCounts := make(map[string]int)
+	webSourcesIssueCounts := make(map[string]int)
 	for _, issue := range result.Issues {
 		if issue.Severity != SeverityError && issue.Severity != SeverityWarning {
 			continue
@@ -271,6 +273,10 @@ func (f *Fixer) applyFixes(path string, result *Result) (*FixResult, error) {
 			templateUIDBindingTargets[issue.FilePath] = struct{}{}
 			templateUIDBindingIssueCounts[issue.FilePath]++
 		}
+		if issue.Rule == ruleWebSources {
+			webSourcesTargets[issue.FilePath] = struct{}{}
+			webSourcesIssueCounts[issue.FilePath]++
+		}
 	}
 	// Phase 0: fill missing required frontmatter fields (title/date/lastmod/tags).
 	// Runs before other frontmatter fixers so the file has a complete baseline.
@@ -307,6 +313,10 @@ func (f *Fixer) applyFixes(path string, result *Result) (*FixResult, error) {
 	// Since sequence-prefix issues weren't covered there, we run a
 	// dedicated phase here.
 	f.applySequencePrefixFilenameFixes(sequencePrefixTargets, sequencePrefixIssueCounts, fixResult, rootPath, fingerprintTargets)
+
+	// Phase 0c: a lone web source becomes a list of one. The field is
+	// the request that ragabast reads, and ragabast reads a list.
+	f.applyWebSourcesFixes(webSourcesTargets, webSourcesIssueCounts, fixResult, fingerprintTargets)
 
 	// Phase 3.8: bind {{ .UID }} references in template bodies to the
 	// embedded frontmatter's `uid` field. Auto-fixes the missing case;

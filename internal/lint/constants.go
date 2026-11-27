@@ -10,5 +10,6 @@ const (
 	ruleDirectoryCategoryConsistency = "directory-category-consistency"
 	ruleFrontmatterRequiredFields    = "frontmatter-required-fields"
 	ruleTemplateUIDBinding           = "template-uid-binding"
+	ruleWebSources                   = "web-sources"
 	gitCommandDiff                   = "diff"
 )

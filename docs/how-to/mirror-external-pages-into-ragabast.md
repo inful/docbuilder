@@ -11,7 +11,7 @@ lastmod: "2026-11-27"
 aliases:
   - /_uid/d01b1ba5-656d-4584-819c-ccc29b4c5e6e/
 uid: d01b1ba5-656d-4584-819c-ccc29b4c5e6e
-fingerprint: 5ecc6a08f353baf3d471008da502bd6eccd1dfbcb8fc8f509eab56b3a7650928
+fingerprint: 2e6df226e2dc811d2a2b5e246320c1e9aa8c8a8c3f964db7c61cc0415949350c
 ---
 
 A document often belongs with a page that lives elsewhere: a
@@ -39,7 +39,17 @@ The request travels with the document. The daemon uploads the document
 as it is, and ragabast reads the field out of it. Nothing else has to
 be configured on the docbuilder side.
 
-The field is a list. A single URL written as a string is not read.
+The field is a list of http(s) URLs. A single URL written as a string is
+not read, and the lint says so:
+
+```
+ERROR: The web sources must be a list
+```
+
+`docbuilder lint --fix` turns a lone URL into a list of one. An entry
+that is not an http(s) URL is reported and left to the author: the
+fixer does not guess a scheme and does not drop a page the author asked
+for.
 
 ## The allowance
 

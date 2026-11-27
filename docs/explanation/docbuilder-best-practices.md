@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-01T00:00:00Z
-fingerprint: 17d443ffa52d977ccbf04855bddbaa8772065e82df324b48ffea57042c32f538
-lastmod: "2026-11-25"
+fingerprint: 8e1b76eb3c5ad70f0684c7611edb63dc010504f4f09fac44f5c93c8f972aa8fc
+lastmod: "2026-11-27"
 tags:
   - best-practices
   - documentation
@@ -557,6 +557,7 @@ This is what you can rely on without re-reading code:
 | `cross-mode-category` | ERROR when `categories:` lists two distinct doc modes not in `AllowedPairs` | `internal/lint/rule_cross_mode_category.go` |
 | `directory-category-consistency` | ERROR when a doc in a mode-specific directory (how-to/reference/explanation/security/adr/tutorials/examples) doesn't carry the matching `categories:` value | `internal/lint/rule_directory_category_consistency.go` |
 | `frontmatter-required-fields` | ERROR when `title`, `date`, `lastmod`, `categories`, or `tags` is missing/empty; WARNING for malformed dates | `internal/lint/rule_frontmatter_required_fields.go` |
+| `web-sources` | ERROR when `web_sources` is not a list, or holds an entry that is not an http(s) URL | `internal/lint/rule_web_sources.go` |
 | `lint_fix` auto-adds | canonical `/_uid/<uid>/` alias; populates `fingerprint`; updates `lastmod` when fingerprint changes | `internal/lint/fixer_*.go` |
 | Broken-link detection | ERROR if a relative `.md` link target doesn't exist | `internal/lint/linter.go::LintPath` |
 

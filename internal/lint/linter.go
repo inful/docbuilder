@@ -54,6 +54,7 @@ func NewLinter(cfg *Config) *Linter {
 			&DirectoryCategoryConsistencyRule{},
 			&FrontmatterRequiredFieldsRule{},
 			&TemplateUIDBindingRule{},
+			&WebSourcesRule{},
 			// Additional rules will be added here in future phases
 		},
 	}
