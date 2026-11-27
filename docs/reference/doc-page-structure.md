@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2026-01-01T00:00:00Z
-fingerprint: f64acd3e759c046cf0f6c8345993edc2f60a980116d389f695673eb07ea5ada0
+fingerprint: d7cd42d424104a14454943736b17b60703604cdb98874936bc14b256834758af
 lastmod: "2026-11-27"
 tags:
   - frontmatter
@@ -127,7 +127,11 @@ of `web_ingest.allowed_hosts`, and a document that names a host the
 operator did not allow is ingested all the same — the mirror simply
 does not exist.
 
-The field is a list. A single URL written as a string is not read.
+The field is a list of http(s) URLs. A single URL written as a string is
+not read, and the lint reports it: `docbuilder lint --fix` turns a lone
+URL into a list of one. An entry that is not an http(s) URL is reported
+too, and left to the author - the fixer does not guess a scheme and
+does not drop a page the author asked for.
 
 The field is part of the fingerprint: a document that gains or loses a
 web source is uploaded again, and ragabast mirrors the pages again.

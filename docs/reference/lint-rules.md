@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-29T00:00:00Z
-fingerprint: 51c46aad35f82b9e0709c94d72939a02ba7b7472840a005f13a92c13179eea51
-lastmod: "2026-11-25"
+fingerprint: 018ff88e207e73b5c058b633fd090960af4aca13487bd4645b26fa820fe95e3b
+lastmod: "2026-11-27"
 tags:
   - linting
   - validation
@@ -448,6 +448,58 @@ ERROR: Missing or invalid fingerprint in frontmatter
 
 ---
 
+### Rule: Web Sources
+
+**Pattern**: The `web_sources` front matter field is not a list of http(s) URLs
+
+**Rationale**:
+- The field asks ragabast to mirror external pages into the corpus, and
+  ragabast reads a list of URLs
+- A field that is not a list is not read: the document is ingested and
+  the mirror silently does not exist
+- The entries are fetched by ragabast, and only an http or https URL is
+  a page of the web
+
+**Examples**:
+
+```yaml
+❌ Invalid (a lone URL):
+---
+web_sources: https://semver.org/spec/v2.0.0.html
+---
+
+❌ Invalid (an entry that is not a URL of the web):
+---
+web_sources:
+  - semver.org/spec/v2.0.0.html
+  - ftp://example.com/file
+---
+
+✅ Valid:
+---
+web_sources:
+  - https://semver.org/spec/v2.0.0.html
+  - http://example.com/page
+---
+```
+
+**Auto-fix**:
+- Turns a lone URL into a list of one
+- The entries that are not http(s) URLs are left to the author: the
+  fixer does not guess a scheme and does not drop a page the author
+  asked for, so the lint keeps reporting them
+
+**Error Message**:
+```
+ERROR: The web sources must be a list
+  File: docs/semver.md
+  Issue: the field holds `https://semver.org/spec/v2.0.0.html`
+
+  Fix: Write the field as a list, or run `docbuilder lint --fix` to turn a lone URL into a list of one.
+```
+
+---
+
 ### Rule: Broken Internal Links
 
 **Pattern**: Link to non-existent local file
@@ -643,6 +695,7 @@ Linting rules evolve with DocBuilder versions. See [Lint Rules Changelog](./lint
 | `cross-mode-category` | ❌ No | Manual correction |
 | `directory-category-consistency` | ✅ Yes | The category of the directory is written |
 | `template-uid-binding` | ✅ Yes | The uid is bound in the template |
+| `web-sources` | ✅ Yes | A lone web source becomes a list of one |
 | `broken-links` | ✅ Yes* | The link is rewritten when the file was renamed in git (*ADR-012) |
 
 ---
