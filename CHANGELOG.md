@@ -9,6 +9,17 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Added
+- **The generated index pages link to the project in the forge.** The
+  landing page of a repository and of a section carry a link to the page
+  of the project in the forge, and the theme renders it in the page meta
+  next to the edit link. The address of the project is the address of
+  the repository in the forge: the clone address of the repository
+  without the `.git` suffix. The landing page of the site carries no
+  link, and neither does a local repository.
+
+## [0.35.36] - 2026-11-26
+
 ### Fixed
 - **The reingestion command reads the environment variables.** Every
   command that reads the configuration loads the `.env` files first,

@@ -11,12 +11,20 @@
   repository the page was written in, so a site that gathers several
   repositories sends the reader to the right one.
 
+  The project link points at the page of the project in the forge. The
+  generated landing pages of a repository and of a section carry it: the
+  reader of such a page wants to see the project the page belongs to.
+
   The print link is Docsy's own and stays.
 */ -}}
 {{ if .File -}}
 {{ $editURL := .Params.editURL }}
 {{ $issueURL := .Params.issueURL }}
+{{ $projectURL := .Params.projectURL }}
 <div class="td-page-meta ms-2 pb-1 pt-2 mb-0">
+{{ with $projectURL }}
+  <a href="{{ . }}" class="td-page-meta--project td-page-meta__project" target="_blank" rel="noopener"><i class="fa-solid fa-code-branch"></i> View the project</a>
+{{ end }}
 {{ with $editURL }}
   <a href="{{ . }}" class="td-page-meta--edit td-page-meta__edit" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square"></i> {{ T "post_edit_this" }}</a>
 {{ end }}
