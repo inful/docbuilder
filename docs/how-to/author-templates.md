@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2026-02-02T00:00:00Z
-fingerprint: 28846efed9bda6d0349bf4a1d0b749525caa7764ec8564a034ab5124a384e5b7
-lastmod: "2026-11-19"
+fingerprint: ecb834435480b63f0aa6ae5cde86f9f46d29514633ce664690f95206ffc71687
+lastmod: "2026-11-27"
 tags:
   - templates
   - authoring
@@ -254,6 +254,12 @@ The template body is a **single fenced markdown code block** in the template doc
 - Must be exactly one markdown code block
 - Code block should use `language-markdown` or `language-md`
 - Content uses Go `text/template` syntax
+
+The template page is a page of the site, and the site numbers the lines
+of its code blocks. The numbers belong to the page and not to the
+template: `docbuilder template new` reads the code block of the
+published page and leaves the numbers of the highlighter out. The
+document it creates holds the code alone.
 
 **Example:**
 

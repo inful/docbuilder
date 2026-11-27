@@ -9,6 +9,16 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Fixed
+- **The template of a document carries no line numbers.** The template
+  body is read from the code block of the published template page, and
+  the site numbers the lines of its code blocks: every line of every
+  document the template created began with its number. The numbers
+  belong to the page and not to the template, and the reader of the
+  page leaves them out.
+
+## [0.35.37] - 2026-11-27
+
 ### Added
 - **The generated index pages link to the project in the forge.** The
   landing page of a repository and of a section carry a link to the page
