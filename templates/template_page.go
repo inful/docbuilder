@@ -101,7 +101,7 @@ func ParseTemplatePage(r io.Reader) (*TemplatePage, error) {
 				}
 			case "code":
 				if isMarkdownCodeNode(n) {
-					markdownBlocks = append(markdownBlocks, strings.TrimSpace(extractTextPreserveWhitespace(n)))
+					markdownBlocks = append(markdownBlocks, strings.TrimSpace(extractTemplateBody(n)))
 				}
 			}
 		}
@@ -152,12 +152,42 @@ func firstTemplateMetaValue(meta map[string]string, keys ...string) string {
 	return ""
 }
 
-// extractTextPreserveWhitespace extracts text content while preserving whitespace.
+// extractTemplateBody returns the text of the code block of a
+// template.
 //
-// This is important for template bodies inside <pre><code> where newlines and
-// indentation must be preserved. Many Hugo themes/syntax highlighters wrap code
-// in nested <span> nodes, which can cause the trimmed extractText() helper to
-// collapse newlines.
+// The text of the block is kept as it is: the newlines and the
+// indentation of a template matter, and many themes and syntax
+// highlighters wrap the code in nested <span> nodes.
+//
+// A syntax highlighter that numbers the lines puts the number of the
+// line in front of the code, in an element of its own. The number
+// belongs to the page and not to the template: the template is the
+// code, and the code has no numbers. A template that carried them
+// would write the number in front of every line of every document it
+// creates.
+func extractTemplateBody(n *html.Node) string {
+	if n == nil {
+		return ""
+	}
+	if isLineNumberNode(n) {
+		return ""
+	}
+	if n.Type == html.TextNode {
+		return n.Data
+	}
+
+	var text strings.Builder
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		text.WriteString(extractTemplateBody(c))
+	}
+	return text.String()
+}
+
+// extractTextPreserveWhitespace returns the text of a node and of its
+// children, the whitespace included.
+//
+// The whitespace matters: a template body lives in a <pre><code> and
+// its newlines and its indentation are part of it.
 func extractTextPreserveWhitespace(n *html.Node) string {
 	if n == nil {
 		return ""
@@ -171,6 +201,50 @@ func extractTextPreserveWhitespace(n *html.Node) string {
 		text.WriteString(extractTextPreserveWhitespace(c))
 	}
 	return text.String()
+}
+
+// lineNumberClasses are the classes a syntax highlighter gives to the
+// number of a line of code.
+//
+// Chroma calls the number "ln" when the numbers stand next to the code
+// and "lnt" when they stand in a column of their own.
+var lineNumberClasses = map[string]bool{
+	"ln":      true,
+	"lnt":     true,
+	"lineno":  true,
+	"linenos": true,
+}
+
+// isLineNumberNode reports whether the node holds the number of a line
+// of code.
+//
+// The class alone does not tell: a highlighter that names its spans
+// "ln" may hold the code of the line in them. The number is a number,
+// and only a number: an element that holds something else is the code
+// and stays.
+func isLineNumberNode(n *html.Node) bool {
+	if n == nil || n.Type != html.ElementNode {
+		return false
+	}
+	numbered := false
+	for class := range strings.FieldsSeq(strings.ToLower(getAttr(n, "class"))) {
+		if lineNumberClasses[class] {
+			numbered = true
+			break
+		}
+	}
+	if !numbered {
+		return false
+	}
+	for _, r := range extractTextPreserveWhitespace(n) {
+		if r < '0' || r > '9' {
+			// A space, a newline or a tab is part of the number.
+			if r != ' ' && r != '\n' && r != '\r' && r != '\t' {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func missingRequiredTemplateMeta(meta TemplateMeta) []string {
