@@ -9,6 +9,17 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Added
+- **A document can name the external pages that belong to it.** The
+  `web_sources` front matter field asks ragabast to mirror those pages
+  into the corpus: the daemon uploads the document as it is, and
+  ragabast reads the field out of it. The allowance is the operator's
+  - ragabast fetches a page only when its host is on the list of
+  `web_ingest.allowed_hosts`, and a document that names a host the
+  operator did not allow is ingested all the same.
+
+## [0.35.38] - 2026-11-27
+
 ### Fixed
 - **The template of a document carries no line numbers.** The template
   body is read from the code block of the published template page, and

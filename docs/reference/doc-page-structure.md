@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2026-01-01T00:00:00Z
-fingerprint: f5c30e14c0da821acb6bb93a991501188992fb82f8aece528cc01478822ca436
-lastmod: "2026-11-22"
+fingerprint: f64acd3e759c046cf0f6c8345993edc2f60a980116d389f695673eb07ea5ada0
+lastmod: "2026-11-27"
 tags:
   - frontmatter
   - structure
@@ -101,6 +101,39 @@ the lint rules.
 | `draft` | bool | If `true`, the page is excluded from production builds. |
 | `description` | string | Short summary used by Hugo's meta tags and search. |
 | `keywords` | list of strings | Additional taxonomy. Rarely needed alongside `tags`. |
+| `web_sources` | list of strings | External pages that belong to the document. Ragabast mirrors them into the corpus. See [The Web Sources Of A Document](#the-web-sources-of-a-document). |
+
+### The web sources of a document
+
+A document can name the external pages that belong to it:
+
+```yaml
+---
+uid: 3f2a1b4c-5d6e-4f70-8192-a3b4c5d6e7f8
+title: Semantic Versioning
+web_sources:
+  - https://semver.org/spec/v2.0.0.html
+---
+```
+
+Ragabast mirrors those pages into the corpus: a question about the
+specification is answered with the specification and not only with the
+words of the document.
+
+The request travels with the document. The daemon uploads the document
+as it is, and ragabast reads the field out of it. The allowance is the
+operator's: ragabast fetches a page only when its host is on the list
+of `web_ingest.allowed_hosts`, and a document that names a host the
+operator did not allow is ingested all the same — the mirror simply
+does not exist.
+
+The field is a list. A single URL written as a string is not read.
+
+The field is part of the fingerprint: a document that gains or loses a
+web source is uploaded again, and ragabast mirrors the pages again.
+
+See [How To: Mirror The External Pages Of A Document Into
+Ragabast](../how-to/mirror-external-pages-into-ragabast.md).
 
 ## Build-Injected Frontmatter
 
