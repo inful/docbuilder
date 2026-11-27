@@ -136,6 +136,18 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 			title := titleCase(key.repository)
 			description := fmt.Sprintf("Documentation for %s", key.repository)
 
+			frontMatter := map[string]any{
+				"title":                   title,
+				frontMatterKeyDescription: description,
+				"type":                    "docs",
+			}
+			// The landing page of a repository links to the page of
+			// the project in the forge: the reader of the page wants
+			// to see the project the page belongs to.
+			if url := projectPageURL(ctx, key.repository); url != "" {
+				frontMatter["projectURL"] = url
+			}
+
 			// Build the content path via the single source of truth
 			// (docs.HugoContentPath) so this stage agrees with the
 			// doc-copy stage on the case of every path component. The
@@ -143,18 +155,14 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 			// next to them, and the metadata of a name cannot say
 			// which of the repositories of that name it describes.
 			doc := &Document{
-				Path:       docs.HugoContentPath(key.forge, key.repository, "", indexFileSuffix, markdownExtension, ctx.IsSingleRepo),
-				IsIndex:    true,
-				Generated:  true,
-				Repository: key.repository,
-				Forge:      key.forge,
-				Section:    "",
-				Content:    indexContent(title, description),
-				FrontMatter: map[string]any{
-					"title":                   title,
-					frontMatterKeyDescription: description,
-					"type":                    "docs",
-				},
+				Path:        docs.HugoContentPath(key.forge, key.repository, "", indexFileSuffix, markdownExtension, ctx.IsSingleRepo),
+				IsIndex:     true,
+				Generated:   true,
+				Repository:  key.repository,
+				Forge:       key.forge,
+				Section:     "",
+				Content:     indexContent(title, description),
+				FrontMatter: frontMatter,
 			}
 			if ctx.Config.IsDaemonPublicOnlyEnabled() {
 				doc.FrontMatter["public"] = true
@@ -274,21 +282,28 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 		// owned by DocBuilder and use a fixed value (mirroring generateMainIndex
 		// above) instead of time.Now() — otherwise today's date bleeds into
 		// rendered Hugo output on every build.
+		frontMatter := map[string]any{
+			"title":       title,
+			"description": description,
+			"type":        "docs",
+			"date":        "2024-01-01T00:00:00Z",
+			"lastmod":     "2024-01-01",
+		}
+		// The landing page of a section links to the page of the
+		// project in the forge: the reader of the page wants to see
+		// the project the page belongs to.
+		if url := projectPageURL(ctx, repo); url != "" {
+			frontMatter["projectURL"] = url
+		}
 		doc := &Document{
-			Path:       sectionPath,
-			IsIndex:    true,
-			Generated:  true,
-			Repository: repo,
-			Forge:      key.forge,
-			Section:    sectionName,
-			Content:    indexContent(title, description),
-			FrontMatter: map[string]any{
-				"title":       title,
-				"description": description,
-				"type":        "docs",
-				"date":        "2024-01-01T00:00:00Z",
-				"lastmod":     "2024-01-01",
-			},
+			Path:        sectionPath,
+			IsIndex:     true,
+			Generated:   true,
+			Repository:  repo,
+			Forge:       key.forge,
+			Section:     sectionName,
+			Content:     indexContent(title, description),
+			FrontMatter: frontMatter,
 		}
 		if ctx.Config.IsDaemonPublicOnlyEnabled() {
 			doc.FrontMatter["public"] = true
@@ -297,6 +312,25 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 	}
 
 	return generated, nil
+}
+
+// projectPageURL returns the address of the page of the project of a
+// repository in the forge.
+//
+// The address of the project is the address of the repository in the
+// forge: the clone address of the repository without the ".git"
+// suffix. A local repository has no page in a forge, and the address is
+// empty.
+func projectPageURL(ctx *GenerationContext, repo string) string {
+	base := ctx.RepositoryMetadata[repo].URL
+	if ctx.Config != nil && ctx.Config.Build.EditURLBase != "" {
+		// The operator named the address of the project themselves.
+		base = ctx.Config.Build.EditURLBase
+	}
+	if !isForgeURL(base) {
+		return ""
+	}
+	return strings.TrimSuffix(webURL(base), ".git")
 }
 
 // titleCase converts a string to title case (simple version).

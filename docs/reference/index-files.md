@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2026-01-01T00:00:00Z
-fingerprint: 7892c7b3dc04525cfb3823ebe8e1c79b2b0c012029b0849e0ca30754ff0016b1
-lastmod: "2026-11-19"
+fingerprint: ec7924697b5a2fa16909914413002761b589e7ebf5d810fcc08805455b44762b
+lastmod: "2026-11-27"
 tags: []
 title: Index File Handling
 uid: 7d804d6f-42df-436f-8b7c-cadc4c6b88c4
@@ -128,6 +128,23 @@ your-repo/
 **Behavior**: Both `README.md` and `index.md` in a section directory are normalized to `_index.md` by the transform pipeline. If both exist in the same section, `index.md` takes precedence (same as repository-level).
 
 If no user-provided index exists, the generation phase creates a section index listing all documents in that section. Generated indexes are then processed through the same transform pipeline.
+
+## The Link To The Project
+
+A generated repository index and a generated section index carry a link to the page of the project in the forge. The theme renders it in the page meta of the page, next to the edit link:
+
+```
+View the project | Edit this page | Create documentation issue
+```
+
+The address of the project is the address of the repository in the forge: the clone address of the repository without the `.git` suffix. A clone address of SSH (`git@git.example.com:org/repo.git`) becomes the address of the web (`https://git.example.com/org/repo`).
+
+The rules of the link:
+
+- The landing page of the site carries no link: a site that gathers the pages of many repositories has no single project page.
+- A local repository has no page in a forge, and its index carries no link.
+- The `--edit-url-base` flag names the address of the project itself, and the link points there.
+- An index that the author wrote carries no link: the author decides what the page says.
 
 ## File Naming Conventions
 
